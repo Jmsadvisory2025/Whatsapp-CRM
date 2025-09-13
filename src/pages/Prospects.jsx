@@ -2,8 +2,18 @@ import React, { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchProspects, convertProspectToLead, resetAction, updateProspect, setProspectsError, clearProspectsError } from "../store/prospectsSlice";
+import {
+  fetchProspects,
+  convertProspectToLead,
+  resetAction,
+  updateProspect,
+  setProspectsError,
+  clearProspectsError,
+} from "../store/prospectsSlice";
 import { motion } from "framer-motion";
+import { getIndex, toCamelCase } from "../hooks/utils";
+import ExportCSVButton from "../components/ui/ExportCSVButton"; // Import reusable component
+import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
 
 const Prospects = () => {
   const dispatch = useDispatch();
@@ -28,7 +38,7 @@ const Prospects = () => {
       if (!isValid) {
         setRowErrors((prev) => ({
           ...prev,
-          [prospect.conversation_id]: 'Name, Phone, and Diseases fields are required',
+          [prospect.conversation_id]: "Name, Phone, and Diseases fields are required",
         }));
         setSelectedAction("");
         return;
@@ -43,12 +53,14 @@ const Prospects = () => {
 
   const handleUpdate = () => {
     if (selectedProspect && selectedAction === "convert") {
-      dispatch(convertProspectToLead({
-        conversation_id: selectedProspect.conversation_id,
-        phone: selectedProspect.phone,
-        patient_name: selectedProspect.patient_name,
-        disease: selectedProspect.disease,
-      }));
+      dispatch(
+        convertProspectToLead({
+          conversation_id: selectedProspect.conversation_id,
+          phone: selectedProspect.phone,
+          patient_name: selectedProspect.patient_name,
+          disease: selectedProspect.disease,
+        })
+      );
     }
     setSelectedProspect(null);
     setSelectedAction("");
@@ -80,11 +92,13 @@ const Prospects = () => {
 
   const handleSaveUpdate = () => {
     if (editProspect) {
-      dispatch(updateProspect({
-        conversation_id: editProspect.conversation_id,
-        patient_name: editForm.patient_name,
-        disease: editForm.disease,
-      })).then(() => {
+      dispatch(
+        updateProspect({
+          conversation_id: editProspect.conversation_id,
+          patient_name: editForm.patient_name,
+          disease: editForm.disease,
+        })
+      ).then(() => {
         // Refresh the page after successful update
         window.location.reload();
       });
@@ -98,46 +112,79 @@ const Prospects = () => {
     setEditForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  if (isLoading) return <div className="text-center py-10">Loading...</div>;
-  if (error) return (
-    <div className="text-center py-10 text-red-600">
-      {error}
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => dispatch(clearProspectsError())}
-        className="mt-4 px-4 py-2"
-      >
-        Dismiss
-      </Button>
-    </div>
-  );
+  if (isLoading) return <div className="text-center py-10"><LoaderDemo/></div>;
+  if (error)
+    return (
+      <div className="text-center py-10 text-red-600">
+        {error}
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => dispatch(clearProspectsError())}
+          className="mt-4 px-4 py-2"
+        >
+          Dismiss
+        </Button>
+      </div>
+    );
+
+  // CSV export data and headers for Prospects
+  const csvData = prospects; // Use the Redux prospects state
+  const csvHeaders = [
+    { label: "#", key: "index" }, // Custom index (handled in data transformation)
+    { label: "Name", key: "patient_name" },
+    { label: "Phone", key: "phone" },
+    { label: "Diseases", key: "disease" },
+    { label: "Assigned To", key: "assigned_to.name" }, // Nested object access
+    { label: "Contact Date", key: "contact_date" },
+    { label: "Relation", key: "relation" },
+    { label: "Visiting Location", key: "location" },
+  ];
+
+  // Transform data to include index and handle nested fields
+  const transformedCsvData = prospects.map((prospect, index) => ({
+    index: index + 1,
+    patient_name: prospect.patient_name || "Not Available",
+    phone: prospect.phone ? prospect.phone.replace("whatsapp:", "") : "Not Available",
+    disease: prospect.disease || "Not Available",
+    "assigned_to.name": prospect.assigned_to?.name || "Not Available",
+    contact_date: prospect.contact_date
+      ? new Date(prospect.contact_date).toLocaleDateString()
+      : "Not Available",
+    relation: prospect.relation || "Not Available",
+    location: prospect.location || "Not Available",
+  }));
 
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-text-primary">
-          Prospect Management
-        </h1>
-        <Button>Export</Button>
+        <h1 className="text-3xl font-bold text-text-primary">Prospect Management</h1>
+        {/* Use reusable ExportCSVButton with transformed data */}
+        <ExportCSVButton
+          data={transformedCsvData}
+          headers={csvHeaders}
+          filename="prospects.csv"
+        />
       </div>
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[600px] text-sm text-left">
           <thead className="bg-gray-50 text-text-secondary">
             <tr>
+              <th className="p-4 font-semibold">#</th>
               <th className="p-4 font-semibold">Name</th>
               <th className="p-4 font-semibold">Phone</th>
               <th className="p-4 font-semibold">Diseases</th>
               <th className="p-4 font-semibold">Assigned To</th>
               <th className="p-4 font-semibold">Contact Date</th>
-              <th className="p-4 font-semibold">Follow Up</th>
-              <th className="p-4 font-semibold">Action</th>
+              <th className="p-4 font-semibold">Relation</th>
+              <th className="p-4 font-semibold">Visiting Location</th>
+              <th className="p-4 font-semibold text-center">Action</th>
             </tr>
           </thead>
           <tbody>
             {prospects.length === 0 ? (
               <tr>
-                <td colSpan="7" className="p-6 text-center">
+                <td colSpan="8" className="p-6 text-center">
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
                     <p className="text-gray-600 font-medium text-lg">No Data Found</p>
                     <p className="text-gray-500 text-sm mt-1">
@@ -156,6 +203,9 @@ const Prospects = () => {
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
                   <td className="p-4 font-medium text-text-primary">
+                    {getIndex(prospects, prospect, false)}
+                  </td>
+                  <td className="p-4 font-medium text-text-primary">
                     {editProspect?.conversation_id === prospect.conversation_id ? (
                       <input
                         type="text"
@@ -165,10 +215,14 @@ const Prospects = () => {
                         className="border rounded-lg px-2 py-1 text-sm w-full"
                       />
                     ) : (
-                      prospect.patient_name || "Not Available"
+                      toCamelCase(prospect.patient_name || "Not Available")
                     )}
                   </td>
-                  <td className="p-4 text-text-secondary">{prospect.phone ? prospect.phone.replace("whatsapp:", "") : "Not Available"}</td>
+                  <td className="p-4 text-text-secondary">
+                    {prospect.phone
+                      ? prospect.phone.replace("whatsapp:", "")
+                      : "Not Available"}
+                  </td>
                   <td className="p-4 text-text-secondary">
                     {editProspect?.conversation_id === prospect.conversation_id ? (
                       <input
@@ -179,13 +233,20 @@ const Prospects = () => {
                         className="border rounded-lg px-2 py-1 text-sm w-full"
                       />
                     ) : (
-                      prospect.disease || "Not Available"
+                      toCamelCase(prospect.disease || "Not Available")
                     )}
                   </td>
-                  <td className="p-4 text-text-secondary">{prospect.assigned_to?.name || "Not Available"}</td>
-                  <td className="p-4 text-text-secondary">{prospect.contact_date ? new Date(prospect.contact_date).toLocaleDateString() : "Not Available"}</td>
-                  <td className="p-4 text-text-secondary">{prospect.followUp || "Not Available"}</td>
-                  <td className="p-4 flex  items-center gap-2">
+                  <td className="p-4 text-text-secondary">
+                    {prospect.assigned_to?.name || "Not Available"}
+                  </td>
+                  <td className="p-4 text-text-secondary">
+                    {prospect.contact_date
+                      ? new Date(prospect.contact_date).toLocaleDateString()
+                      : "Not Available"}
+                  </td>
+                  <td className="p-4 text-text-secondary">{prospect.relation || "Not Available"}</td>
+                  <td className="p-4 text-text-secondary">{prospect.location || "Not Available"}</td>
+                  <td className="p-4 flex items-center gap-2">
                     {editProspect?.conversation_id === prospect.conversation_id ? (
                       <>
                         <Button
@@ -217,12 +278,15 @@ const Prospects = () => {
                     )}
                     <select
                       className="border rounded-lg px-3 py-2 text-sm bg-surface"
-                      value={selectedProspect?.conversation_id === prospect.conversation_id ? selectedAction : ""}
+                      value={
+                        selectedProspect?.conversation_id === prospect.conversation_id
+                          ? selectedAction
+                          : ""
+                      }
                       onChange={(e) => handleActionChange(prospect, e.target.value)}
                     >
                       <option value="">select</option>
                       <option value="convert">Convert to Lead</option>
-                      <option value="notInterested">Not Interested</option>
                     </select>
                     {selectedProspect?.conversation_id === prospect.conversation_id && selectedAction && (
                       <div className="flex gap-2">
@@ -245,7 +309,9 @@ const Prospects = () => {
                       </div>
                     )}
                     {rowErrors[prospect.conversation_id] && (
-                      <span className="text-red-600 text-xs mt-1">{rowErrors[prospect.conversation_id]}</span>
+                      <span className="text-red-600 text-xs mt-1">
+                        {rowErrors[prospect.conversation_id]}
+                      </span>
                     )}
                   </td>
                 </motion.tr>

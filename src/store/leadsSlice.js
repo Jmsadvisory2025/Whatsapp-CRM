@@ -3,7 +3,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 const BASE_URL = 'https://mcrm-cbe4exh8ghdheben.centralindia-01.azurewebsites.net';
 
 // Async thunk to fetch confirmed leads
-export const fetchConfirmedLeads = createAsyncThunk(
+const fetchConfirmedLeads = createAsyncThunk(
   'leads/fetchConfirmed',
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState();
@@ -35,7 +35,7 @@ export const fetchConfirmedLeads = createAsyncThunk(
 );
 
 // Async thunk to convert lead to patient
-export const convertToPatient = createAsyncThunk(
+const convertToPatient = createAsyncThunk(
   'leads/convertToPatient',
   async ({ conversation_id }, { getState, rejectWithValue }) => {
     const { auth } = getState();
@@ -67,10 +67,10 @@ export const convertToPatient = createAsyncThunk(
   }
 );
 
-// Async thunk to update lead
-export const updateLead = createAsyncThunk(
-  'leads/update',
-  async ({ conversation_id, patient_name, disease, status }, { getState, rejectWithValue }) => {
+// Async thunk to update lead action
+const updateLeadAction = createAsyncThunk(
+  'leads/updateAction',
+  async ({ conversation_id, action, reminder_note }, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem('accessToken');
 
@@ -79,18 +79,18 @@ export const updateLead = createAsyncThunk(
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/leads/${conversation_id}/update/`, {
-        method: 'PUT', // Adjust to PUT if required by API
+      const response = await fetch(`${BASE_URL}/api/v1/leads/${conversation_id}/action/`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ patient_name, disease, status }),
+        body: JSON.stringify({ action, reminder_note }),
       });
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to update lead');
+        throw new Error(data.message || 'Failed to update lead action');
       }
 
       return data;
@@ -144,11 +144,11 @@ const leadsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-      .addCase(updateLead.pending, (state) => {
+      .addCase(updateLeadAction.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(updateLead.fulfilled, (state, action) => {
+      .addCase(updateLeadAction.fulfilled, (state, action) => {
         state.isLoading = false;
         const updatedLead = action.payload;
         state.leads = state.leads.map(l =>
@@ -156,7 +156,7 @@ const leadsSlice = createSlice({
         );
         state.error = null;
       })
-      .addCase(updateLead.rejected, (state, action) => {
+      .addCase(updateLeadAction.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       });
@@ -164,4 +164,5 @@ const leadsSlice = createSlice({
 });
 
 export const { clearLeadsError } = leadsSlice.actions;
+export { fetchConfirmedLeads, convertToPatient, updateLeadAction };
 export default leadsSlice.reducer;

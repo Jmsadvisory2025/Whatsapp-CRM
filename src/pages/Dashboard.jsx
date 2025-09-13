@@ -1,26 +1,29 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Card from "../components/ui/Card";
 import { Briefcase, LogOut, Search, User, UserCheck } from "lucide-react";
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  CartesianGrid,
 } from "recharts";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchDashboardAnalytics } from "../store/dashboardSlice";
+import {
+  fetchDashboardAnalytics,
+  fetchRecentActivity,
+  loadMoreActivity,
+  clearDashboardError,
+} from "../store/dashboardSlice";
 import { motion } from "framer-motion";
 import StatCard from "../components/ui/StatCard";
-import ActivityItem from "../components/layout/ActivityItem";
 import AllIcons from "../assets/images/assets";
 import Calendar from "react-calendar";
 import Button from "../components/ui/Button";
 import { useNavigate } from "react-router-dom";
+import RecentActivities from "../components/layout/RecentActivities";
+import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
 
 const { totalInquiriesIcon, cardProspectsIcon, PatientsIcon, LeadsIcon } =
   AllIcons;
@@ -28,39 +31,74 @@ const { totalInquiriesIcon, cardProspectsIcon, PatientsIcon, LeadsIcon } =
 const Dashboard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { totals, daily_trend, monthly_trend, isLoading, error } = useSelector(
-    (state) => state.dashboard
-  );
+  const {
+    totals,
+    daily_trend,
+    monthly_trend,
+    recent_activity,
+    isLoading,
+    error,
+    offset,
+    limit,
+  } = useSelector((state) => state.dashboard);
+  const [visibleActivities, setVisibleActivities] = useState([]);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     dispatch(fetchDashboardAnalytics());
+    dispatch(fetchRecentActivity());
   }, [dispatch]);
 
-  if (isLoading) return <div className="text-center py-10">Loading...</div>;
+  useEffect(() => {
+    if (recent_activity.length > 0) {
+      const sortedActivities = [...recent_activity].sort((a, b) => {
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+      const startIndex = Math.max(0, sortedActivities.length - (offset + limit));
+      const endIndex = sortedActivities.length - offset;
+      const slicedActivities = sortedActivities.slice(startIndex, endIndex);
+      setVisibleActivities(slicedActivities);
+    } else if (!isInitialMount.current) {
+      setVisibleActivities([]);
+    }
+    if (isInitialMount.current) isInitialMount.current = false;
+  }, [recent_activity, offset, limit]);
+
+  if (isLoading) return <div className="text-center py-10"><LoaderDemo   /></div>;
   if (error)
-    return <div className="text-center py-10 text-red-600">{error}</div>;
+    return (
+      <div className="text-center py-10 text-red-600">
+        {error}
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => dispatch(clearDashboardError())}
+          className="mt-4 px-4 py-2"
+        >
+          Dismiss
+        </Button>
+      </div>
+    );
 
-  // Mock recent activity (replace with API call if needed)
-  const recentActivity = [
-    { icon: User, text: "New user registered", time: "2h ago" },
-    { icon: Briefcase, text: "Lead converted to prospect", time: "4h ago" },
-    { icon: UserCheck, text: "Patient follow-up scheduled", time: "6h ago" },
-  ];
+  // Filter daily_trend to last 7 days
+  const last7Days = [...daily_trend]
+    .sort((a, b) => new Date(b.day) - new Date(a.day))
+    .slice(0, 7)
+    .map((item) => ({
+      day: new Date(item.day).getDate(), // Only day number (e.g., 5, 11)
+      count: item.count,
+    }));
 
-  // Prepare bar chart data
-  const barChartData = daily_trend.map((item) => ({
-    day: item.day.split("-")[2], // Show only day (e.g., "04")
-    count: item.count,
-  }));
-
-  // Customize calendar tile content based on daily_trend
   const tileContent = ({ date, view }) => {
     if (view === "month") {
       const dateStr = date.toISOString().split("T")[0];
-      const trend = daily_trend.find((item) => item.day === dateStr);
+      const trend = last7Days.find((item) => {
+        const trendDate = new Date(daily_trend.find((d) => d.count === item.count)?.day || "").getDate();
+        return trendDate === date.getDate();
+      });
       if (trend && trend.count > 0) {
         return (
-          <div className="text-center text-xs bg-blue-100 rounded-full w-5 h-5 flex items-center justify-center text-blue-800">
+          <div className="text-center text-xs bg-blue-200 rounded-full w-6 h-6 flex items-center justify-center text-blue-800 font-medium shadow-sm">
             {trend.count}
           </div>
         );
@@ -68,26 +106,41 @@ const Dashboard = () => {
     }
     return null;
   };
+
   const handleLogout = () => {
-    alert("Logged out!");
+    const confirmLogout = window.confirm("Are you sure you want to log out?");
+    if (confirmLogout) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      navigate("/signin");
+    }
   };
 
+  const handleShowMore = () => {
+    dispatch(loadMoreActivity());
+  };
+
+  // Calculate total count for calendar summary
+  const totalCount = daily_trend.reduce((sum, item) => sum + item.count, 0);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-3xl font-bold text-text-primary">
-          Dashboard Overview
+        <h1 className="text-2xl font-bold text-blue-700">
+          Good to have you back, Doctor. Review your insights here.
         </h1>
         <Button
-          onClick={handleLogout} // your logout function
-          className="bg-red-600 hover:bg-red-700 focus:ring-red-500 text-white  "
+          onClick={handleLogout}
+          className="bg-red-600 hover:bg-red-700 focus:ring-red-500 text-white flex items-center px-4 py-2 rounded-lg"
         >
           <LogOut className="w-4 h-4 mr-2" />
-          Log Out{" "}
+          Log Out
         </Button>
       </div>
+      {/* <LoaderDemo text="Loading patient records..." />
+<LoaderDemo text="Scheduling appointment..." />
+<LoaderDemo text="Processing insurance..." /> */}
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           icon={totalInquiriesIcon}
@@ -100,107 +153,83 @@ const Dashboard = () => {
           value={totals.prospects.toString()}
           label="Prospect"
           color="#C2FFE3"
-          onClick={() => {
-            navigate("/prospects");
-          }}
+          onClick={() => navigate("/prospects")}
         />
-
         <StatCard
           icon={PatientsIcon}
           value={totals.patients.toString()}
           label="Patient"
           color="#FFF0C2"
-          onClick={() => {
-            navigate("/patients");
-          }}
+          onClick={() => navigate("/patients")}
         />
         <StatCard
           icon={LeadsIcon}
           value={totals.leads.toString()}
           label="Lead"
           color="#E8D1FF"
-          onClick={() => {
-            navigate("/leads");
-          }}
+          onClick={() => navigate("/leads")}
         />
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <h2 className="text-lg font-semibold mb-4 text-text-primary">
-            Inquiry Trend of{" "}
-            {new Date().toLocaleString("default", { month: "long" })}{" "}
-            {new Date().getFullYear()}
+        <Card className="p-4">
+          <h2 className="text-lg font-semibold mb-4 text-gray-800">
+            Inquiry Trend September 2025 (Last 7 Days)
           </h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={daily_trend}>
+            <BarChart data={last7Days}>
               <XAxis
                 dataKey="day"
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(value) => value} // Show only day (e.g., "04")
+                tickFormatter={(value) => value}
+                interval={0} // Show all labels
               />
+              <YAxis axisLine={false} tickLine={false} />
               <Tooltip
                 formatter={(value) => value.toString()}
-                labelFormatter={(label) => `Day: ${label}`}
+                labelFormatter={(label) => `Date: ${label}`}
               />
-
               <Bar dataKey="count" fill="#4338ca" radius={[10, 10, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
-        <Card>
-          <h2 className="text-lg font-semibold mb-4 text-text-primary">
-            Analytics
-          </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <Card>
-              <h2 className="text-lg font-semibold mb-4 text-text-primary">
-                Activity Calendar
-              </h2>
-              <div className="p-4">
-                <Calendar
-                  value={new Date()} // Default to current date
-                  tileContent={tileContent}
-                  className="w-full border-none shadow-md rounded-lg"
-                  tileClassName={({ date, view }) =>
-                    view === "month" &&
-                    daily_trend.some(
-                      (item) => item.day === date.toISOString().split("T")[0]
-                    )
-                      ? "bg-blue-50 hover:bg-blue-100"
-                      : ""
-                  }
-                />
-              </div>
-            </Card>{" "}
-          </ResponsiveContainer>
+        <Card className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">Activity Calendar</h2>
+            <span className="text-sm text-gray-600 font-medium">
+              Total: {totalCount} inquiries
+            </span>
+          </div>
+          <div className="p-2 bg-white rounded-lg shadow-lg">
+            <Calendar
+              value={new Date()}
+              tileContent={tileContent}
+              className="w-full text-sm"
+              navigationLabel={({ date, label }) =>
+                `${date.toLocaleString("default", { month: "long" })} ${date.getFullYear()}`
+              }
+              prev2Label={null}
+              next2Label={null}
+              tileClassName={({ date, view }) =>
+                view === "month" &&
+                last7Days.some((item) => {
+                  const trendDate = new Date(daily_trend.find((d) => d.count === item.count)?.day || "").getDate();
+                  return trendDate === date.getDate();
+                })
+                  ? "bg-blue-50 hover:bg-blue-100 transition-colors duration-200 rounded-full"
+                  : "hover:bg-gray-100 transition-colors duration-200 rounded-full"
+              }
+            />
+          </div>
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card>
-        <h2 className="text-lg font-semibold text-text-primary mb-2">
-          Recent Activity
-        </h2>
-        <div className="divide-y divide-gray-200">
-          {recentActivity.map((activity, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <ActivityItem {...activity} />
-            </motion.div>
-          ))}
-        </div>
+      <Card key={visibleActivities.length} className="p-4">
+        <RecentActivities activities={visibleActivities} />
       </Card>
     </div>
   );
 };
 
 export default Dashboard;
-
-

@@ -1,63 +1,87 @@
-import React from 'react';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { Calendar, Clock, AlertTriangle, CheckSquare } from 'lucide-react';
-import { remindersData } from '../data/mockData';
-import StatCard from '../components/ui/StatCard';
-import AllIcons from '../assets/images/assets';
+import React, { useState } from "react";
+import Card from "../components/ui/Card";
+import Button from "../components/ui/Button";
+import { Calendar, Clock, AlertTriangle, CheckSquare } from "lucide-react";
+import StatCard from "../components/ui/StatCard";
+import AllIcons from "../assets/images/assets";
 
-const {  CompletedIcon,
-  DuetodayIcon,
-  OverdueIcon,
-  UpcomingRemindersIcon,} = AllIcons
+const { CompletedIcon, DuetodayIcon, OverdueIcon, UpcomingRemindersIcon } =
+  AllIcons;
+
+// Dummy data for reminders
+const remindersData = [
+  { lead: 1, name: "Amit Patel", phone: "+919876543210", disease: "Diabetes", days: 3, visitingLocation: "Ambavadi" },
+  { lead: 2, name: "Sneha Sharma", phone: "+918765432109", disease: "Hypertension", days: 7, visitingLocation: "Nikol" },
+  { lead: 3, name: "Rahul Mehta", phone: "+917654321098", disease: "Asthma", days: 15, visitingLocation: "Ambavadi" },
+  { lead: 4, name: "Priya Desai", phone: "+916543210987", disease: "Arthritis", days: 30, visitingLocation: "Nikol" },
+  { lead: 5, name: "Vikram Singh", phone: "+915432109876", disease: "Migraine", days: 3, visitingLocation: "Ambavadi" },
+  { lead: 6, name: "Neha Gupta", phone: "+914321098765", disease: "Cold", days: 7, visitingLocation: "Nikol" },
+  { lead: 7, name: "Karan Joshi", phone: "+913210987654", disease: "Fever", days: 15, visitingLocation: "Ambavadi" },
+];
 
 const Reminders = () => {
+  const [filterDays, setFilterDays] = useState(null); // State to track selected filter
+
+  // Filter reminders based on selected days
+  const filteredReminders = filterDays
+    ? remindersData.filter((reminder) => reminder.days === filterDays)
+    : remindersData;
+
+  const handleFilter = (days) => {
+    setFilterDays(days);
+  };
+
   return (
     <div className="container mx-auto bg-gray-100 min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Reminders & Follow-ups</h1>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md">
-          + New Reminder
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard icon={UpcomingRemindersIcon} value="5" label="Upcoming" color="#3b82f6" />
-        <StatCard icon={DuetodayIcon} value="1" label="Due Today" color="#FDE680" />
-        <StatCard icon={OverdueIcon} value="1" label="Overdue" color="#ef4444" />
-        <StatCard icon={CompletedIcon} value="1" label="Completed" color="#10b981" />
+        <h1 className="text-3xl font-bold text-gray-900">
+          Reminders & 
+        </h1>
       </div>
 
       <Card className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <select className="border rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
-              <option>All Status</option>
-            </select>
-            <select className="border rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
-              <option>All Types</option>
-            </select>
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <span className="text-sm font-medium text-gray-600 whitespace-nowrap">
+              Visiting in
+            </span>
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+              <Button variant={filterDays === null ? "primary" : "secondary"} onClick={() => handleFilter(null)}>All</Button>
+              <Button variant="secondary" onClick={() => handleFilter(3)}>3 days</Button>
+              <Button variant="secondary" onClick={() => handleFilter(7)}>7 days</Button>
+              <Button variant="secondary" onClick={() => handleFilter(15)}>15 days</Button>
+              <Button variant="secondary" onClick={() => handleFilter(30)}>1 month</Button>
+            </div>
           </div>
-          <p className="text-sm text-gray-500">Showing 7 of 7 reminders</p>
+
+          <p className="text-sm text-gray-500">Showing {filteredReminders.length} of {remindersData.length} reminders</p>
         </div>
         <div className="p-4">
           <table className="w-full text-left">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr className="border-b border-gray-200">
-                <th className="p-3 text-sm font-semibold uppercase tracking-wider">Lead</th>
-                <th className="p-3 text-sm font-semibold uppercase tracking-wider">Date & Time</th>
-                <th className="p-3 text-sm font-semibold uppercase tracking-wider">Type</th>
+            <thead className="bg-gray-50 text-text-secondary">
+              <tr>
+                <th className="p-4 font-semibold">#</th>
+                <th className="p-4 font-semibold">Name</th>
+                <th className="p-4 font-semibold">Phone</th>
+                <th className="p-4 font-semibold">Diseases</th>
+                <th className="p-4 font-semibold">Visiting in Days</th>
+                <th className="p-4 font-semibold">Visiting Location</th>
               </tr>
             </thead>
             <tbody>
-              {remindersData.map((reminder, index) => (
+              {filteredReminders.map((reminder, index) => (
                 <tr
                   key={index}
                   className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
                 >
-                  <td className="p-3 text-gray-800 font-medium">{reminder.lead}</td>
-                  <td className="p-3 text-gray-600">{reminder.dateTime}</td>
-                  <td className="p-3 text-gray-600">{reminder.type}</td>
+                  <td className="p-3 text-gray-800 font-medium">
+                    {index + 1}
+                  </td>
+                  <td className="p-3 text-gray-600">{reminder.name}</td>
+                  <td className="p-3 text-gray-600">{reminder.phone}</td>
+                  <td className="p-3 text-gray-600">{reminder.disease}</td>
+                  <td className="p-3 text-gray-600">{reminder.days} days</td>
+                  <td className="p-3 text-gray-600">{reminder.visitingLocation}</td>
                 </tr>
               ))}
             </tbody>

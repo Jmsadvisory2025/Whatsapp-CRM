@@ -7,7 +7,9 @@ import { MdEdit } from "react-icons/md";
 import RoleBadge from "../components/ui/RoleBadge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchTeamMembers, deleteTeamMember, updateTeamMember } from "../store/teamSlice";
-import SearchInput from "../components/ui/SearchInput"; // Assuming this component exists
+import SearchInput from "../components/ui/SearchInput";
+import { getIndex, toCamelCase } from "../hooks/utils"; // Import updated function
+import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
 
 const Team = () => {
   const navigate = useNavigate();
@@ -70,7 +72,7 @@ const Team = () => {
     member.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isLoading) return <div className="text-center py-10">Loading...</div>;
+  if (isLoading) return <div className="text-center py-10"><LoaderDemo/></div>;
   if (error) return <div className="text-center py-10 text-red-600">{error}</div>;
 
   return (
@@ -101,6 +103,9 @@ const Team = () => {
             <thead className="bg-gray-100 text-gray-700">
               <tr className="border-b border-gray-200">
                 <th className="p-3 text-sm font-semibold uppercase tracking-wider">
+                  #
+                </th>
+                <th className="p-3 text-sm font-semibold uppercase tracking-wider">
                   Name
                 </th>
                 <th className="p-3 text-sm font-semibold uppercase tracking-wider">
@@ -117,7 +122,7 @@ const Team = () => {
             <tbody>
               {filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="p-6 text-center">
+                  <td colSpan="5" className="p-6 text-center">
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
                       <p className="text-gray-600 font-medium text-lg">No Data Found</p>
                       <p className="text-gray-500 text-sm mt-1">
@@ -133,6 +138,9 @@ const Team = () => {
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
                   >
                     <td className="p-3 text-gray-800 font-medium">
+                      {getIndex(filteredMembers, member, true)}
+                    </td>
+                    <td className="p-3 text-gray-800 font-medium">
                       {editMember?.id === member.id ? (
                         <input
                           type="text"
@@ -142,7 +150,7 @@ const Team = () => {
                           className="border rounded-lg px-2 py-1 text-sm w-full"
                         />
                       ) : (
-                        member.full_name
+                        toCamelCase(member.full_name)
                       )}
                     </td>
                     <td className="p-3 text-gray-600">

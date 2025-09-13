@@ -22,7 +22,7 @@ export const fetchPatients = createAsyncThunk(
         },
       });
       const data = await response.json();
-      
+       console.log("patient data", data);
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch patients');
       }
