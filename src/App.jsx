@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { store } from './store/store';
 import LoaderDemo from "./components/ui/ProfessionalMedicalLoader ";
+import { RequireSignIn } from "./components/guards/AuthGuards";
 
 // Simple Loading Component
 // const Loading = () => (
@@ -77,13 +78,13 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <Suspense fallback={<LoaderDemo   />}>
-        {/* <RequireSignIn> */}
+        <RequireSignIn>
           {/* <RequireVerification> */}
             {/* <RequireOrganization> */}
               <AppLayout />
             {/* </RequireOrganization> */}
           {/* </RequireVerification> */}
-        {/* </RequireSignIn> */}
+        </RequireSignIn>
       </Suspense>
     ),
     children: [

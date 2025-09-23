@@ -24,7 +24,7 @@ const fetchConfirmedLeads = createAsyncThunk(
       const data = await response.json();
       console.log("leads data", data);
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch confirmed leads');
+        throw new Error(data.message || 'Sorry , you are not the part of the organization');
       }
 
       return data;
@@ -67,12 +67,57 @@ const convertToPatient = createAsyncThunk(
   }
 );
 
-// Async thunk to update lead action
+// Async thunk to update lead (edit button)
 const updateLeadAction = createAsyncThunk(
   'leads/updateAction',
-  async ({ conversation_id, action, reminder_note }, { getState, rejectWithValue }) => {
+  async (payload, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem('accessToken');
+    const { conversation_id, phone, disease, visit_date, visit_time, relation, status, reminder_note } = payload;
+
+    if (!token) {
+      throw new Error('No authentication token available');
+    }
+
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/leads/confirmed/${conversation_id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          phone,
+          disease,
+          visit_date,
+          visit_time,
+          relation,
+          status,
+          reminder_date: null,
+          reminder_type: null,
+          reminder_note,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update lead');
+      }
+
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// New async thunk for dropdown actions with reminder
+const updateLeadActionWithReminder = createAsyncThunk(
+  'leads/updateActionWithReminder',
+  async (payload, { getState, rejectWithValue }) => {
+    const { auth } = getState();
+    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const { conversation_id, action, reminder_note } = payload;
 
     if (!token) {
       throw new Error('No authentication token available');
@@ -85,7 +130,10 @@ const updateLeadAction = createAsyncThunk(
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ action, reminder_note }),
+        body: JSON.stringify({
+          action,
+          reminder_note: reminder_note || undefined,
+        }),
       });
       const data = await response.json();
 
@@ -137,7 +185,7 @@ const leadsSlice = createSlice({
         state.isLoading = false;
         state.leads = state.leads.filter(
           (l) => l.conversation_id !== action.meta.arg.conversation_id
-        ); // Remove converted lead
+        );
         state.error = null;
       })
       .addCase(convertToPatient.rejected, (state, action) => {
@@ -159,10 +207,26 @@ const leadsSlice = createSlice({
       .addCase(updateLeadAction.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+      })
+      .addCase(updateLeadActionWithReminder.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateLeadActionWithReminder.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const updatedLead = action.payload;
+        state.leads = state.leads.map(l =>
+          l.conversation_id === updatedLead.conversation_id ? { ...l, ...updatedLead } : l
+        );
+        state.error = null;
+      })
+      .addCase(updateLeadActionWithReminder.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });
 
 export const { clearLeadsError } = leadsSlice.actions;
-export { fetchConfirmedLeads, convertToPatient, updateLeadAction };
+export { fetchConfirmedLeads, convertToPatient, updateLeadAction, updateLeadActionWithReminder };
 export default leadsSlice.reducer;

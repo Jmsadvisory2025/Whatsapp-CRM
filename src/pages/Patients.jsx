@@ -10,6 +10,8 @@ import { getIndex, toCamelCase } from "../hooks/utils";
 import SearchInput from "../components/ui/SearchInput"; // Import SearchInput
 import ExportCSVButton from "../components/ui/ExportCSVButton"; // Import reusable component
 import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
+import EmptyState from "../components/ui/EmptyState";
+import { FileSearch, Stethoscope } from "lucide-react";
 
 const confirmationStyles = {
   Confirmed: {
@@ -80,8 +82,32 @@ const Patients = () => {
   });
 
   if (isLoading) return <div className="text-center py-10"><LoaderDemo   /></div>;
-  if (error && !errorStatus)
-    return <div className="text-center py-10 text-red-600">{error}</div>;
+ 
+    if (error && !errorStatus)
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 py-10 mt-20 px-4 text-center max-w-xl mx-auto bg-red-50 border border-red-200 rounded-xl shadow-sm">
+       <div className="flex text-red-700 gap-3 text-xl font-medium"><Stethoscope color="black" size={35} className="animate-bounce"/> {error}</div>
+
+        {/* <div className="flex flex-wrap justify-center gap-4">
+           <Button
+          variant="primary"
+          size="sm"
+          onClick={() => dispatch(clearDashboardError())}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition-all duration-200 flex items-center gap-2 font-medium"
+        >
+          Dismiss
+        </Button> 
+
+          <Button
+            onClick={handleLogout}
+            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-5 py-2 rounded-lg shadow transition-all duration-200 flex items-center gap-2 font-medium"
+          >
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </Button>
+        </div> */}
+      </div>
+    );
 
   // CSV export data and headers for Patients
   const csvData = filteredPatients; // Use filtered patients for export
@@ -101,11 +127,9 @@ const Patients = () => {
   const transformedCsvData = filteredPatients.map((patient, index) => ({
     index: getIndex(filteredPatients, patient, true),
     name: toCamelCase(patient.name || "No Data Found"),
-    phone: patient.phone?.replace("whatsapp:", "") || "No Data Found",
+    phone: `'${patient.phone?.replace("whatsapp:", "") || "-"}`,
     disease: toCamelCase(patient.disease || "No Data Found"),
-    visit_date: patient.visit_date
-      ? new Date(patient.visit_date).toLocaleDateString()
-      : "No Data Found",
+    visit_date: patient.visit_date || "No Data Found",
     visit_time: patient.visit_time || "No Data Found",
     visited_location: toCamelCase(patient.visited_location || "No Data Found"),
     relation: toCamelCase(patient.relation || "No Data Found"),
@@ -170,7 +194,13 @@ const Patients = () => {
             {filteredPatients.length === 0 ? (
               <tr>
                 <td colSpan="7" className="p-6 text-center">
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
+                  <EmptyState
+                  description={"No patients match the current filter. Try adjusting the filter or adding new patient records."}
+                  title={"No Records Found"}
+                  icon={FileSearch}
+                  
+                  />
+                  {/* <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
                     <p className="text-gray-600 font-medium text-lg">
                       No Records Found
                     </p>
@@ -178,7 +208,7 @@ const Patients = () => {
                       No patients match the current filter. Try adjusting the
                       filter or adding new patient records.
                     </p>
-                  </div>
+                  </div> */}
                 </td>
               </tr>
             ) : (

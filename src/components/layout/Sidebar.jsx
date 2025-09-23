@@ -18,7 +18,7 @@ const navItems = [
   { icon: LeadsIcon, label: "Leads", path: "/leads" },
   { icon: PatientsIcon, label: "Patient", path: "/patients" },
   { icon: RemindersIcon, label: "Reminders", path: "/reminders" },
-  { icon: TeamIcon, label: "Team", path: "/team" },
+  { icon: TeamIcon, label: "Team ", path: "/team" },
   { icon: WhatsappIcon, label: "Whatsapp", path: "/whatsapp" },
 ];
 

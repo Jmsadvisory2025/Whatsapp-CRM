@@ -24,7 +24,7 @@ const fetchTeamMembers = createAsyncThunk(
       const data = await response.json();
       console.log("team members data", data);
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch team members');
+        throw new Error(data.message || "OOPS  •︵•  You don't have permission to view team members ");
       }
 
       return data;

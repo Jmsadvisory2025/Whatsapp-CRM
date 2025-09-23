@@ -6,17 +6,28 @@ import { BiSolidTrashAlt } from "react-icons/bi";
 import { MdEdit } from "react-icons/md";
 import RoleBadge from "../components/ui/RoleBadge";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTeamMembers, deleteTeamMember, updateTeamMember } from "../store/teamSlice";
+import {
+  fetchTeamMembers,
+  deleteTeamMember,
+  updateTeamMember,
+} from "../store/teamSlice";
 import SearchInput from "../components/ui/SearchInput";
 import { getIndex, toCamelCase } from "../hooks/utils"; // Import updated function
 import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
+import { RiHospitalLine } from "react-icons/ri";
+import { Building2, Mail, Globe, User, FileSearch, Stethoscope,  } from "lucide-react";
+import EmptyState from "../components/ui/EmptyState";
 
 const Team = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { members, isLoading, error } = useSelector((state) => state.team);
   const [editMember, setEditMember] = React.useState(null);
-  const [editForm, setEditForm] = React.useState({ full_name: "", new_email: "", role: "" });
+  const [editForm, setEditForm] = React.useState({
+    full_name: "",
+    new_email: "",
+    role: "",
+  });
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -42,12 +53,14 @@ const Team = () => {
 
   const handleSaveUpdate = () => {
     if (editMember) {
-      dispatch(updateTeamMember({
-        id: editMember.id,
-        full_name: editForm.full_name,
-        new_email: editForm.new_email,
-        role: editForm.role,
-      })).then(() => {
+      dispatch(
+        updateTeamMember({
+          id: editMember.id,
+          full_name: editForm.full_name,
+          new_email: editForm.new_email,
+          role: editForm.role,
+        })
+      ).then(() => {
         setEditMember(null);
         setEditForm({ full_name: "", new_email: "", role: "" });
         window.location.reload(); // Refresh to reflect the updated member
@@ -66,19 +79,51 @@ const Team = () => {
   };
 
   // Filter members based on search query
-  const filteredMembers = members.filter((member) =>
-    member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.role.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMembers = members.filter(
+    (member) =>
+      member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isLoading) return <div className="text-center py-10"><LoaderDemo/></div>;
-  if (error) return <div className="text-center py-10 text-red-600">{error}</div>;
+  if (isLoading)
+    return (
+      <div className="text-center py-10">
+        <LoaderDemo />
+      </div>
+    );
+    if (error)
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 py-10 mt-20 px-4 text-center max-w-xl mx-auto bg-red-50 border border-red-400 rounded-xl shadow-sm">
+        <div className="flex text-red-800 text-xl font-medium"><Stethoscope color="black" size={35} className="animate-bounce"/> {error}</div>
+
+        {/* <div className="flex flex-wrap justify-center gap-4">
+           <Button
+          variant="primary"
+          size="sm"
+          onClick={() => dispatch(clearDashboardError())}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition-all duration-200 flex items-center gap-2 font-medium"
+        >
+          Dismiss
+        </Button> 
+
+          <Button
+            onClick={handleLogout}
+            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-5 py-2 rounded-lg shadow transition-all duration-200 flex items-center gap-2 font-medium"
+          >
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </Button>
+        </div> */}
+      </div>
+    );
 
   return (
     <div className="container mx-auto bg-gray-100 min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Team Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900  flex items-center gap-2">
+          Organization & Team Management
+        </h1>
         <Button
           onClick={() => navigate("/addMember")}
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md"
@@ -86,6 +131,67 @@ const Team = () => {
           + Add Member
         </Button>
       </div>
+      <Card className="mb-6 p-6 bg-white rounded-xl shadow-md border border-gray-200">
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Left Section */}
+          <div className="space-y-6">
+            {/* Organization Name */}
+            <div className="flex items-start gap-4">
+              <Building2 className="w-6 h-6 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-500">Organization Name</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  Acme Healthcare Pvt Ltd
+                </p>
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="flex items-start gap-4">
+              <Mail className="w-6 h-6 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-500">Email</p>
+                <a
+                  href="mailto:drshaheyehospitals@gmail.com"
+                  className="text-lg font-semibold text-blue-600 hover:underline break-all"
+                >
+                  drshaheyehospitals@gmail.com
+                </a>
+              </div>
+            </div>
+
+            {/* Website */}
+            <div className="flex items-start gap-4">
+              <Globe className="w-6 h-6 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-500">Website</p>
+                <a
+                  href="https://shaheyehospitals.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-lg font-semibold text-blue-600 hover:underline"
+                >
+                  shaheyehospitals.com
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Section */}
+          <div className="space-y-6">
+            {/* Owner Name */}
+            <div className="flex items-start gap-4">
+              <User className="w-6 h-6 text-blue-600" />
+              <div>
+                <p className="text-sm text-gray-500">Owner Name</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  Sapan Shah
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <Card className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -96,7 +202,9 @@ const Team = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <p className="text-sm text-gray-500">Showing {filteredMembers.length} of {members.length} members</p>
+          <p className="text-sm text-gray-500">
+            Showing {filteredMembers.length} of {members.length} members
+          </p>
         </div>
         <div className="p-4">
           <table className="w-full text-left">
@@ -123,12 +231,22 @@ const Team = () => {
               {filteredMembers.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="p-6 text-center">
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
-                      <p className="text-gray-600 font-medium text-lg">No Data Found</p>
-                      <p className="text-gray-500 text-sm mt-1">
-                        No team members available. Add a new member to get started or adjust your search.
+                    <EmptyState
+                      icon={FileSearch}
+                      title={"No Data Found"}
+                      description={
+                        "No team members available. Add a new member to get started or adjust your search."
+                      }
+                    />
+                    {/* <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
+                      <p className="text-gray-600 font-medium text-lg">
+                        No Data Found
                       </p>
-                    </div>
+                      <p className="text-gray-500 text-sm mt-1">
+                        No team members available. Add a new member to get
+                        started or adjust your search.
+                      </p>
+                    </div> */}
                   </td>
                 </tr>
               ) : (
