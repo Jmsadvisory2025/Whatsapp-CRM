@@ -1,30 +1,31 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const BASE_URL = 'https://mcrm-cbe4exh8ghdheben.centralindia-01.azurewebsites.net';
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Async thunk to fetch confirmed leads
 const fetchConfirmedLeads = createAsyncThunk(
-  'leads/fetchConfirmed',
+  "leads/fetchConfirmed",
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/leads/confirmed/`, {
-        method: 'GET',
+      const response = await fetch(`${API_BASE_URL}/api/v1/leads/confirmed/`, {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
       console.log("leads data", data);
       if (!response.ok) {
-        throw new Error(data.message || 'Sorry , you are not the part of the organization');
+        throw new Error(
+          data.message || "Sorry , you are not the part of the organization"
+        );
       }
 
       return data;
@@ -36,28 +37,31 @@ const fetchConfirmedLeads = createAsyncThunk(
 
 // Async thunk to convert lead to patient
 const convertToPatient = createAsyncThunk(
-  'leads/convertToPatient',
+  "leads/convertToPatient",
   async ({ conversation_id }, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/leads/convert-to-patient/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ conversation_id }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/leads/convert-to-patient/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ conversation_id }),
+        }
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to convert lead to patient');
+        throw new Error(data.message || "Failed to convert lead to patient");
       }
 
       return data;
@@ -69,39 +73,51 @@ const convertToPatient = createAsyncThunk(
 
 // Async thunk to update lead (edit button)
 const updateLeadAction = createAsyncThunk(
-  'leads/updateAction',
+  "leads/updateAction",
   async (payload, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
-    const { conversation_id, phone, disease, visit_date, visit_time, relation, status, reminder_note } = payload;
+    const token = auth.accessToken || localStorage.getItem("accessToken");
+    const {
+      conversation_id,
+      phone,
+      disease,
+      visit_date,
+      visit_time,
+      relation,
+      status,
+      reminder_note,
+    } = payload;
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/leads/confirmed/${conversation_id}/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          phone,
-          disease,
-          visit_date,
-          visit_time,
-          relation,
-          status,
-          reminder_date: null,
-          reminder_type: null,
-          reminder_note,
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/leads/confirmed/${conversation_id}/`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            phone,
+            disease,
+            visit_date,
+            visit_time,
+            relation,
+            status,
+            reminder_date: null,
+            reminder_type: null,
+            reminder_note,
+          }),
+        }
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to update lead');
+        throw new Error(data.message || "Failed to update lead");
       }
 
       return data;
@@ -113,32 +129,35 @@ const updateLeadAction = createAsyncThunk(
 
 // New async thunk for dropdown actions with reminder
 const updateLeadActionWithReminder = createAsyncThunk(
-  'leads/updateActionWithReminder',
+  "leads/updateActionWithReminder",
   async (payload, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
     const { conversation_id, action, reminder_note } = payload;
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/leads/${conversation_id}/action/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          action,
-          reminder_note: reminder_note || undefined,
-        }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/leads/${conversation_id}/action/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            action,
+            reminder_note: reminder_note || undefined,
+          }),
+        }
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to update lead action');
+        throw new Error(data.message || "Failed to update lead action");
       }
 
       return data;
@@ -155,7 +174,7 @@ const initialState = {
 };
 
 const leadsSlice = createSlice({
-  name: 'leads',
+  name: "leads",
   initialState,
   reducers: {
     clearLeadsError: (state) => {
@@ -199,8 +218,10 @@ const leadsSlice = createSlice({
       .addCase(updateLeadAction.fulfilled, (state, action) => {
         state.isLoading = false;
         const updatedLead = action.payload;
-        state.leads = state.leads.map(l =>
-          l.conversation_id === updatedLead.conversation_id ? { ...l, ...updatedLead } : l
+        state.leads = state.leads.map((l) =>
+          l.conversation_id === updatedLead.conversation_id
+            ? { ...l, ...updatedLead }
+            : l
         );
         state.error = null;
       })
@@ -215,8 +236,10 @@ const leadsSlice = createSlice({
       .addCase(updateLeadActionWithReminder.fulfilled, (state, action) => {
         state.isLoading = false;
         const updatedLead = action.payload;
-        state.leads = state.leads.map(l =>
-          l.conversation_id === updatedLead.conversation_id ? { ...l, ...updatedLead } : l
+        state.leads = state.leads.map((l) =>
+          l.conversation_id === updatedLead.conversation_id
+            ? { ...l, ...updatedLead }
+            : l
         );
         state.error = null;
       })
@@ -228,5 +251,10 @@ const leadsSlice = createSlice({
 });
 
 export const { clearLeadsError } = leadsSlice.actions;
-export { fetchConfirmedLeads, convertToPatient, updateLeadAction, updateLeadActionWithReminder };
+export {
+  fetchConfirmedLeads,
+  convertToPatient,
+  updateLeadAction,
+  updateLeadActionWithReminder,
+};
 export default leadsSlice.reducer;

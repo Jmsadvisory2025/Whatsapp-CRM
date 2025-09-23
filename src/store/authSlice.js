@@ -1,14 +1,14 @@
 // store/authSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-const BASE_URL = 'https://mcrm-cbe4exh8ghdheben.centralindia-01.azurewebsites.net';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Async thunks for API calls
 export const sendOtp = createAsyncThunk(
   'auth/sendOtp',
   async (email, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/auth/send-code/`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/send-code/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -30,7 +30,7 @@ export const verifyOtp = createAsyncThunk(
   'auth/verifyOtp',
   async ({ email, code }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/auth/verify-code/`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-code/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code }),

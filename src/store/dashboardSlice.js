@@ -1,31 +1,35 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const BASE_URL = 'https://mcrm-cbe4exh8ghdheben.centralindia-01.azurewebsites.net';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Async thunk to fetch dashboard analytics
 export const fetchDashboardAnalytics = createAsyncThunk(
-  'dashboard/fetchAnalytics',
+  "dashboard/fetchAnalytics",
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/analytics/`, {
-        method: 'GET',
+      console.log("Fetching:", `${API_BASE_URL}/api/v1/analytics/`);
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/analytics/`, {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
       // console.log('Analytics Response:', data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Sorry , you are not the part of the organization');
+        throw new Error(
+          data.message || "Sorry , you are not the part of the organization"
+        );
       }
 
       return data;
@@ -37,29 +41,32 @@ export const fetchDashboardAnalytics = createAsyncThunk(
 
 // Async thunk to fetch visit counts for calendar
 export const fetchVisitCounts = createAsyncThunk(
-  'dashboard/fetchVisitCounts',
+  "dashboard/fetchVisitCounts",
   async ({ start, end }, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      // const response = await fetch(`${BASE_URL}/api/v1/visit-counts/?start=${start}&end=${end}`, {
-      const response = await fetch(`${BASE_URL}/api/v1/visit-counts/?start=${start}&end=2035-09-30`, {
-      method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      // const response = await fetch(`API_BASE_URL/api/v1/visit-counts/?start=${start}&end=${end}`, {
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/visit-counts/?start=${start}&end=2035-09-30`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       const data = await response.json();
-      console.log('Visit Counts Response:', data);
+      console.log("Visit Counts Response:", data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch visit counts');
+        throw new Error(data.message || "Failed to fetch visit counts");
       }
 
       return data.counts || [];
@@ -71,28 +78,31 @@ export const fetchVisitCounts = createAsyncThunk(
 
 // Async thunk to fetch visit details for a specific day
 export const fetchVisitDetails = createAsyncThunk(
-  'dashboard/fetchVisitDetails',
+  "dashboard/fetchVisitDetails",
   async ({ day }, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/visit-details/?day=${day}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/visit-details/?day=${day}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       const data = await response.json();
-      console.log('Visit Details Response:', data);
+      console.log("Visit Details Response:", data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch visit details');
+        throw new Error(data.message || "Failed to fetch visit details");
       }
 
       return data.daily_details || { date: day, count: 0, items: [] };
@@ -104,28 +114,30 @@ export const fetchVisitDetails = createAsyncThunk(
 
 // Async thunk to fetch recent activity
 export const fetchRecentActivity = createAsyncThunk(
-  'dashboard/fetchRecentActivity',
+  "dashboard/fetchRecentActivity",
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/dashboard/`, {
-        method: 'GET',
+      const response = await fetch(`${API_BASE_URL}/api/v1/dashboard/`, {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
       // console.log('Recent Activity Response:', data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Sorry , you are not the part of the organization');
+        throw new Error(
+          data.message || "Sorry , you are not the part of the organization"
+        );
       }
 
       // Return the array directly if the response is an array, or extract recent_activity if it's an object
@@ -155,7 +167,7 @@ const initialState = {
 };
 
 const dashboardSlice = createSlice({
-  name: 'dashboard',
+  name: "dashboard",
   initialState,
   reducers: {
     clearDashboardError: (state) => {

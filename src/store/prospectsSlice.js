@@ -1,30 +1,31 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const BASE_URL = 'https://mcrm-cbe4exh8ghdheben.centralindia-01.azurewebsites.net';
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Async thunk to fetch prospects
 export const fetchProspects = createAsyncThunk(
-  'prospects/fetch',
+  "prospects/fetch",
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/leads/prospects/`, {
-        method: 'GET',
+      const response = await fetch(`${API_BASE_URL}/api/v1/leads/prospects/`, {
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
       console.log("prospect data ", data);
       if (!response.ok) {
-        throw new Error(data.message || 'Sorry , you are not the part of the organization');
+        throw new Error(
+          data.message || "Sorry , you are not the part of the organization"
+        );
       }
 
       return data;
@@ -36,33 +37,36 @@ export const fetchProspects = createAsyncThunk(
 
 // Async thunk to convert prospect to lead
 export const convertProspectToLead = createAsyncThunk(
-  'prospects/convert',
-  async ({ conversation_id, phone, patient_name, disease }, { getState, rejectWithValue }) => {
+  "prospects/convert",
+  async (
+    { conversation_id, phone, patient_name, disease },
+    { getState, rejectWithValue }
+  ) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     // Validate required fields
     if (!conversation_id || !phone || !patient_name || !disease) {
-      throw new Error('Conversation ID, Phone, Name, and Disease are required');
+      throw new Error("Conversation ID, Phone, Name, and Disease are required");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/leads/convert/`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/v1/leads/convert/`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ conversation_id, phone, patient_name, disease }),
       });
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to convert prospect to lead');
+        throw new Error(data.message || "Failed to convert prospect to lead");
       }
 
       return data;
@@ -74,28 +78,34 @@ export const convertProspectToLead = createAsyncThunk(
 
 // Async thunk to update prospect
 export const updateProspect = createAsyncThunk(
-  'prospects/update',
-  async ({ conversation_id, patient_name, disease }, { getState, rejectWithValue }) => {
+  "prospects/update",
+  async (
+    { conversation_id, patient_name, disease },
+    { getState, rejectWithValue }
+  ) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/conversations/${conversation_id}/update/`, {
-        method: 'POST', // Adjust to PUT if required by API
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ patient_name, disease }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/conversations/${conversation_id}/update/`,
+        {
+          method: "POST", // Adjust to PUT if required by API
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ patient_name, disease }),
+        }
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to update prospect');
+        throw new Error(data.message || "Failed to update prospect");
       }
 
       return data;
@@ -112,7 +122,7 @@ const initialState = {
 };
 
 const prospectsSlice = createSlice({
-  name: 'prospects',
+  name: "prospects",
   initialState,
   reducers: {
     clearProspectsError: (state) => {
@@ -164,8 +174,10 @@ const prospectsSlice = createSlice({
         state.isLoading = false;
         // Update the prospect with new data if returned by API
         const updatedProspect = action.payload;
-        state.prospects = state.prospects.map(p =>
-          p.conversation_id === updatedProspect.conversation_id ? { ...p, ...updatedProspect } : p
+        state.prospects = state.prospects.map((p) =>
+          p.conversation_id === updatedProspect.conversation_id
+            ? { ...p, ...updatedProspect }
+            : p
         );
         state.error = null;
       })
@@ -176,5 +188,6 @@ const prospectsSlice = createSlice({
   },
 });
 
-export const { clearProspectsError, setProspectsError, resetAction } = prospectsSlice.actions;
+export const { clearProspectsError, setProspectsError, resetAction } =
+  prospectsSlice.actions;
 export default prospectsSlice.reducer;

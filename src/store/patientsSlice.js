@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-const BASE_URL = 'https://mcrm-cbe4exh8ghdheben.centralindia-01.azurewebsites.net';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Async thunk to fetch patients
 export const fetchPatients = createAsyncThunk(
@@ -14,7 +14,7 @@ export const fetchPatients = createAsyncThunk(
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/v1/patients`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/patients`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

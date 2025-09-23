@@ -1,30 +1,36 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const BASE_URL = 'https://mcrm-cbe4exh8ghdheben.centralindia-01.azurewebsites.net';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Async thunk to fetch all team members
 const fetchTeamMembers = createAsyncThunk(
-  'team/fetchMembers',
+  "team/fetchMembers",
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/organization/members/list/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/organization/members/list/`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       const data = await response.json();
       console.log("team members data", data);
       if (!response.ok) {
-        throw new Error(data.message || "OOPS  •︵•  You don't have permission to view team members ");
+        throw new Error(
+          data.message ||
+            "OOPS  •︵•  You don't have permission to view team members "
+        );
       }
 
       return data;
@@ -36,27 +42,30 @@ const fetchTeamMembers = createAsyncThunk(
 
 // Async thunk to delete a team member
 const deleteTeamMember = createAsyncThunk(
-  'team/deleteMember',
+  "team/deleteMember",
   async (id, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/organization/members/${id}/`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/organization/members/${id}/`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to delete team member');
+        throw new Error(data.message || "Failed to delete team member");
       }
 
       return id; // Return the deleted member's ID
@@ -68,28 +77,31 @@ const deleteTeamMember = createAsyncThunk(
 
 // Async thunk to update a team member
 const updateTeamMember = createAsyncThunk(
-  'team/updateMember',
+  "team/updateMember",
   async ({ id, full_name, new_email, role }, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/organization/members/${id}/`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ full_name, new_email, role }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/organization/members/${id}/`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ full_name, new_email, role }),
+        }
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to update team member');
+        throw new Error(data.message || "Failed to update team member");
       }
 
       return data;
@@ -101,28 +113,31 @@ const updateTeamMember = createAsyncThunk(
 
 // Async thunk to add a new team member
 const addTeamMember = createAsyncThunk(
-  'team/addMember',
+  "team/addMember",
   async ({ full_name, new_email, role }, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem('accessToken');
+    const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
-      throw new Error('No authentication token available');
+      throw new Error("No authentication token available");
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/organization/members/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ full_name, new_email, role }),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/organization/members/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ full_name, new_email, role }),
+        }
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to add team member');
+        throw new Error(data.message || "Failed to add team member");
       }
 
       return data;
@@ -139,7 +154,7 @@ const initialState = {
 };
 
 const teamSlice = createSlice({
-  name: 'team',
+  name: "team",
   initialState,
   reducers: {
     clearTeamError: (state) => {
@@ -167,7 +182,9 @@ const teamSlice = createSlice({
       })
       .addCase(deleteTeamMember.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.members = state.members.filter((member) => member.id !== action.payload);
+        state.members = state.members.filter(
+          (member) => member.id !== action.payload
+        );
         state.error = null;
       })
       .addCase(deleteTeamMember.rejected, (state, action) => {
@@ -182,7 +199,9 @@ const teamSlice = createSlice({
         state.isLoading = false;
         const updatedMember = action.payload;
         state.members = state.members.map((member) =>
-          member.id === updatedMember.id ? { ...member, ...updatedMember } : member
+          member.id === updatedMember.id
+            ? { ...member, ...updatedMember }
+            : member
         );
         state.error = null;
       })

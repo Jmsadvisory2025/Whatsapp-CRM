@@ -1,32 +1,31 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const BASE_URL = 'https://mcrm-cbe4exh8ghdheben.centralindia-01.azurewebsites.net';
-
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Helper function to get auth token
 const getAuthToken = () => {
-  return localStorage.getItem('accessToken');
+  return localStorage.getItem("accessToken");
 };
 
 // Async thunk for creating organization
 export const createOrganization = createAsyncThunk(
-  'organization/create',
+  "organization/create",
   async (organizationData, { rejectWithValue }) => {
     try {
       const token = getAuthToken();
       if (!token) {
-        throw new Error('No authentication token available');
+        throw new Error("No authentication token available");
       }
-      const response = await fetch(`${BASE_URL}/api/organization/`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+      const response = await fetch(`${API_BASE_URL}/api/organization/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(organizationData),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         // Handle validation errors from API
         if (data.name || data.email || data.website) {
@@ -36,13 +35,13 @@ export const createOrganization = createAsyncThunk(
           if (data.website) errors.website = data.website[0];
           return rejectWithValue({ fieldErrors: errors });
         }
-        throw new Error(data.message || 'Failed to create organization');
+        throw new Error(data.message || "Failed to create organization");
       }
-      
+
       return data;
     } catch (error) {
-      return rejectWithValue({ 
-        message: error.message || 'Network error occurred' 
+      return rejectWithValue({
+        message: error.message || "Network error occurred",
       });
     }
   }
@@ -57,7 +56,7 @@ const initialState = {
 };
 
 const organizationSlice = createSlice({
-  name: 'organization',
+  name: "organization",
   initialState,
   reducers: {
     clearErrors: (state) => {
@@ -88,22 +87,20 @@ const organizationSlice = createSlice({
       .addCase(createOrganization.rejected, (state, action) => {
         state.isLoading = false;
         state.isCreated = false;
-        
+
         if (action.payload?.fieldErrors) {
           state.fieldErrors = action.payload.fieldErrors;
           state.error = null;
         } else {
-          state.error = action.payload?.message || 'Failed to create organization';
+          state.error =
+            action.payload?.message || "Failed to create organization";
           state.fieldErrors = {};
         }
       });
   },
 });
 
-export const { 
-  clearErrors, 
-  clearFieldError, 
-  resetOrganizationState 
-} = organizationSlice.actions;
+export const { clearErrors, clearFieldError, resetOrganizationState } =
+  organizationSlice.actions;
 
 export default organizationSlice.reducer;
