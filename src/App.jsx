@@ -147,14 +147,14 @@ const router = createBrowserRouter([
           </Suspense>
         )
       },
-      { 
-        path: 'whatsapp', 
-        element: (
-          <Suspense fallback={<LoaderDemo   />}>
-            <Whatsapp />
-          </Suspense>
-        )
-      },
+      // { 
+      //   path: 'whatsapp', 
+      //   element: (
+      //     <Suspense fallback={<LoaderDemo   />}>
+      //       <Whatsapp />
+      //     </Suspense>
+      //   )
+      // },
       { 
         path: 'addMember', 
         element: (

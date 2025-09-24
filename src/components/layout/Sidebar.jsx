@@ -19,7 +19,7 @@ const navItems = [
   { icon: PatientsIcon, label: "Patient", path: "/patients" },
   { icon: RemindersIcon, label: "Reminders", path: "/reminders" },
   { icon: TeamIcon, label: "Team ", path: "/team" },
-  { icon: WhatsappIcon, label: "Whatsapp", path: "/whatsapp" },
+  // { icon: WhatsappIcon, label: "Whatsapp", path: "/whatsapp" },
 ];
 
 const Sidebar = () => {

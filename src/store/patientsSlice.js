@@ -7,6 +7,7 @@ export const fetchPatients = createAsyncThunk(
   'patients/fetch',
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState();
+    console.log(auth)
     const token = auth.accessToken || localStorage.getItem('accessToken');
 
     if (!token) {
@@ -14,7 +15,7 @@ export const fetchPatients = createAsyncThunk(
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/patients`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/patients/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
