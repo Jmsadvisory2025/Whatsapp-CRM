@@ -141,7 +141,7 @@ const Team = () => {
               <div>
                 <p className="text-sm text-gray-500">Organization Name</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  Acme Healthcare Pvt Ltd
+                  Dr. Shah's Superspeciality Eye Hospital
                 </p>
               </div>
             </div>

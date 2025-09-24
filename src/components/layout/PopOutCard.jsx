@@ -5,7 +5,7 @@ import { toCamelCase } from "../../hooks/utils";
 // Enhanced PopOutCard Component
 const PopOutCard = ({ date, totalVisits, items, onClose }) => {
   // Log items to debug
-  console.log("PopOutCard items:", items);
+  // console.log("PopOutCard items:", items);
 
   return (
     <AnimatePresence>

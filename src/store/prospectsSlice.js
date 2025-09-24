@@ -21,7 +21,7 @@ export const fetchProspects = createAsyncThunk(
         },
       });
       const data = await response.json();
-      console.log("prospect data ", data);
+      // console.log("prospect data ", data);
       if (!response.ok) {
         throw new Error(
           data.message || "Sorry , you are not the part of the organization"

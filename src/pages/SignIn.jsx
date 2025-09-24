@@ -11,6 +11,7 @@ import { sendOtp, clearError } from '../store/authSlice';
 const SignIn = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
+    const [emailError, setEmailError] = useState('');
     const dispatch = useDispatch();
     const { isLoading, error, otpSent } = useSelector((state) => state.auth);
 
@@ -21,20 +22,23 @@ const SignIn = () => {
 
     const handleSendCode = async (e) => {
         e.preventDefault();
-        
+
         if (!email.trim()) {
+            setEmailError('Email is required');
             return;
         }
-        
+
         if (!validateEmail(email)) {
+            setEmailError('Please enter a valid email address');
             return;
         }
+
+        setEmailError('');
 
         try {
             const result = await dispatch(sendOtp(email)).unwrap();
             navigate('/verify');
         } catch (error) {
-            // Error is already handled by the slice
             console.error('Send OTP error:', error);
         }
     };
@@ -43,6 +47,9 @@ const SignIn = () => {
         setEmail(e.target.value);
         if (error) {
             dispatch(clearError());
+        }
+        if (emailError) {
+            setEmailError('');
         }
     };
 
@@ -87,6 +94,15 @@ const SignIn = () => {
                                 required
                                 disabled={isLoading}
                             />
+                            {emailError && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-sm text-red-600 mt-1"
+                                >
+                                    {emailError}
+                                </motion.div>
+                            )}
                         </div>
                         
                         <Button 

@@ -7,6 +7,7 @@ export const fetchDashboardAnalytics = createAsyncThunk(
   "dashboard/fetchAnalytics",
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState();
+    // console.log(auth)
     const token = auth.accessToken || localStorage.getItem("accessToken");
 
     if (!token) {
@@ -14,7 +15,7 @@ export const fetchDashboardAnalytics = createAsyncThunk(
     }
 
     try {
-      console.log("Fetching:", `${API_BASE_URL}/api/v1/analytics/`);
+      // console.log("Fetching:", `${API_BASE_URL}/api/v1/analytics/`);
 
       const response = await fetch(`${API_BASE_URL}/api/v1/analytics/`, {
         method: "GET",
@@ -63,7 +64,7 @@ export const fetchVisitCounts = createAsyncThunk(
         }
       );
       const data = await response.json();
-      console.log("Visit Counts Response:", data);
+      // console.log("Visit Counts Response:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to fetch visit counts");
@@ -99,7 +100,7 @@ export const fetchVisitDetails = createAsyncThunk(
         }
       );
       const data = await response.json();
-      console.log("Visit Details Response:", data);
+      // console.log("Visit Details Response:", data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to fetch visit details");

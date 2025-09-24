@@ -7,7 +7,7 @@ export const fetchPatients = createAsyncThunk(
   'patients/fetch',
   async (_, { getState, rejectWithValue }) => {
     const { auth } = getState();
-    console.log(auth)
+    // console.log(auth)
     const token = auth.accessToken || localStorage.getItem('accessToken');
 
     if (!token) {
@@ -23,7 +23,7 @@ export const fetchPatients = createAsyncThunk(
         },
       });
       const data = await response.json();
-       console.log("patient data", data);
+      //  console.log("patient data", data);
       if (!response.ok) {
         throw new Error(data.message || 'Sorry , you are not the part of the organization');
       }

@@ -25,7 +25,7 @@ const fetchTeamMembers = createAsyncThunk(
         }
       );
       const data = await response.json();
-      console.log("team members data", data);
+      // console.log("team members data", data);
       if (!response.ok) {
         throw new Error(
           data.message ||

@@ -21,7 +21,7 @@ const fetchConfirmedLeads = createAsyncThunk(
         },
       });
       const data = await response.json();
-      console.log("leads data", data);
+      // console.log("leads data", data);
       if (!response.ok) {
         throw new Error(
           data.message || "Sorry , you are not the part of the organization"
