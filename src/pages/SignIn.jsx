@@ -76,10 +76,10 @@ const SignIn = () => {
 
                     <form onSubmit={handleSendCode} className="space-y-6">
                         <div className="flex items-center justify-center gap-3 text-lg font-semibold text-text-primary">
-                            <div className="bg-green-100 p-2 rounded-lg text-green-600">
-                                <Mail size={20} />
+                            <div className="bg-green-200 p-2 rounded-lg text-green-700">
+                                <Mail size={30} />
                             </div>
-                            <span>User Login</span>
+                            <span className='text-3xl'>Sign In</span>
                         </div>
 
                         <div>
@@ -116,7 +116,7 @@ const SignIn = () => {
                                     Sending...
                                 </div>
                             ) : (
-                                'Send Login Code'
+                                'Send Verification Code'
                             )}
                         </Button>
 
@@ -149,9 +149,9 @@ const SignIn = () => {
                         </div>
                     </form>
                     
-                    <p className="text-xs text-text-secondary text-center mt-8">
+                    {/* <p className="text-xs text-text-secondary text-center mt-8">
                         By signing in, you agree to our <a href="#" className="text-primary hover:underline">Terms of Service</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>.
-                    </p>
+                    </p> */}
                 </div>
 
                 <div className="text-center mt-6 bg-surface p-4 rounded-lg shadow-md border flex items-center gap-4 max-w-xs mx-auto">

@@ -156,7 +156,7 @@ const Dashboard = () => {
                 <Syringe className="w-8 h-8 ml-3 text-blue-600 animate-bounce" />
               </h1>
               <p className="text-gray-500 text-lg lg:text-xl">
-                Here’s what’s happening with your patient today
+                Here’s what’s happening with your patients today
               </p>
             </div>
 

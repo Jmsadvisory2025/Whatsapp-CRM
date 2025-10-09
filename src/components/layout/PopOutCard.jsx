@@ -1,12 +1,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, X } from "lucide-react";
 import { toCamelCase } from "../../hooks/utils";
+import { useNavigate } from "react-router-dom";
 
 // Enhanced PopOutCard Component
 const PopOutCard = ({ date, totalVisits, items, onClose }) => {
   // Log items to debug
   // console.log("PopOutCard items:", items);
-
+  const navigate = useNavigate();
   return (
     <AnimatePresence>
       <motion.div
@@ -65,6 +66,7 @@ const PopOutCard = ({ date, totalVisits, items, onClose }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {items.map((item, index) => (
                   <motion.div
+                  onClick={() => navigate("/leads")}
                     key={index}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}

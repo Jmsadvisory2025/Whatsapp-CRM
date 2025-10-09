@@ -12,11 +12,12 @@ import {
   updateTeamMember,
 } from "../store/teamSlice";
 import SearchInput from "../components/ui/SearchInput";
-import { getIndex, toCamelCase } from "../hooks/utils"; // Import updated function
-import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
+import { getIndex, toCamelCase } from "../hooks/utils";
+
 import { RiHospitalLine } from "react-icons/ri";
-import { Building2, Mail, Globe, User, FileSearch, Stethoscope,  } from "lucide-react";
+import { Building2, Mail, Globe, User, FileSearch, Stethoscope } from "lucide-react";
 import EmptyState from "../components/ui/EmptyState";
+import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
 
 const Team = () => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ const Team = () => {
     setEditMember(member);
     setEditForm({
       full_name: member.full_name || "",
-      new_email: member.email || "",
+      new_email: member.email || "", // Initialize with current email
       role: member.role || "",
     });
   };
@@ -57,10 +58,11 @@ const Team = () => {
         updateTeamMember({
           id: editMember.id,
           full_name: editForm.full_name,
-          new_email: editForm.new_email,
+          new_email: editForm.new_email, // Ensure new_email is sent
           role: editForm.role,
         })
-      ).then(() => {
+      ).then((response) => {
+        console.log("Update action response:", response); // Debug response
         setEditMember(null);
         setEditForm({ full_name: "", new_email: "", role: "" });
         window.location.reload(); // Refresh to reflect the updated member
@@ -78,7 +80,6 @@ const Team = () => {
     setEditForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Filter members based on search query
   const filteredMembers = members.filter(
     (member) =>
       member.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -92,36 +93,19 @@ const Team = () => {
         <LoaderDemo />
       </div>
     );
-    if (error)
+  if (error)
     return (
       <div className="flex flex-col items-center justify-center gap-6 py-10 mt-20 px-4 text-center max-w-xl mx-auto bg-red-50 border border-red-400 rounded-xl shadow-sm">
-        <div className="flex text-red-800 text-xl font-medium"><Stethoscope color="black" size={35} className="animate-bounce"/> {error}</div>
-
-        {/* <div className="flex flex-wrap justify-center gap-4">
-           <Button
-          variant="primary"
-          size="sm"
-          onClick={() => dispatch(clearDashboardError())}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition-all duration-200 flex items-center gap-2 font-medium"
-        >
-          Dismiss
-        </Button> 
-
-          <Button
-            onClick={handleLogout}
-            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-5 py-2 rounded-lg shadow transition-all duration-200 flex items-center gap-2 font-medium"
-          >
-            <LogOut className="w-5 h-5" />
-            Sign Out
-          </Button>
-        </div> */}
+        <div className="flex text-red-800 text-xl font-medium">
+          <Stethoscope color="black" size={35} className="animate-bounce" /> {error}
+        </div>
       </div>
     );
 
   return (
     <div className="container mx-auto bg-gray-100 min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-900  flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
           Organization & Team Management
         </h1>
         <Button
@@ -133,20 +117,16 @@ const Team = () => {
       </div>
       <Card className="mb-6 p-6 bg-white rounded-xl shadow-md border border-gray-200">
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Left Section */}
           <div className="space-y-6">
-            {/* Organization Name */}
             <div className="flex items-start gap-4">
               <Building2 className="w-6 h-6 text-blue-600" />
               <div>
                 <p className="text-sm text-gray-500">Organization Name</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  Dr. Shah's Superspeciality Eye Hospital
+                  Dr. Shah's  Superspeciality Eye Hospital
                 </p>
               </div>
             </div>
-
-            {/* Email */}
             <div className="flex items-start gap-4">
               <Mail className="w-6 h-6 text-blue-600" />
               <div>
@@ -159,8 +139,6 @@ const Team = () => {
                 </a>
               </div>
             </div>
-
-            {/* Website */}
             <div className="flex items-start gap-4">
               <Globe className="w-6 h-6 text-blue-600" />
               <div>
@@ -176,23 +154,17 @@ const Team = () => {
               </div>
             </div>
           </div>
-
-          {/* Right Section */}
           <div className="space-y-6">
-            {/* Owner Name */}
             <div className="flex items-start gap-4">
               <User className="w-6 h-6 text-blue-600" />
               <div>
                 <p className="text-sm text-gray-500">Owner Name</p>
-                <p className="text-lg font-semibold text-gray-900">
-                  Sapan Shah
-                </p>
+                <p className="text-lg font-semibold text-gray-900">Sapan Shah</p>
               </div>
             </div>
           </div>
         </div>
       </Card>
-
       <Card className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -210,9 +182,7 @@ const Team = () => {
           <table className="w-full text-left">
             <thead className="bg-gray-100 text-gray-700">
               <tr className="border-b border-gray-200">
-                <th className="p-3 text-sm font-semibold uppercase tracking-wider">
-                  #
-                </th>
+                <th className="p-3 text-sm font-semibold uppercase tracking-wider">#</th>
                 <th className="p-3 text-sm font-semibold uppercase tracking-wider">
                   Name
                 </th>
@@ -233,20 +203,9 @@ const Team = () => {
                   <td colSpan="5" className="p-6 text-center">
                     <EmptyState
                       icon={FileSearch}
-                      title={"No Data Found"}
-                      description={
-                        "No team members available. Add a new member to get started or adjust your search."
-                      }
+                      title="No Data Found"
+                      description="No team members available. Add a new member to get started or adjust your search."
                     />
-                    {/* <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
-                      <p className="text-gray-600 font-medium text-lg">
-                        No Data Found
-                      </p>
-                      <p className="text-gray-500 text-sm mt-1">
-                        No team members available. Add a new member to get
-                        started or adjust your search.
-                      </p>
-                    </div> */}
                   </td>
                 </tr>
               ) : (
