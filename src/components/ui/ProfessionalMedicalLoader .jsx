@@ -3,7 +3,7 @@ import "./ProfessionalMedicalLoader.css"; // import the css file
 
 const ProfessionalMedicalLoader = ({ text = "Loading..." }) => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen  p-8">
       <div className="relative">
         {/* Main scene container */}
         <div className="w-96 h-80 relative">

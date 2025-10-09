@@ -25,7 +25,6 @@ const fetchTeamMembers = createAsyncThunk(
         }
       );
       const data = await response.json();
-      // console.log("team members data", data);
       if (!response.ok) {
         throw new Error(
           data.message ||
@@ -68,7 +67,7 @@ const deleteTeamMember = createAsyncThunk(
         throw new Error(data.message || "Failed to delete team member");
       }
 
-      return id; // Return the deleted member's ID
+      return id;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -99,12 +98,13 @@ const updateTeamMember = createAsyncThunk(
         }
       );
       const data = await response.json();
+      console.log("Update response:", data); // Log the full response
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to update team member");
       }
 
-      return data;
+      return data; // Return the full response data
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -198,9 +198,10 @@ const teamSlice = createSlice({
       .addCase(updateTeamMember.fulfilled, (state, action) => {
         state.isLoading = false;
         const updatedMember = action.payload;
+        console.log("Updated member in state:", updatedMember); // Log the updated member
         state.members = state.members.map((member) =>
           member.id === updatedMember.id
-            ? { ...member, ...updatedMember }
+            ? { ...member, ...updatedMember, email: updatedMember.new_email || member.email } // Update email with new_email
             : member
         );
         state.error = null;
