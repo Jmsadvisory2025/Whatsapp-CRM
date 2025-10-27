@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import RoleBadge from "../components/ui/RoleBadge";
+import PatientCard from "../components/PatientCard";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchPatients } from "../store/patientsSlice";
 import { motion } from "framer-motion";
@@ -57,6 +58,8 @@ const Patients = () => {
   );
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState(""); // State for search input
+  const [isCardOpen, setIsCardOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   useErrorRedirect();
 
   useEffect(() => {
@@ -81,6 +84,20 @@ const Patients = () => {
     return matchesFilter && matchesSearch;
   });
 
+  // Handler functions for PatientCard
+  const handleOpenCard = (patient) => {
+    setSelectedPatient(patient);
+    setIsCardOpen(true);
+  };
+
+  const handleCloseCard = () => {
+    setIsCardOpen(false);
+    setSelectedPatient(null);
+  };
+
+
+
+  
   if (isLoading) return <div className="text-center py-10"><LoaderDemo   /></div>;
  
     if (error && !errorStatus)
@@ -215,12 +232,13 @@ const Patients = () => {
               filteredPatients.map((patient, index) => (
                 <motion.tr
                   key={index}
-                  className={`border-b last:border-0 hover:bg-gray-50 ${
+                  className={`border-b last:border-0 hover:bg-gray-50 cursor-pointer ${
                     patient.name === "Emily Davis" ? "bg-blue-50" : ""
                   }`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
+                  onClick={() => handleOpenCard(patient)}
                 >
                   <td className="p-4 text-text-secondary">
                     {getIndex(filteredPatients, patient, true)}
@@ -266,6 +284,13 @@ const Patients = () => {
           </tbody>
         </table>
       </Card>
+
+      {/* Patient Card Modal */}
+      <PatientCard
+        patient={selectedPatient}
+        isOpen={isCardOpen}
+        onClose={handleCloseCard}
+      />
     </div>
   );
 };

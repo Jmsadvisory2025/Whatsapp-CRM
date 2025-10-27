@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
+import LeadCard from "../components/LeadCard";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchConfirmedLeads,
@@ -33,6 +34,9 @@ const Leads = () => {
   });
   // State to track action and reminder note for each lead
   const [actionStates, setActionStates] = useState({});
+  // State for lead card modal
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [showLeadCard, setShowLeadCard] = useState(false);
 
   useEffect(() => {
     dispatch(fetchConfirmedLeads());
@@ -187,6 +191,16 @@ const Leads = () => {
     }
   };
 
+  const handleLeadClick = (lead) => {
+    setSelectedLead(lead);
+    setShowLeadCard(true);
+  };
+
+  const handleCloseLeadCard = () => {
+    setShowLeadCard(false);
+    setSelectedLead(null);
+  };
+
   if (isLoading)
     return (
       <div className="text-center py-10">
@@ -311,10 +325,15 @@ const Leads = () => {
               {filteredLeads.map((lead, index) => (
                 <motion.tr
                   key={index}
-                  className="border-b last:border-0 hover:bg-gray-50"
+                  className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
+                  onClick={(e) => {
+                    // Don't trigger card if clicking on action buttons/inputs or if lead is being edited
+                    if (e.target.closest('.action-column') || editLead?.conversation_id === lead.conversation_id) return;
+                    handleLeadClick(lead);
+                  }}
                 >
                   <td className="p-4 text-text-secondary">
                     {getIndex(filteredLeads, lead, true)}
@@ -429,7 +448,7 @@ const Leads = () => {
                       lead.reminder_note || "No Data Found"
                     )}
                   </td>
-                  <td className="p-4 flex items-center gap-2">
+                  <td className="p-4 flex items-center gap-2 action-column">
                     {editLead?.conversation_id === lead.conversation_id ? (
                       <>
                         <Button
@@ -515,6 +534,14 @@ const Leads = () => {
           </table>
         )}
       </Card>
+
+      {/* Lead Card Component */}
+      <LeadCard
+        lead={selectedLead}
+        isOpen={showLeadCard}
+        onClose={handleCloseLeadCard}
+        onEdit={handleEditClick}
+      />
     </div>
   );
 };
