@@ -32,6 +32,7 @@ export const filterByDisease = (data, selectedDisease, diseaseField = 'disease')
       "artificial",
       "કૃત્રિમ",
       "કૃત્રિમ આંખ",
+      "આર્ટિફિશિયલ આંખ",
       "कृत्रिम",
       "कृत्रिम आँख",
       "कृत्रिम आंख"

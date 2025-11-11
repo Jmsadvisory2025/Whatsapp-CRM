@@ -184,7 +184,9 @@ const Prospects = () => {
           filename="prospects.csv"
         />
       </div>
-      <div className="  gap-4 py-4 ">
+
+      <Card className="overflow-x-auto">
+              <div className="  gap-4 py-4 border-b ">
         <div className="flex-1 min-w-[200px] max-w-md">
           {/* Search functionality can be added here if needed */}
         </div>
@@ -197,7 +199,6 @@ const Prospects = () => {
           />
         </div>
       </div>
-      <Card className="overflow-x-auto">
         <table className="w-full min-w-[600px] text-sm text-left">
           <thead className="bg-gray-50 text-text-secondary">
             <tr>

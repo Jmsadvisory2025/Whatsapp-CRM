@@ -8,9 +8,9 @@ const DiseasesSort = ({ selectedDisease, onDiseaseChange, className = "" }) => {
       id: "all",
       name: "All Diseases",
       translations: {
-        // english: "All Diseases",
-        // gujarati: "બધા રોગો",
-        // hindi: "सभी रोग"
+        english: "All Diseases",
+        gujarati: "બધા રોગો",
+        hindi: "सभी रोग"
       }
     },
     {

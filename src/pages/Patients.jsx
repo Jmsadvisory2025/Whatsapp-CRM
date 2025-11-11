@@ -70,7 +70,7 @@ const Patients = () => {
   }, [dispatch]);
 
   // Filter patients based on confirmation status, search query, and disease
-  const filteredPatients = patients.filter((patient) => {
+  const filteredPatients = filterByDisease(patients, selectedDisease).filter((patient) => {
     const matchesFilter =
       filter === "all" ||
       (filter === "confirmed" && patient.confirmation === "confirmed") ||
@@ -84,8 +84,7 @@ const Patients = () => {
       (patient.visited_location?.toLowerCase() || "").includes(
         searchQuery.toLowerCase()
       );
-    const matchesDisease = filterByDisease([patient], selectedDisease).length > 0;
-    return matchesFilter && matchesSearch && matchesDisease;
+    return matchesFilter && matchesSearch;
   });
 
   // Handler functions for PatientCard
@@ -170,46 +169,28 @@ const Patients = () => {
           filename="patients.csv"
         />
       </div>
-      <div className=" gap-4 py-4 ">
-        <div className="flex-1 min-w-[200px] max-w-md">
-          {/* Search bar is already present in the card below */}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Disease:</span>
-          <DiseasesSort 
-            selectedDisease={selectedDisease} 
-            onDiseaseChange={setSelectedDisease} 
-            className="min-w-[200px]"
-          />
-        </div>
-      </div>
+
       <Card className="overflow-x-auto">
-        <div className="flex align-items-center gap-3 mb-4">
-          <SearchInput
-            className="max-w-lg"
-            placeholder="Search by name, phone number, disease or location......."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {/* <Button
-            variant={filter === "all" ? "primary" : "secondary"}
-            onClick={() => setFilter("all")}
-          >
-            All Patients
-          </Button>
-          <Button
-            variant={filter === "confirmed" ? "primary" : "secondary"}
-            onClick={() => setFilter("confirmed")}
-          >
-            Visited Patients
-          </Button>
-          <Button
-            variant={filter === "cancelled" ? "primary" : "secondary"}
-            onClick={() => setFilter("cancelled")}
-          >
-            Not Visited Patients
-          </Button> */}
+        
+        <div className="flex flex-wrap items-center gap-4 p-4 border-b">
+          <div className="flex-1 min-w-[200px] max-w-md">
+            <SearchInput
+              className="max-w-lg"
+              placeholder="Search by name, phone number, disease or location......."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Disease:</span>
+            <DiseasesSort 
+              selectedDisease={selectedDisease} 
+              onDiseaseChange={setSelectedDisease} 
+              className="min-w-[200px]"
+            />
+          </div>
         </div>
+        
         <table className="w-full min-w-[800px] text-sm text-left">
           <thead className="bg-gray-50 text-text-secondary">
             <tr>
@@ -275,7 +256,7 @@ const Patients = () => {
                       : "No Data Found"}
                   </td>
                   <td className="p-4 text-text-secondary">
-                    {patient.visit_time || "No Data Found"}
+                    {patient.visit_time ? new Date(`1970-01-01T${patient.visit_time}`).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true}) : "No Data Found"}
                   </td>
                   <td className="p-4 text-text-secondary">
                     {toCamelCase(patient.location || "No Data Found")}
