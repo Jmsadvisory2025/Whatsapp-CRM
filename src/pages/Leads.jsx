@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
+import DiseasesSort from "../components/ui/DiseasesSort";
+import { filterByDisease } from "../utils/diseaseFilter";
 import LeadCard from "../components/LeadCard";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -22,6 +24,7 @@ const Leads = () => {
   const dispatch = useDispatch();
   const { leads, isLoading, error } = useSelector((state) => state.leads);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDisease, setSelectedDisease] = useState("all");
   const [leadList, setLeadList] = useState(leads);
   const [editLead, setEditLead] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -57,6 +60,8 @@ const Leads = () => {
       (lead.reminder_note?.toLowerCase() || "").includes(
         searchQuery.toLowerCase()
       )
+  ).filter(
+    (lead) => filterByDisease([lead], selectedDisease).length > 0
   );
 
   const handleEditClick = (lead) => {
@@ -275,16 +280,25 @@ const Leads = () => {
           filename="leads.csv"
         />
       </div>
+      
       <Card className="overflow-x-auto">
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="flex gap-4">
-            <SearchInput
-              placeholder="Search leads by name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+        <div className="flex flex-wrap items-center gap-4 p-4 border-b">
+        <div className="flex-1 min-w-[200px] max-w-md">
+          <SearchInput
+            placeholder="Search leads by name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Disease:</span>
+          <DiseasesSort 
+            selectedDisease={selectedDisease} 
+            onDiseaseChange={setSelectedDisease} 
+            className="min-w-[200px]"
+          />
+        </div>
+      </div>
         {filteredLeads.length === 0 ? (
           <div className="p-6 text-center">
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
@@ -310,7 +324,7 @@ const Leads = () => {
                 <th className="p-4 font-semibold">Name</th>
                 <th className="p-4 font-semibold">Phone</th>
                 <th className="p-4 font-semibold">Diseases</th>
-                <th className="p-4 font-semibold">Assets</th>
+                {/* <th className="p-4 font-semibold">Assets</th> */}
                 <th className="p-4 font-semibold">Assigned To</th>
                 <th className="p-4 font-semibold">Location</th>
                 <th className="p-4 font-semibold">Status</th>
@@ -358,7 +372,7 @@ const Leads = () => {
                       toCamelCase(lead.disease) || "No Data Found"
                     )}
                   </td>
-                  <td className="p-4 text-text-secondary ">
+                  {/* <td className="p-4 text-text-secondary ">
                     {lead.photo_url ? (
                       <a
                         href={lead.photo_url}
@@ -367,12 +381,12 @@ const Leads = () => {
                         className="flex items-center gap-2 text-blue-600 hover:underline"
                       >
                         <FileImage color="#4d52ff" size={25}/>
-                        {/* <span className="text-sm font-medium">View Image</span> */}
+                        <span className="text-sm font-medium">View Image</span>
                       </a>
                     ) : (
                       <span className="text-gray-500">No Data Found</span>
                     )}
-                  </td>
+                  </td> */}
 
                   <td className="p-4 text-text-secondary">
                     {lead.assigned_to?.name || "Not Assigned"}

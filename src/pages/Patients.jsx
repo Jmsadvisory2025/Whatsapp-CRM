@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
+import DiseasesSort from "../components/ui/DiseasesSort";
+import { filterByDisease } from "../utils/diseaseFilter";
 import RoleBadge from "../components/ui/RoleBadge";
 import PatientCard from "../components/PatientCard";
 import { useDispatch, useSelector } from "react-redux";
@@ -58,6 +60,7 @@ const Patients = () => {
   );
   const [filter, setFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState(""); // State for search input
+  const [selectedDisease, setSelectedDisease] = useState("all");
   const [isCardOpen, setIsCardOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   useErrorRedirect();
@@ -66,7 +69,7 @@ const Patients = () => {
     dispatch(fetchPatients());
   }, [dispatch]);
 
-  // Filter patients based on confirmation status and search query
+  // Filter patients based on confirmation status, search query, and disease
   const filteredPatients = patients.filter((patient) => {
     const matchesFilter =
       filter === "all" ||
@@ -81,7 +84,8 @@ const Patients = () => {
       (patient.visited_location?.toLowerCase() || "").includes(
         searchQuery.toLowerCase()
       );
-    return matchesFilter && matchesSearch;
+    const matchesDisease = filterByDisease([patient], selectedDisease).length > 0;
+    return matchesFilter && matchesSearch && matchesDisease;
   });
 
   // Handler functions for PatientCard
@@ -165,6 +169,19 @@ const Patients = () => {
           headers={csvHeaders}
           filename="patients.csv"
         />
+      </div>
+      <div className=" gap-4 py-4 ">
+        <div className="flex-1 min-w-[200px] max-w-md">
+          {/* Search bar is already present in the card below */}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Disease:</span>
+          <DiseasesSort 
+            selectedDisease={selectedDisease} 
+            onDiseaseChange={setSelectedDisease} 
+            className="min-w-[200px]"
+          />
+        </div>
       </div>
       <Card className="overflow-x-auto">
         <div className="flex align-items-center gap-3 mb-4">

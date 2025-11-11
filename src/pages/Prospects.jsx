@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
+import DiseasesSort from "../components/ui/DiseasesSort";
+import { filterByDisease } from "../utils/diseaseFilter";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchProspects,
@@ -25,6 +27,7 @@ const Prospects = () => {
   const [editProspect, setEditProspect] = useState(null);
   const [editForm, setEditForm] = useState({ patient_name: "", disease: "" });
   const [rowErrors, setRowErrors] = useState({}); // Track errors per prospect by conversation_id
+  const [selectedDisease, setSelectedDisease] = useState("all");
 
   useEffect(() => {
     dispatch(fetchProspects());
@@ -140,8 +143,11 @@ const Prospects = () => {
         </div> */}
       </div>
     );
+  // Filter prospects based on selected disease
+  const filteredProspects = filterByDisease(prospects, selectedDisease);
+
   // CSV export data and headers for Prospects
-  const csvData = prospects; // Use the Redux prospects state
+  const csvData = filteredProspects; // Use the Redux prospects state
   const csvHeaders = [
     { label: "#", key: "index" }, // Custom index (handled in data transformation)
     { label: "Name", key: "patient_name" },
@@ -154,7 +160,7 @@ const Prospects = () => {
   ];
 
   // Transform data to include index and handle nested fields
-  const transformedCsvData = prospects.map((prospect, index) => ({
+  const transformedCsvData = filteredProspects.map((prospect, index) => ({
     index: index + 1,
     patient_name: prospect.patient_name || "Not Available",
     phone: `'${prospect.phone?.replace("whatsapp:", "") || "-"}`,
@@ -178,6 +184,19 @@ const Prospects = () => {
           filename="prospects.csv"
         />
       </div>
+      <div className="  gap-4 py-4 ">
+        <div className="flex-1 min-w-[200px] max-w-md">
+          {/* Search functionality can be added here if needed */}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Disease:</span>
+          <DiseasesSort 
+            selectedDisease={selectedDisease} 
+            onDiseaseChange={setSelectedDisease} 
+            className="min-w-[200px]"
+          />
+        </div>
+      </div>
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[600px] text-sm text-left">
           <thead className="bg-gray-50 text-text-secondary">
@@ -194,7 +213,7 @@ const Prospects = () => {
             </tr>
           </thead>
           <tbody>
-            {prospects.length === 0 ? (
+            {filteredProspects.length === 0 ? (
               <tr>
                 <td colSpan="8" className="p-6 text-center">
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
@@ -211,7 +230,7 @@ const Prospects = () => {
                 </td>
               </tr>
             ) : (
-              prospects.map((prospect, index) => (
+              filteredProspects.map((prospect, index) => (
                 <motion.tr
                   key={index}
                   className="border-b last:border-0 hover:bg-gray-50"
@@ -220,7 +239,7 @@ const Prospects = () => {
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
                   <td className="p-4 font-medium text-text-primary">
-                    {getIndex(prospects, prospect, false)}
+                    {getIndex(filteredProspects, prospect, false)}
                   </td>
                   <td className="p-4 font-medium text-text-primary">
                     {editProspect?.conversation_id === prospect.conversation_id ? (

@@ -210,7 +210,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
           {/* Chart Section */}
           <div className="xl:col-span-2 ">
-            <Card className="p-6  bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
+            <Card className="p-6  bg-white backdrop-blur-sm border border-gray-300 ">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
@@ -231,7 +231,7 @@ const Dashboard = () => {
 
           {/* Calendar Section */}
           <div className="xl:col-span-1">
-            <Card className="p-6 bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
+            <Card className="p-6 bg-white backdrop-blur-sm border border-gray-300 ">
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
@@ -265,10 +265,10 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Activities */}
-        <Card className="p-6 bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
+        {/* <Card className="p-6 bg-white/80 backdrop-blur-sm border border-white/20 shadow-xl">
           Recent Activities
-          {/* <RecentActivities activities={visibleActivities} /> */}
-        </Card>
+          <RecentActivities activities={visibleActivities} />
+        </Card> */}
 
         {/* PopOut Modal */}
         {showDetails && selectedDate && visit_details && (

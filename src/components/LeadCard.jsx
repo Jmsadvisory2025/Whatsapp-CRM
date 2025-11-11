@@ -175,7 +175,7 @@ const LeadCard = ({ lead, isOpen, onClose, onEdit }) => {
               </div>
 
               {/* Assets */}
-              <div className="space-y-3">
+              {/* <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FileImage className="w-5 h-5 text-indigo-600" />
                   Assets
@@ -194,7 +194,7 @@ const LeadCard = ({ lead, isOpen, onClose, onEdit }) => {
                             e.target.nextSibling.style.display = 'block';
                           }}
                         />
-                        {/* Download indicator */}
+
                         <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           Click to download
                         </div>
@@ -211,8 +211,8 @@ const LeadCard = ({ lead, isOpen, onClose, onEdit }) => {
                       <p className="text-sm text-gray-400">No image attached to this lead</p>
                     </div>
                   )}
-                </div>
-              </div>
+                </div> 
+              </div> */}
             </div>
           </div>
         </div>

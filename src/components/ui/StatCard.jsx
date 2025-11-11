@@ -3,8 +3,8 @@ import Card from "./Card";
 const StatCard = ({ icon, value, label, color, onClick }) => {
   return (
     <Card
-      className={`flex items-center justify-between p-4 rounded-2xl shadow-sm transition 
-        ${onClick ? "cursor-pointer hover:shadow-md hover:scale-[1.02]" : ""}`}
+      className={`flex items-center justify-between p-4 rounded-2xl  transition 
+        ${onClick ? "cursor-pointer hover:shadow-md hover:scale-[1.02] hover:border-gray-300" : ""}`}
       onClick={onClick}
     >
       {/* Left side: value + label */}
