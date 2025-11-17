@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-// Async thunk to fetch prospects
+
+// Async thunk to fetch prospects with pagination
 export const fetchProspects = createAsyncThunk(
   "prospects/fetch",
-  async (_, { getState, rejectWithValue }) => {
+  async (pageUrl = null, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem("accessToken");
 
@@ -13,23 +14,32 @@ export const fetchProspects = createAsyncThunk(
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/leads/prospects/`, {
+      // Use provided page URL or default to first page
+      const url = pageUrl || `${API_BASE_URL}/api/v1/leads/prospects/`;
+      
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          // Authorization: `Bearer ${token}`,
         },
       });
+      
       const data = await response.json();
-      // console.log("prospect data ", data);
+      
       if (!response.ok) {
         throw new Error(
-          data.message || "Sorry , you are not the part of the organization"
+          data.message || "Sorry, you are not part of the organization"
         );
       }
 
-      return data;
+      return {
+        results: data.results || [],
+        count: data.count || 0,
+        next: data.next,
+        previous: data.previous,
+        currentPageUrl: url
+      };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -118,6 +128,12 @@ export const updateProspect = createAsyncThunk(
 
 const initialState = {
   prospects: [],
+  pagination: {
+    count: 0,
+    next: null,
+    previous: null,
+    currentPageUrl: null
+  },
   isLoading: false,
   error: null,
 };
@@ -145,7 +161,15 @@ const prospectsSlice = createSlice({
       })
       .addCase(fetchProspects.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.prospects = action.payload || [];
+        // Store pagination data
+        state.pagination = {
+          count: action.payload.count || 0,
+          next: action.payload.next,
+          previous: action.payload.previous,
+          currentPageUrl: action.payload.currentPageUrl
+        };
+        // Store results
+        state.prospects = action.payload.results || [];
         state.error = null;
       })
       .addCase(fetchProspects.rejected, (state, action) => {

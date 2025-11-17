@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import DiseasesSort from "../components/ui/DiseasesSort";
+import LocationsSort from "../components/ui/LocationsSort";
 import { filterByDisease } from "../utils/diseaseFilter";
+import { filterByLocation } from "../utils/locationFilter";
 import LeadCard from "../components/LeadCard";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -18,14 +20,17 @@ import ExportCSVButton from "../components/ui/ExportCSVButton";
 import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
 import { MdEdit } from "react-icons/md";
 import EmptyState from "../components/ui/EmptyState";
-import { FileImage, FileSearch, Stethoscope } from "lucide-react";
+import { FileSearch, Stethoscope, UserCheck, Activity, Calendar, FileImage } from "lucide-react";
+import SimplePagination from "../components/ui/SimplePagination";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Leads = () => {
   const dispatch = useDispatch();
-  const { leads, isLoading, error } = useSelector((state) => state.leads);
+  const { leads, pagination, isLoading, error } = useSelector((state) => state.leads);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDisease, setSelectedDisease] = useState("all");
-  const [leadList, setLeadList] = useState(leads);
+  const [selectedLocation, setSelectedLocation] = useState("all");
   const [editLead, setEditLead] = useState(null);
   const [editForm, setEditForm] = useState({
     disease: "",
@@ -40,16 +45,16 @@ const Leads = () => {
   // State for lead card modal
   const [selectedLead, setSelectedLead] = useState(null);
   const [showLeadCard, setShowLeadCard] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 100; // Fixed to 100 as per API
 
   useEffect(() => {
     dispatch(fetchConfirmedLeads());
   }, [dispatch]);
 
-  useEffect(() => {
-    setLeadList(leads);
-  }, [leads]);
-
-  const filteredLeads = leadList.filter(
+  const filteredLeads = leads.filter(
     (lead) =>
       (lead.patient_name?.toLowerCase() || "").includes(
         searchQuery.toLowerCase()
@@ -62,7 +67,39 @@ const Leads = () => {
       )
   ).filter(
     (lead) => filterByDisease([lead], selectedDisease).length > 0
+  ).filter(
+    (lead) => filterByLocation([lead], selectedLocation).length > 0
   );
+
+  // Filter today's leads
+  const todaysLeads = filteredLeads.filter(lead => {
+    if (lead.visit_date && lead.visit_date !== "-") {
+      try {
+        const leadDate = new Date(lead.visit_date).toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
+        return leadDate === today;
+      } catch (error) {
+        return false;
+      }
+    }
+    return false;
+  });
+
+  // Handle next page using API's next URL
+  const handleNextPage = () => {
+    if (pagination.next) {
+      dispatch(fetchConfirmedLeads(pagination.next));
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  // Handle previous page using API's previous URL
+  const handlePreviousPage = () => {
+    if (pagination.previous) {
+      dispatch(fetchConfirmedLeads(pagination.previous));
+      setCurrentPage(prev => Math.max(1, prev - 1));
+    }
+  };
 
   const handleEditClick = (lead) => {
     setEditLead(lead);
@@ -91,7 +128,10 @@ const Leads = () => {
         reminder_note: editForm.reminder_note || undefined,
       };
       dispatch(updateLeadAction(payload)).then(() => {
-        window.location.reload();
+        // Refetch the current page data instead of full reload
+        dispatch(fetchConfirmedLeads(pagination.next || pagination.previous ? 
+          (currentPage === 1 ? undefined : `${API_BASE_URL}/api/v1/leads/confirmed/?page=${currentPage}`) 
+          : undefined));
       });
       setEditLead(null);
       setEditForm({
@@ -128,7 +168,10 @@ const Leads = () => {
         dispatch(
           convertToPatient({ conversation_id: lead.conversation_id })
         ).then(() => {
-          window.location.reload();
+          // Refetch the current page data instead of full reload
+          dispatch(fetchConfirmedLeads(pagination.next || pagination.previous ? 
+            (currentPage === 1 ? undefined : `${API_BASE_URL}/api/v1/leads/confirmed/?page=${currentPage}`) 
+            : undefined));
         });
       }
       return;
@@ -185,7 +228,10 @@ const Leads = () => {
         reminder_note: actionState.reminder_note || undefined,
       };
       dispatch(updateLeadActionWithReminder(payload)).then(() => {
-        window.location.reload();
+        // Refetch the current page data instead of full reload
+        dispatch(fetchConfirmedLeads(pagination.next || pagination.previous ? 
+          (currentPage === 1 ? undefined : `${API_BASE_URL}/api/v1/leads/confirmed/?page=${currentPage}`) 
+          : undefined));
       });
       // Clear the action state after submission
       setActionStates((prev) => {
@@ -206,40 +252,7 @@ const Leads = () => {
     setSelectedLead(null);
   };
 
-  if (isLoading)
-    return (
-      <div className="text-center py-10">
-        <LoaderDemo />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="flex flex-col items-center justify-center gap-6 py-10 mt-20 px-4 text-center max-w-xl mx-auto bg-red-50 border border-red-200 rounded-xl shadow-sm">
-       <div className="flex text-red-700 gap-3 text-xl font-medium"><Stethoscope color="black" size={35} className="animate-bounce"/> {error}</div>
-
-        {/* <div className="flex flex-wrap justify-center gap-4">
-          {/* <Button
-          variant="primary"
-          size="sm"
-          onClick={() => dispatch(clearDashboardError())}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition-all duration-200 flex items-center gap-2 font-medium"
-        >
-          Dismiss
-        </Button>
-
-          <Button
-            onClick={handleLogout}
-            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-5 py-2 rounded-lg shadow transition-all duration-200 flex items-center gap-2 font-medium"
-          >
-            <LogOut className="w-5 h-5" />
-            Sign Out
-          </Button>
-        </div> */}
-      </div>
-    );
-
   // CSV export data and headers for Leads
-  const csvData = filteredLeads;
   const csvHeaders = [
     { label: "#", key: "index" },
     { label: "Name", key: "patient_name" },
@@ -262,291 +275,381 @@ const Leads = () => {
     "assigned_to.name": lead.assigned_to?.name || "-",
     location: lead.location || "-",
     status: lead.status || "-",
-    visit_date: lead.visit_date ? lead.visit_date : "-", // Ensure date is present or use "-"
+    visit_date: lead.visit_date ? lead.visit_date : "-",
     visit_time: lead.visit_time ? lead.visit_time : "-",
     relation: lead.relation || "-",
     reminder_note: lead.reminder_note || "-",
   }));
 
+  if (isLoading)
+    return (
+      <div className="text-center py-10">
+        <LoaderDemo />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 py-10 mt-20 px-4 text-center max-w-xl mx-auto bg-red-50 border border-red-200 rounded-xl shadow-sm">
+       <div className="flex text-red-700 gap-3 text-xl font-medium"><Stethoscope color="#b91c1c" size={35} className="animate-bounce"/> {error}</div>
+      </div>
+    );
+
   return (
-    <div>
-      <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-text-primary">
-          Lead Management
-        </h1>
-        <ExportCSVButton
-          data={transformedCsvData}
-          headers={csvHeaders}
-          filename="leads.csv"
-        />
-      </div>
-      
-      <Card className="overflow-x-auto">
-        <div className="flex flex-wrap items-center gap-4 p-4 border-b">
-        <div className="flex-1 min-w-[200px] max-w-md">
-          <SearchInput
-            placeholder="Search leads by name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by Disease:</span>
-          <DiseasesSort 
-            selectedDisease={selectedDisease} 
-            onDiseaseChange={setSelectedDisease} 
-            className="min-w-[200px]"
-          />
-        </div>
-      </div>
-        {filteredLeads.length === 0 ? (
-          <div className="p-6 text-center">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 shadow-md">
-              {/* <p className="text-gray-600 font-medium text-lg">No Data Found</p>
-              <p className="text-gray-500 text-sm mt-1">
-                No leads match the current search criteria. Try adjusting your
-                search or adding new leads. */}
-              <EmptyState
-                title={"No Data Found"}
-                description={
-                  "No leads match the current search criteria. Try adjusting your search or adding new leads."
-                }
-                icon={FileSearch}
-              />
-              {/* </p> */}
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      {/* Header Section */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          {/* Title */}
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Lead Management</h1>
+              <p className="text-sm text-gray-600 mt-0.5">Track and manage patient leads</p>
             </div>
           </div>
-        ) : (
-          <table className="w-full min-w-[800px] text-sm text-left">
-            <thead className="bg-gray-50 text-text-secondary">
-              <tr>
-                <th className="p-4 font-semibold">#</th>
-                <th className="p-4 font-semibold">Name</th>
-                <th className="p-4 font-semibold">Phone</th>
-                <th className="p-4 font-semibold">Diseases</th>
-                {/* <th className="p-4 font-semibold">Assets</th> */}
-                <th className="p-4 font-semibold">Assigned To</th>
-                <th className="p-4 font-semibold">Location</th>
-                <th className="p-4 font-semibold">Status</th>
-                <th className="p-4 font-semibold">Visit Date</th>
-                <th className="p-4 font-semibold">Visit Time</th>
-                <th className="p-4 font-semibold">Relation</th>
-                <th className="p-4 font-semibold">Reminder Note</th>
-                <th className="p-4 font-semibold">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLeads.map((lead, index) => (
-                <motion.tr
-                  key={index}
-                  className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  onClick={(e) => {
-                    // Don't trigger card if clicking on action buttons/inputs or if lead is being edited
-                    if (e.target.closest('.action-column') || editLead?.conversation_id === lead.conversation_id) return;
-                    handleLeadClick(lead);
-                  }}
-                >
-                  <td className="p-4 text-text-secondary">
-                    {getIndex(filteredLeads, lead, true)}
-                  </td>
-                  <td className="p-4 font-medium text-text-primary">
-                    {toCamelCase(lead.patient_name) || "No Data Found"}
-                  </td>
-                  <td className="p-4 text-text-secondary">
-                    {lead.phone?.replace("whatsapp:", "") || "No Data Found"}
-                  </td>
-                  <td className="p-4 text-text-secondary">
-                    {editLead?.conversation_id === lead.conversation_id ? (
-                      <input
-                        type="text"
-                        name="disease"
-                        value={editForm.disease}
-                        onChange={handleInputChange}
-                        className="border rounded-lg px-2 py-1 text-sm w-full"
-                        placeholder="Enter disease"
-                      />
-                    ) : (
-                      toCamelCase(lead.disease) || "No Data Found"
-                    )}
-                  </td>
-                  {/* <td className="p-4 text-text-secondary ">
-                    {lead.photo_url ? (
-                      <a
-                        href={lead.photo_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-blue-600 hover:underline"
-                      >
-                        <FileImage color="#4d52ff" size={25}/>
-                        <span className="text-sm font-medium">View Image</span>
-                      </a>
-                    ) : (
-                      <span className="text-gray-500">No Data Found</span>
-                    )}
-                  </td> */}
 
-                  <td className="p-4 text-text-secondary">
-                    {lead.assigned_to?.name || "Not Assigned"}
+          {/* Stats and Export */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
+              <Activity className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-semibold text-gray-900">{pagination.count}</span>
+              <span className="text-sm text-gray-600">Total Leads</span>
+            </div>
+            {/* <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
+              <Calendar className="h-4 w-4 text-green-600" />
+              <span className="text-sm font-semibold text-gray-900">{todaysLeads.length}</span>
+              <span className="text-sm text-gray-600">Today's Leads</span>
+            </div> */}
+            <ExportCSVButton
+              data={transformedCsvData}
+              headers={csvHeaders}
+              filename="leads.csv"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Card */}
+      <Card className="overflow-hidden shadow-sm border border-gray-200 bg-white">
+        {/* Filter Section */}
+        <div className="bg-gray-50 border-b border-gray-200">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 p-4">
+            {/* Search Input */}
+            <div className="flex-1 min-w-full lg:min-w-[280px] lg:max-w-md">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">Search</label>
+              <SearchInput
+                placeholder="Name, phone, disease, location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="min-w-full sm:min-w-[200px]">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Disease</label>
+                <DiseasesSort 
+                  selectedDisease={selectedDisease} 
+                  onDiseaseChange={setSelectedDisease} 
+                  className="w-full"
+                />
+              </div>
+
+              <div className="min-w-full sm:min-w-[200px]">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">Location</label>
+                <LocationsSort 
+                  selectedLocation={selectedLocation} 
+                  onLocationChange={setSelectedLocation} 
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Section - Horizontally Scrollable */}
+        <div className="overflow-x-auto -mx-6 sm:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden border-t border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[50px]">#</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[150px]">Name</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[130px]">Phone</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[140px]">Disease</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[80px]">Assets</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[130px]">Assigned To</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Location</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[110px]">Status</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Visit Date</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Visit Time</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Relation</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[150px]">Reminder Note</th>
+                    <th className="px-3 py-3 text-center font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[220px]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+              {filteredLeads.length === 0 ? (
+                <tr>
+                  <td colSpan="13" className="p-8">
+                    <EmptyState
+                      title="No Leads Found"
+                      description="No leads match your current filters."
+                      icon={FileSearch}
+                    />
                   </td>
-                  <td className="p-4 text-text-secondary">
-                    {lead.location || "Not Specified"}
-                  </td>
-                  <td className="p-4 text-text-secondary">
-                    {editLead?.conversation_id === lead.conversation_id ? (
-                      <input
-                        type="text"
-                        name="status"
-                        value={editForm.status}
-                        onChange={handleInputChange}
-                        className="border rounded-lg px-2 py-1 text-sm w-full"
-                        placeholder="Enter status"
-                      />
-                    ) : (
-                      lead.status || "No Data Found"
-                    )}
-                  </td>
-                  <td className="p-4 text-text-secondary">
-                    {editLead?.conversation_id === lead.conversation_id ? (
-                      <input
-                        type="date"
-                        name="visit_date"
-                        value={editForm.visit_date}
-                        onChange={handleInputChange}
-                        className="border rounded-lg px-2 py-1 text-sm w-full"
-                      />
-                    ) : (
-                      lead.visit_date || "Not Scheduled"
-                    )}
-                  </td>
-                  <td className="p-4 text-text-secondary">
-                    {editLead?.conversation_id === lead.conversation_id ? (
-                      <input
-                        type="time"
-                        name="visit_time"
-                        value={editForm.visit_time}
-                        onChange={handleInputChange}
-                        className="border rounded-lg px-2 py-1 text-sm w-full"
-                      />
-                    ) : (
-                      lead.visit_time || "Not Scheduled"
-                    )}
-                  </td>
-                  <td className="p-4 text-text-secondary">
-                    {editLead?.conversation_id === lead.conversation_id ? (
-                      <input
-                        type="text"
-                        name="relation"
-                        value={editForm.relation}
-                        onChange={handleInputChange}
-                        className="border rounded-lg px-2 py-1 text-sm w-full"
-                        placeholder="Enter relation"
-                      />
-                    ) : (
-                      lead.relation || "Not Specified"
-                    )}
-                  </td>
-                  <td className="p-4 text-text-secondary">
-                    {editLead?.conversation_id === lead.conversation_id ? (
-                      <input
-                        type="text"
-                        name="reminder_note"
-                        value={editForm.reminder_note}
-                        onChange={handleInputChange}
-                        className="border rounded-lg px-2 py-1 text-sm w-full"
-                        placeholder="Add reminder note"
-                      />
-                    ) : (
-                      lead.reminder_note || "No Data Found"
-                    )}
-                  </td>
-                  <td className="p-4 flex items-center gap-2 action-column">
-                    {editLead?.conversation_id === lead.conversation_id ? (
-                      <>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={handleSaveAction}
-                          className="px-3 py-1 text-sm"
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={handleCancel}
-                          className="px-3 py-1 text-sm"
-                        >
-                          Cancel
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <MdEdit
-                          size={20}
-                          className="text-blue-500 cursor-pointer transition-colors duration-200"
-                          onClick={() => handleEditClick(lead)}
+                </tr>
+              ) : (
+                filteredLeads.map((lead, index) => (
+                  <motion.tr
+                    key={lead.conversation_id}
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={(e) => {
+                      // Don't trigger card if clicking on action buttons/inputs or if lead is being edited
+                      if (e.target.closest('.action-column') || editLead?.conversation_id === lead.conversation_id) return;
+                      handleLeadClick(lead);
+                    }}
+                  >
+                    <td className="px-3 py-3 text-gray-600 font-medium text-sm whitespace-nowrap">
+                      {(currentPage - 1) * itemsPerPage + getIndex(filteredLeads, lead, true)}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      <span className="font-medium text-gray-900 text-sm">
+                        {toCamelCase(lead.patient_name) || "No Data Found"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
+                      {lead.phone?.replace("whatsapp:", "") || "No Data Found"}
+                    </td>
+                    <td className="px-3 py-3">
+                      {editLead?.conversation_id === lead.conversation_id ? (
+                        <input
+                          type="text"
+                          name="disease"
+                          value={editForm.disease}
+                          onChange={handleInputChange}
+                          className="border border-gray-300 rounded px-2 py-1 text-xs min-w-[120px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         />
-                        <div className="flex items-center gap-2">
-                          <select
-                            className="border rounded-lg px-3 py-2 text-sm bg-surface"
-                            onChange={(e) =>
-                              handleActionChange(lead, e.target.value)
-                            }
-                            value={
-                              actionStates[lead.conversation_id]?.action || ""
-                            }
-                          >
-                            <option value="">Select</option>
-                            <option value="convert">Convert to Patient</option>
-                            <option value="in 3 days">in 3 days</option>
-                            <option value="in 7 days">in 7 days</option>
-                            <option value="in 15 days">in 15 days</option>
-                            <option value="in 1 month">in 1 month</option>
-                            <option value="not interested">
-                              Not Interested
-                            </option>
-                          </select>
-                          {actionStates[lead.conversation_id]?.action &&
-                            actionStates[lead.conversation_id].action !==
-                              "convert" && (
-                              <>
-                                <input
-                                  type="text"
-                                  value={
-                                    actionStates[lead.conversation_id]
-                                      ?.reminder_note || ""
-                                  }
-                                  onChange={(e) =>
-                                    handleReminderNoteChange(
-                                      e,
-                                      lead.conversation_id
-                                    )
-                                  }
-                                  className="border rounded-lg px-2 py-1 text-sm w-32"
-                                  placeholder="Reminder note"
-                                />
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => handleSubmitAction(lead)}
-                                  className="px-2 py-1 text-sm"
-                                >
-                                  Submit
-                                </Button>
-                              </>
-                            )}
+                      ) : (
+                        <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full border border-blue-200 whitespace-nowrap">
+                          {toCamelCase(lead.disease) || "No Data Found"}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      {lead.photo_url ? (
+                        <div className="flex items-center justify-center">
+                          <img 
+                            src={lead.photo_url} 
+                            alt="Lead asset" 
+                            className="w-10 h-10 object-cover rounded-md border border-gray-200"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                          <div className="hidden w-10 h-10 items-center justify-center bg-gray-100 rounded-md border border-gray-200">
+                            <FileImage className="w-5 h-5 text-gray-400" />
+                          </div>
                         </div>
-                      </>
-                    )}
-                  </td>
-                </motion.tr>
-              ))}
+                      ) : (
+                        <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-md border border-gray-200">
+                          <FileImage className="w-5 h-5 text-gray-400" />
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
+                      {lead.assigned_to?.name || "Not Assigned"}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
+                      {lead.location || "Not Specified"}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm">
+                      {editLead?.conversation_id === lead.conversation_id ? (
+                        <input
+                          type="text"
+                          name="status"
+                          value={editForm.status}
+                          onChange={handleInputChange}
+                          className="border border-gray-300 rounded px-2 py-1 text-xs min-w-[90px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <span className="inline-block px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full whitespace-nowrap">
+                          {lead.status || "No Data Found"}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm">
+                      {editLead?.conversation_id === lead.conversation_id ? (
+                        <input
+                          type="date"
+                          name="visit_date"
+                          value={editForm.visit_date}
+                          onChange={handleInputChange}
+                          className="border border-gray-300 rounded px-2 py-1 text-xs min-w-[110px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <span className="whitespace-nowrap">{lead.visit_date || "Not Scheduled"}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm">
+                      {editLead?.conversation_id === lead.conversation_id ? (
+                        <input
+                          type="time"
+                          name="visit_time"
+                          value={editForm.visit_time}
+                          onChange={handleInputChange}
+                          className="border border-gray-300 rounded px-2 py-1 text-xs min-w-[110px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <span className="whitespace-nowrap">{lead.visit_time || "Not Scheduled"}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm">
+                      {editLead?.conversation_id === lead.conversation_id ? (
+                        <input
+                          type="text"
+                          name="relation"
+                          value={editForm.relation}
+                          onChange={handleInputChange}
+                          className="border border-gray-300 rounded px-2 py-1 text-xs min-w-[110px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <span className="whitespace-nowrap">{lead.relation || "Not Specified"}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm max-w-[150px]">
+                      {editLead?.conversation_id === lead.conversation_id ? (
+                        <input
+                          type="text"
+                          name="reminder_note"
+                          value={editForm.reminder_note}
+                          onChange={handleInputChange}
+                          className="border border-gray-300 rounded px-2 py-1 text-xs min-w-[110px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <span className="truncate block">{lead.reminder_note || "-"}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center justify-center gap-1 flex-wrap action-column">
+                        {editLead?.conversation_id === lead.conversation_id ? (
+                          <>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveAction();
+                              }}
+                              className="px-2 py-1 text-xs"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancel();
+                              }}
+                              className="px-2 py-1 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditClick(lead);
+                              }}
+                              className="px-2 py-1 text-xs"
+                            >
+                              ✏️
+                            </Button>
+                            <div className="flex items-center gap-1">
+                              <select
+                                className="border border-gray-300 rounded px-2 py-1 text-xs bg-white hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleActionChange(lead, e.target.value);
+                                }}
+                                value={
+                                  actionStates[lead.conversation_id]?.action || ""
+                                }
+                              >
+                                <option value="">Select</option>
+                                <option value="convert">Convert</option>
+                                <option value="in 3 days">3 days</option>
+                                <option value="in 7 days">7 days</option>
+                                <option value="in 15 days">15 days</option>
+                                <option value="in 1 month">1 month</option>
+                                <option value="not interested">Not Interested</option>
+                              </select>
+                              {actionStates[lead.conversation_id]?.action &&
+                                actionStates[lead.conversation_id].action !==
+                                  "convert" && (
+                                  <>
+                                    <input
+                                      type="text"
+                                      value={
+                                        actionStates[lead.conversation_id]
+                                          ?.reminder_note || ""
+                                      }
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        handleReminderNoteChange(
+                                          e,
+                                          lead.conversation_id
+                                        );
+                                      }}
+                                      className="border border-gray-300 rounded px-2 py-1 text-xs w-20 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Note"
+                                    />
+                                    <Button
+                                      variant="primary"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSubmitAction(lead);
+                                      }}
+                                      className="px-2 py-1 text-xs"
+                                    >
+                                      Submit
+                                    </Button>
+                                  </>
+                                )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
             </tbody>
           </table>
-        )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Simple Pagination Component */}
+        <SimplePagination
+          next={pagination.next}
+          previous={pagination.previous}
+          onNext={handleNextPage}
+          onPrevious={handlePreviousPage}
+          totalItems={pagination.count}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+        />
       </Card>
 
       {/* Lead Card Component */}

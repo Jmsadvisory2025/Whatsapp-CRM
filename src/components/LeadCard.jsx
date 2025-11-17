@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { MdClose } from "react-icons/md";
 import Button from "./ui/Button";
@@ -7,6 +7,20 @@ import { toCamelCase } from "../hooks/utils";
 
 const LeadCard = ({ lead, isOpen, onClose, onEdit }) => {
   if (!isOpen || !lead) return null;
+
+  useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [onClose]);
 
   const handleBackdropClick = (e) => {
     e.stopPropagation();
@@ -175,7 +189,7 @@ const LeadCard = ({ lead, isOpen, onClose, onEdit }) => {
               </div>
 
               {/* Assets */}
-              {/* <div className="space-y-3">
+              <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <FileImage className="w-5 h-5 text-indigo-600" />
                   Assets
@@ -194,25 +208,32 @@ const LeadCard = ({ lead, isOpen, onClose, onEdit }) => {
                             e.target.nextSibling.style.display = 'block';
                           }}
                         />
-
                         <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           Click to download
                         </div>
                       </div>
                       <div className="hidden text-gray-500 text-center">
                         <FileImage className="w-8 h-8 mx-auto mb-2" />
-                        Failed to load image
+                        <p className="text-sm">Failed to load image</p>
                       </div>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleImageDownload(lead.photo_url, lead.patient_name)}
+                        className="w-full"
+                      >
+                        Download Image
+                      </Button>
                     </div>
                   ) : (
                     <div className="text-gray-500 text-center py-8">
                       <FileImage className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                      <p className="text-lg font-medium mb-1">No Image</p>
-                      <p className="text-sm text-gray-400">No image attached to this lead</p>
+                      <p className="text-lg font-medium mb-1">No Assets</p>
+                      <p className="text-sm text-gray-400">No images or files attached to this lead</p>
                     </div>
                   )}
                 </div> 
-              </div> */}
+              </div>
             </div>
           </div>
         </div>

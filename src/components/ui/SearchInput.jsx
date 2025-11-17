@@ -3,7 +3,7 @@ import { RiUserSearchLine } from "react-icons/ri";
 
 const SearchInput = ({ placeholder = "Search...", onChange, value, className = "" }) => {
   return (
-    <div className={`relative w-full ${className}`}>
+    <div className={`relative w-[400px] ${className}`}>
       <input
         type="text"
         placeholder={placeholder}

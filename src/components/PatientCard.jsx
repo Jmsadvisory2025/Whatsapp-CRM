@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { MdClose } from "react-icons/md";
 import Button from "./ui/Button";
@@ -7,6 +7,20 @@ import { toCamelCase } from "../hooks/utils";
 
 const PatientCard = ({ patient, isOpen, onClose }) => {
   if (!isOpen || !patient) return null;
+
+  useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [onClose]);
 
   const handleBackdropClick = (e) => {
     e.stopPropagation();

@@ -253,7 +253,7 @@ const Team = () => {
                         >
                           <option value="sales">Sales</option>
                           <option value="manager">Manager</option>
-                          <option value="admin">Admin</option>
+                          {/* <option value="admin">Admin</option> */}
                         </select>
                       ) : (
                         <RoleBadge role={member.role} />

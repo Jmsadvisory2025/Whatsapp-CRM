@@ -2,12 +2,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, X } from "lucide-react";
 import { toCamelCase } from "../../hooks/utils";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 // Enhanced PopOutCard Component
 const PopOutCard = ({ date, totalVisits, items, onClose }) => {
   // Log items to debug
   // console.log("PopOutCard items:", items);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleEscapeKey = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscapeKey);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [onClose]);
+
   return (
     <AnimatePresence>
       <motion.div
