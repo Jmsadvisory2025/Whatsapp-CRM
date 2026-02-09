@@ -10,6 +10,11 @@ import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
 
+// Ensure `webkitSpeechRecognition` is available as `window.SpeechRecognition` in browsers that use the prefixed API
+if (typeof window !== "undefined" && !window.SpeechRecognition && window.webkitSpeechRecognition) {
+  window.SpeechRecognition = window.webkitSpeechRecognition;
+}
+
 export default function VoiceBot() {
   const [language, setLanguage] = useState("gu-IN");
   const [messages, setMessages] = useState([
@@ -22,6 +27,11 @@ export default function VoiceBot() {
   ]);
 
   const [isLanguageSelected, setIsLanguageSelected] = useState(false);
+
+  // UI / runtime states for speech behavior
+  const [continuous, setContinuous] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [permissionGranted, setPermissionGranted] = useState(false);
 
   const dispatch = useDispatch();
   const { response, audioUrl, loading, error } = useSelector(
@@ -264,8 +274,16 @@ export default function VoiceBot() {
     resetTranscript();
     isUserStartedRef.current = true;
     isConversationActive.current = true;
+    setErrorMessage("");
     console.log("Mic ON");
-    SpeechRecognition.startListening({ continuous: false, language: language });
+    try {
+      SpeechRecognition.startListening({ continuous: continuous, language: language });
+    } catch (e) {
+      console.error("startListening failed:", e);
+      setErrorMessage(
+        "Could not start speech recognition. Check microphone permissions or try a Chromium-based browser."
+      );
+    }
   };
 
   const stopListening = () => {
@@ -283,6 +301,27 @@ export default function VoiceBot() {
       isUserStartedRef.current = false;
       // Optional: You could show a toast here, but the alert in useEffect might be enough
       // keeping it clean for manual stops to avoid double alerts if the timer also fired
+    }
+  };
+
+  const requestMicPermission = async () => {
+    setErrorMessage("");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setErrorMessage("getUserMedia not supported by this browser.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Immediately stop tracks — this was only to trigger the permission prompt
+      stream.getTracks().forEach((t) => t.stop());
+      setPermissionGranted(true);
+      // Optionally start listening right away
+      startListening();
+    } catch (err) {
+      console.error("Microphone permission denied", err);
+      setErrorMessage("Microphone permission denied. Please allow microphone access.");
+      setPermissionGranted(false);
     }
   };
 
@@ -461,6 +500,12 @@ export default function VoiceBot() {
         {/* Footer Controls - Only show when language is selected */}
         {isLanguageSelected && (
           <div className="py-2  border-t border-slate-400 flex items-center justify-center gap-8">
+            {/* Error / Permission message */}
+            {errorMessage && (
+              <div className="absolute left-4 bottom-20 bg-red-50 text-red-600 px-3 py-1 rounded-md text-sm">
+                {errorMessage}
+              </div>
+            )}
             <Button
               size="lg"
               onClick={startListening}
@@ -486,6 +531,26 @@ export default function VoiceBot() {
             >
               <Pause className="mr-2 h-5 w-5 fill-current" /> Stop
             </Button>
+
+            <div className="flex flex-col items-start gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-slate-600">Continuous</label>
+                <Button
+                  size="sm"
+                  onClick={() => setContinuous((c) => !c)}
+                  variant={continuous ? "default" : "ghost"}
+                  className={`h-8 ${continuous ? 'bg-green-600 text-white' : 'bg-white text-slate-700'} px-3`}
+                >
+                  {continuous ? "On" : "Off"}
+                </Button>
+              </div>
+
+              {!permissionGranted && (
+                <Button size="sm" onClick={requestMicPermission} className="h-8 bg-yellow-500 text-white px-3">
+                  Allow Microphone
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </Card>
