@@ -34,6 +34,7 @@ const Team = lazy(() => import("./pages/Team"));
 const Whatsapp = lazy(() => import("./pages/Whatsapp"));
 const AddMember = lazy(() => import("./subpages/AddMember"));
 const ErrorPage = lazy(() => import("./pages/ErrorPage"));
+const VoiceBot = lazy(() => import("./pages/VoiceBot"));
 
 // Define routes with appropriate access control  
 const router = createBrowserRouter([
@@ -169,6 +170,7 @@ const router = createBrowserRouter([
         <ErrorPage />
       </Suspense>
     ),
+    
   },
   
   // Dynamic error route for specific status codes
@@ -179,6 +181,14 @@ const router = createBrowserRouter([
         <ErrorPage />
       </Suspense>
     )
+  },
+  {
+    path: "/voicebot",
+    element: (
+      <Suspense fallback={<LoaderDemo   />}>
+        <VoiceBot />
+      </Suspense>
+    ),
   },
   
   // Catch all - redirect to signin or error page

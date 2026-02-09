@@ -1,11 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
-import DiseasesSort from "../components/ui/DiseasesSort";
-import LocationsSort from "../components/ui/LocationsSort";
 import SearchInput from "../components/ui/SearchInput";
-import { filterByDisease } from "../utils/diseaseFilter";
-import { filterByLocation } from "../utils/locationFilter";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchProspects,
@@ -14,6 +10,7 @@ import {
   updateProspect,
   setProspectsError,
   clearProspectsError,
+  searchProspects,
 } from "../store/prospectsSlice";
 import { motion } from "framer-motion";
 import { getIndex, toCamelCase } from "../hooks/utils";
@@ -27,15 +24,15 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Prospects = () => {
   const dispatch = useDispatch();
-  const { prospects, pagination, isLoading, error } = useSelector((state) => state.prospects);
+  const { prospects, pagination, isLoading, error, isSearching } = useSelector((state) => state.prospects);
+  console.log(pagination);
   const [selectedProspect, setSelectedProspect] = useState(null);
   const [selectedAction, setSelectedAction] = useState("");
   const [editProspect, setEditProspect] = useState(null);
-  const [editForm, setEditForm] = useState({ patient_name: "", disease: "" });
+  const [editForm, setEditForm] = useState({ patient_name: "", disease: "", notes: "" });
   const [rowErrors, setRowErrors] = useState({});
-  const [selectedDisease, setSelectedDisease] = useState("all");
-  const [selectedLocation, setSelectedLocation] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const searchTimeoutRef = useRef(null);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,6 +40,13 @@ const Prospects = () => {
 
   useEffect(() => {
     dispatch(fetchProspects());
+    
+    // Cleanup function to clear timeout on unmount
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, [dispatch]);
   
   const handleActionChange = (prospect, value) => {
@@ -91,7 +95,7 @@ const Prospects = () => {
     setSelectedProspect(null);
     setSelectedAction("");
     setEditProspect(null);
-    setEditForm({ patient_name: "", disease: "" });
+    setEditForm({ patient_name: "", disease: "", notes: "" });
     setRowErrors((prev) => ({
       ...prev,
       [selectedProspect?.conversation_id]: null,
@@ -103,6 +107,7 @@ const Prospects = () => {
     setEditForm({
       patient_name: prospect.patient_name || "",
       disease: prospect.disease || "",
+      notes: prospect.notes || "",
     });
   };
 
@@ -113,15 +118,16 @@ const Prospects = () => {
           conversation_id: editProspect.conversation_id,
           patient_name: editForm.patient_name,
           disease: editForm.disease,
+          notes: editForm.notes,
         })
       ).then(() => {
         // Refetch the current page data instead of full reload
-        dispatch(fetchProspects(pagination.next || pagination.previous ? 
-          (currentPage === 1 ? undefined : `${API_BASE_URL}/api/v1/leads/prospects/?page=${currentPage}`) 
+        dispatch(fetchProspects(pagination.next || pagination.previous ?
+          (currentPage === 1 ? undefined : `${API_BASE_URL}/api/v1/leads/prospects/?page=${currentPage}`)
           : undefined));
       });
       setEditProspect(null);
-      setEditForm({ patient_name: "", disease: "" });
+      setEditForm({ patient_name: "", disease: "", notes: "" });
     }
   };
 
@@ -146,7 +152,7 @@ const Prospects = () => {
     }
   };
 
-  if (isLoading) return <div className="text-center py-10"><LoaderDemo/></div>;
+  if (isLoading && !isSearching) return <div className="text-center py-10"><LoaderDemo/></div>;
   if (error)
     return (
       <div className="flex flex-col items-center justify-center gap-6 py-10 mt-20 px-4 text-center max-w-xl mx-auto bg-red-50 border border-red-200 rounded-xl shadow-sm">
@@ -159,15 +165,8 @@ const Prospects = () => {
     return new Date().toISOString().split('T')[0];
   };
 
-  const filteredProspects = filterByDisease(prospects, selectedDisease)
-    .filter(prospect => filterByLocation([prospect], selectedLocation).length > 0)
-    .filter(prospect =>
-      (prospect.patient_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-      (prospect.phone?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-      (prospect.disease?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-      (prospect.location?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-      (prospect.relation?.toLowerCase() || "").includes(searchQuery.toLowerCase())
-    );
+  // Use prospects from API search or regular fetch
+  const filteredProspects = prospects;
 
   // Filter today's prospects
   const todaysProspects = filteredProspects.filter(prospect => {
@@ -198,7 +197,9 @@ const Prospects = () => {
     patient_name: prospect.patient_name || "Not Available",
     phone: `'${prospect.phone?.replace("whatsapp:", "") || "-"}`,
     disease: prospect.disease || "Not Available",
-    "assigned_to.name": prospect.assigned_to?.name || "Not Available",
+    "assigned_to.name": typeof prospect.assigned_to === 'object' && prospect.assigned_to !== null
+      ? prospect.assigned_to.name || "Not Available"
+      : prospect.assigned_to || "Not Available",
     contact_date: prospect.contact_date
       ? new Date(prospect.contact_date).toLocaleDateString()
       : "Not Available",
@@ -229,11 +230,13 @@ const Prospects = () => {
               <span className="text-sm font-semibold text-gray-900">{pagination.count}</span>
               <span className="text-sm text-gray-600">Total Prospects</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Calendar className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-semibold text-gray-900">{todaysProspects.length}</span>
-              <span className="text-sm text-gray-600">Today's Prospects</span>
-            </div>
+            {!isSearching && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
+                <Calendar className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-semibold text-gray-900">{todaysProspects.length}</span>
+                <span className="text-sm text-gray-600">Today's Prospects</span>
+              </div>
+            )}
             <ExportCSVButton
               data={transformedCsvData}
               headers={csvHeaders}
@@ -254,30 +257,30 @@ const Prospects = () => {
               <SearchInput
                 placeholder="Name, phone, disease, location..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchQuery(value);
+                  
+                  // Clear previous timeout
+                  if (searchTimeoutRef.current) {
+                    clearTimeout(searchTimeoutRef.current);
+                  }
+                  
+                  // Clear search if input is empty
+                  if (value === "") {
+                    dispatch(fetchProspects());
+                    setCurrentPage(1);
+                  } else {
+                    // Perform search with debounce (500ms delay)
+                    searchTimeoutRef.current = setTimeout(() => {
+                      dispatch(searchProspects(value));
+                    }, 500);
+                  }
+                }}
               />
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="min-w-full sm:min-w-[200px]">
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">Disease</label>
-                <DiseasesSort 
-                  selectedDisease={selectedDisease} 
-                  onDiseaseChange={setSelectedDisease} 
-                  className="w-full"
-                />
-              </div>
 
-              <div className="min-w-full sm:min-w-[200px]">
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">Location</label>
-                <LocationsSort 
-                  selectedLocation={selectedLocation} 
-                  onLocationChange={setSelectedLocation} 
-                  className="w-full"
-                />
-              </div>
-            </div>
           </div>
         </div>
 
@@ -296,6 +299,7 @@ const Prospects = () => {
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Contact Date</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Relation</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Location</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Notes</th>
                     <th className="px-3 py-3 text-center font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[200px]">Actions</th>
                   </tr>
                 </thead>
@@ -333,7 +337,7 @@ const Prospects = () => {
                         />
                       ) : (
                         <span className="font-medium text-gray-900 text-sm">
-                          {toCamelCase(prospect.patient_name || "Not Available")}
+                          {toCamelCase(prospect.patient_name || prospect.customer_name || "Not Available")}
                         </span>
                       )}
                     </td>
@@ -356,7 +360,9 @@ const Prospects = () => {
                       )}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
-                      {prospect.assigned_to?.name || "Not Available"}
+                      {typeof prospect.assigned_to === 'object' && prospect.assigned_to !== null
+                        ? prospect.assigned_to.name || "Not Available"
+                        : prospect.assigned_to || "Not Available"}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
                       {prospect.contact_date
@@ -365,6 +371,21 @@ const Prospects = () => {
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">{prospect.relation || "Not Available"}</td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">{prospect.location || "Not Available"}</td>
+                    <td className="px-3 py-3">
+                      {editProspect?.conversation_id === prospect.conversation_id ? (
+                        <input
+                          type="text"
+                          name="notes"
+                          value={editForm.notes}
+                          onChange={handleInputChange}
+                          className="border border-gray-300 rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <span className="text-gray-600 text-sm whitespace-nowrap">
+                          {prospect.notes || "-"}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-center gap-1 flex-wrap">
                         {editProspect?.conversation_id === prospect.conversation_id ? (
@@ -445,15 +466,17 @@ const Prospects = () => {
         </div>
         
         {/* Simple Pagination Component */}
-        <SimplePagination
-          next={pagination.next}
-          previous={pagination.previous}
-          onNext={handleNextPage}
-          onPrevious={handlePreviousPage}
-          totalItems={pagination.count}
-          currentPage={currentPage}
-          itemsPerPage={itemsPerPage}
-        />
+        {!isSearching && (
+          <SimplePagination
+            next={pagination.next}
+            previous={pagination.previous}
+            onNext={handleNextPage}
+            onPrevious={handlePreviousPage}
+            totalItems={pagination.count}
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+          />
+        )}
       </Card>
     </div>
   );

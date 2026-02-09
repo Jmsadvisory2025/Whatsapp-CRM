@@ -5,7 +5,8 @@ import dashboardReducer from './dashboardSlice';
 import leadsReducer from './leadsSlice';
 import prospectsReducer from './prospectsSlice';
 import patientsReducer from './patientsSlice';
-import teamReducer from './teamSlice'; // Add this line
+import teamReducer from './teamSlice';
+import voicebotReducer from './voicebotSlice'; // ✅ added
 
 export const store = configureStore({
   reducer: {
@@ -15,7 +16,8 @@ export const store = configureStore({
     leads: leadsReducer,
     prospects: prospectsReducer,
     patients: patientsReducer,
-    team: teamReducer, // Add this line
+    team: teamReducer,
+    voicebot: voicebotReducer, // ✅ added
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
