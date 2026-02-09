@@ -211,7 +211,7 @@ export default function VoiceBot() {
   // This is required because iOS blocks dynamic audio creation
   const playbackAudioRef = useRef(new Audio());
 
-  const handleLanguageSelect = async (selectedLang) => {
+  const handleLanguageSelect = (selectedLang) => {
     // Unlock AudioContext for iOS immediately on user interaction
     const unlockAudio = () => {
       const audio = playbackAudioRef.current;
@@ -225,22 +225,6 @@ export default function VoiceBot() {
       }).catch((e) => console.log("Audio unlock failed", e));
     };
     unlockAudio();
-
-    // Request microphone permission immediately when language is selected
-    setErrorMessage("");
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Immediately stop tracks — this was only to trigger the permission prompt
-        stream.getTracks().forEach((t) => t.stop());
-        setPermissionGranted(true);
-        console.log("Microphone permission granted");
-      } catch (err) {
-        console.error("Microphone permission denied", err);
-        setErrorMessage("Microphone permission denied. Please allow microphone access.");
-        setPermissionGranted(false);
-      }
-    }
 
     setLanguage(selectedLang);
     setIsLanguageSelected(true);
@@ -351,9 +335,9 @@ export default function VoiceBot() {
         {/* Header */}
         <div className="border-b border-slate-400 p-2 md:p-4 flex items-center justify-between bg-gray-200 z-10">
           <h1 className="text-xl font-bold flex gap-2 text-slate-900">
-            Dr.Sapan Shah's Voice AI Bot 
+   Dr.Sapan ios test 2
           </h1>
-          {/* <p>
+          <p>
              {listening && !isPlayingAudio && (
                 <div className="flex flex-col items-center py-4 gap-2">
                   <div className="text-sm text-slate-500 italic animate-pulse font-medium">
@@ -373,7 +357,7 @@ export default function VoiceBot() {
                   </div>
                 </div>
               )}
-          </p> */}
+          </p>
 
           <div className="flex items-center gap-3"></div>
         </div>
@@ -389,7 +373,7 @@ export default function VoiceBot() {
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800">
-                  Welcome to Dr.Sapan Shah's Voice AI Bot
+                  Welcome to Dr. Sapan Shah's AI Voicebot
                 </h2>
                 <p className="text-slate-500">
                   Please select your preferred language to start chatting
@@ -420,7 +404,7 @@ export default function VoiceBot() {
                   variant="outline"
                   className="h-16 text-lg font-medium hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all justify-start px-8 shadow-sm"
                 >
-                  <span className="mr-4 text-2xl">🇮🇳</span>
+                  <span className="mr-4 text-2xl"></span>
                   English
                 </Button>
               </div>
@@ -488,7 +472,7 @@ export default function VoiceBot() {
               )}
 
               {/* Visualizer / Transcript Preview - Hide if playing audio to avoid confusion */}
-              {listening && !isPlayingAudio && (
+              {/* {listening && !isPlayingAudio && (
                 <div className="flex flex-col items-center py-4 gap-2">
                   <div className="text-sm text-slate-500 italic animate-pulse font-medium">
                     {transcript || "Listening..."}
@@ -506,7 +490,7 @@ export default function VoiceBot() {
                     ))}
                   </div>
                 </div>
-              )}
+              )} */}
 
               <div ref={messagesEndRef} />
             </>
@@ -538,13 +522,18 @@ export default function VoiceBot() {
             <Button
               size="lg"
               onClick={stopListening}
-              className="w-36 h-12 text-base bg-red-600 text-white font-medium border-2 border-white transition-all hover:bg-white hover:text-red-600 hover:border hover:border-red-600 cursor-pointer"
+              disabled={!listening || loading}
+              className={`w-36 h-12 text-base bg-red-600 text-white font-medium border-2 border-white  transition-all ${
+                !listening
+                  ? "opacity-50"
+                  : "bg-red-600 hover:bg-white hover:text-red-600 hover:border hover:border-red-600 cursor-pointer"
+              }`}
             >
               <Pause className="mr-2 h-5 w-5 fill-current" /> Stop
             </Button>
 
             <div className="flex flex-col items-start gap-2">
-              {/* <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <label className="text-sm text-slate-600">Continuous</label>
                 <Button
                   size="sm"
@@ -554,13 +543,13 @@ export default function VoiceBot() {
                 >
                   {continuous ? "On" : "Off"}
                 </Button>
-              </div> */}
+              </div>
 
-              {/* {!permissionGranted && (
+              {!permissionGranted && (
                 <Button size="sm" onClick={requestMicPermission} className="h-8 bg-yellow-500 text-white px-3">
                   Allow Microphone
                 </Button>
-              )} */}
+              )}
             </div>
           </div>
         )}
