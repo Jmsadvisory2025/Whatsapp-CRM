@@ -29,7 +29,7 @@ export default function VoiceBot() {
   const [isLanguageSelected, setIsLanguageSelected] = useState(false);
 
   // UI / runtime states for speech behavior
-  const [continuous, setContinuous] = useState(true);
+  const [continuous, setContinuous] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [permissionGranted, setPermissionGranted] = useState(false);
 
@@ -138,10 +138,10 @@ export default function VoiceBot() {
       return () => clearTimeout(initialSilenceTimer);
     }
 
-    // 2. End-of-Speech Timeout: If speech pauses for 5 seconds
+    // 2. End-of-Speech Timeout: If speech pauses for 2.5 seconds
     const pauseTimer = setTimeout(() => {
       SpeechRecognition.stopListening();
-    }, 4000);
+    }, 2500);
 
     return () => clearTimeout(pauseTimer);
   }, [transcript, listening, messages]);
@@ -351,7 +351,7 @@ export default function VoiceBot() {
         {/* Header */}
         <div className="border-b border-slate-400 p-2 md:p-4 flex items-center justify-between bg-gray-200 z-10">
           <h1 className="text-xl font-bold flex gap-2 text-slate-900">
-            Dr.Sapan Shah's  AI Voice Bot 
+            Dr.Sapan Shah's Voice AI Bot 
           </h1>
           {/* <p>
              {listening && !isPlayingAudio && (
@@ -389,7 +389,7 @@ export default function VoiceBot() {
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800">
-                  Welcome to Dr.Sapan Shah's  AI Voice Bot
+                  Welcome to Dr.Sapan Shah's Voice AI Bot
                 </h2>
                 <p className="text-slate-500">
                   Please select your preferred language to start chatting
@@ -532,7 +532,7 @@ export default function VoiceBot() {
                   : "bg-green-600 hover:bg-white hover:text-green-600 hover:border hover:border-green-600 cursor-pointer"
               }`}
             >
-              <Pipette className="mr-2 h-5 w-5" /> Speak
+              <Pipette className="mr-2 h-5 w-5" /> Start
             </Button>
 
             <Button
