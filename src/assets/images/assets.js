@@ -23,7 +23,7 @@ import BuildingIcon from "./CreateOrganizationIcons/createOrganization.png";
 
 // Reminders & Follow-ups related icons
 import CompletedIcon from "./RemindersIcons/CompletedIcon.png"
-import DuetodayIcon from "./RemindersIcons/duetodayIcon.png"
+import DuetodayIcon from "./RemindersIcons/dueTodayIcon.png"
 import OverdueIcon from "./RemindersIcons/OverdueIcon.png"
 import UpcomingRemindersIcon from "./RemindersIcons/UpcomingRemindersIcon.png"
 

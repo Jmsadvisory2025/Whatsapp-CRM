@@ -115,7 +115,14 @@ export default function VoiceBot() {
         // Ensure conversation stays active so it restarts after speaking
         isConversationActive.current = true;
 
-        playAudioResponse(audioToPlay, textToRepeat);
+        if (audioToPlay) {
+           playAudioResponse(audioToPlay, textToRepeat);
+        } else {
+           // If we don't have audio to replay, just restart listening quietly
+           // or maybe play a generic "I didn't hear you" sound if you had one.
+           // For now, just restart listening.
+           startListening();
+        }
       }, 4000);
 
       return () => clearTimeout(initialSilenceTimer);
@@ -132,51 +139,80 @@ export default function VoiceBot() {
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
   const playAudioResponse = (audioUrl, text) => {
+    // STRICT: Ensure Mic is OFF before playing
+    console.log("Mic OFF");
+    SpeechRecognition.stopListening();
+    
+    console.log("Speaking message:", text);
     setIsPlayingAudio(true);
+
     if (!audioUrl) {
-      // Fallback to text-to-speech if no audio URL
-      if (!window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = language;
-      utterance.onend = () => {
-        setIsPlayingAudio(false);
+      console.error("No audio URL provided for response:", text);
+      setIsPlayingAudio(false);
+      // Wait a moment before restarting listening so it doesn't loop instantly on error
+      setTimeout(() => {
         if (isConversationActive.current) {
           startListening();
         }
-      };
-      window.speechSynthesis.speak(utterance);
+      }, 1000);
       return;
     }
 
-    const audio = new Audio(audioUrl);
+    const audio = playbackAudioRef.current;
+    audio.src = audioUrl;
 
-    // Resume listening after audio finishes
-    audio.onended = () => {
+    // Define the handler so we can remove it later
+    const handleEnded = () => {
+      console.log("Speaker OFF");
       setIsPlayingAudio(false);
-      // Force start listening after audio ends, especially for initial welcome message
-      startListening();
+      // Remove listener to avoid stacking
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+      
+      // Force start listening after audio ends - THE CONTINUOUS LOOP
+      if (isConversationActive.current) {
+        startListening();
+      }
     };
 
-    audio.play().catch((e) => {
+    const handleError = (e) => {
       console.error("Error playing audio:", e);
-      // Fallback if audio fails to play
+      console.log("Speaker OFF (Error)");
       setIsPlayingAudio(false);
-      if (window.speechSynthesis) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = language;
-        window.speechSynthesis.speak(utterance);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+      
+      // If audio fails, just restart listening
+      if (isConversationActive.current) {
+          startListening();
       }
+    };
+
+    // Add listeners
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+
+    audio.play().catch((e) => {
+      handleError(e);
     });
   };
+
+  // Create a persistent Audio object for iOS compatibility
+  // This is required because iOS blocks dynamic audio creation
+  const playbackAudioRef = useRef(new Audio());
 
   const handleLanguageSelect = (selectedLang) => {
     // Unlock AudioContext for iOS immediately on user interaction
     const unlockAudio = () => {
-      const audio = new Audio();
+      const audio = playbackAudioRef.current;
       audio.src =
         "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjYwLjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD//////////////////////////////////////////////////////////////////wAAADFMYXZjNTYuNjAAAAAAAAAAAAAAAAAAAAAAACQAAAAAAAAAAAAAAAAAAAD/84TTOHWWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEz2ZMmMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg=="; // Silent MP3 for better compatibility
-      audio.play().catch((e) => console.log("Audio unlock failed", e));
+      
+      // Play and immediately pause to "unlock" the audio element on iOS
+      audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      }).catch((e) => console.log("Audio unlock failed", e));
     };
     unlockAudio();
 
@@ -214,26 +250,33 @@ export default function VoiceBot() {
   const isConversationActive = useRef(false);
 
   const startListening = () => {
+    // STRICT: Ensure Audio is OFF before listening
+    playbackAudioRef.current.pause();
+    playbackAudioRef.current.currentTime = 0;
+    setIsPlayingAudio(false);
+
     // iOS Safari requires a user interaction to unlock speech synthesis.
     // We play a silent utterance when the user manually clicks "Start".
     // This allows subsequent programmatic speech (from the bot) to work.
     console.log("start button pressed");
-    if (!isConversationActive.current && window.speechSynthesis) {
-      const silentUtterance = new SpeechSynthesisUtterance(" ");
-      window.speechSynthesis.speak(silentUtterance);
-      window.speechSynthesis.cancel(); // immediately cancel it, we just needed the interaction
-    }
+    // Removed legacy speech synthesis hack because we use persistent Audio object now.
 
     resetTranscript();
     isUserStartedRef.current = true;
     isConversationActive.current = true;
+    console.log("Mic ON");
     SpeechRecognition.startListening({ continuous: false, language: language });
   };
 
   const stopListening = () => {
+    console.log("Mic OFF (Manual Stop)");
     isConversationActive.current = false;
     SpeechRecognition.stopListening();
-    window.speechSynthesis.cancel(); // Also stop speaking if user manually stops
+    
+    // Also stop audio if playing
+    playbackAudioRef.current.pause();
+    playbackAudioRef.current.currentTime = 0;
+    setIsPlayingAudio(false);
 
     // If stopped manually and no transcript was captured
     if (isUserStartedRef.current && !transcript) {
@@ -253,8 +296,29 @@ export default function VoiceBot() {
         {/* Header */}
         <div className="border-b border-slate-400 p-2 md:p-4 flex items-center justify-between bg-gray-200 z-10">
           <h1 className="text-xl font-bold flex gap-2 text-slate-900">
-   Dr.Sapan Shah's Voicebot
+   Dr.Sapan ios test 2
           </h1>
+          <p>
+             {listening && !isPlayingAudio && (
+                <div className="flex flex-col items-center py-4 gap-2">
+                  <div className="text-sm text-slate-500 italic animate-pulse font-medium">
+                    {transcript || "Listening..."}
+                  </div>
+                  <div className="flex items-center gap-1.5 h-8">
+                    {[...Array(5)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-1.5 bg-blue-500 rounded-full animate-[pulse_0.6s_ease-in-out_infinite]"
+                        style={{
+                          height: `${Math.random() * 20 + 10}px`,
+                          animationDelay: `${i * 0.1}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+          </p>
 
           <div className="flex items-center gap-3"></div>
         </div>
@@ -369,7 +433,7 @@ export default function VoiceBot() {
               )}
 
               {/* Visualizer / Transcript Preview - Hide if playing audio to avoid confusion */}
-              {listening && !isPlayingAudio && (
+              {/* {listening && !isPlayingAudio && (
                 <div className="flex flex-col items-center py-4 gap-2">
                   <div className="text-sm text-slate-500 italic animate-pulse font-medium">
                     {transcript || "Listening..."}
@@ -387,7 +451,7 @@ export default function VoiceBot() {
                     ))}
                   </div>
                 </div>
-              )}
+              )} */}
 
               <div ref={messagesEndRef} />
             </>
