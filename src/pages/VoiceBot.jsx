@@ -29,7 +29,7 @@ export default function VoiceBot() {
   const [isLanguageSelected, setIsLanguageSelected] = useState(false);
 
   // UI / runtime states for speech behavior
-  const [continuous, setContinuous] = useState(false);
+  const [continuous, setContinuous] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [permissionGranted, setPermissionGranted] = useState(false);
 
@@ -138,10 +138,10 @@ export default function VoiceBot() {
       return () => clearTimeout(initialSilenceTimer);
     }
 
-    // 2. End-of-Speech Timeout: If speech pauses for 2.5 seconds
+    // 2. End-of-Speech Timeout: If speech pauses for 5 seconds
     const pauseTimer = setTimeout(() => {
       SpeechRecognition.stopListening();
-    }, 2500);
+    }, 4000);
 
     return () => clearTimeout(pauseTimer);
   }, [transcript, listening, messages]);
@@ -277,7 +277,7 @@ export default function VoiceBot() {
     setErrorMessage("");
     console.log("Mic ON");
     try {
-      SpeechRecognition.startListening({ continuous: continuous, language: language });
+      SpeechRecognition.startListening({ continuous: true, language: language });
     } catch (e) {
       console.error("startListening failed:", e);
       setErrorMessage(
@@ -335,7 +335,7 @@ export default function VoiceBot() {
         {/* Header */}
         <div className="border-b border-slate-400 p-2 md:p-4 flex items-center justify-between bg-gray-200 z-10">
           <h1 className="text-xl font-bold flex gap-2 text-slate-900">
-   Dr.Sapan ios test 2
+            Dr.Sapan Shah's  AI Voice Bot 
           </h1>
           <p>
              {listening && !isPlayingAudio && (
@@ -373,7 +373,7 @@ export default function VoiceBot() {
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800">
-                  Welcome to Dr. Sapan Shah's AI Voicebot
+                  Welcome to Dr.Sapan Shah's  AI Voice Bot
                 </h2>
                 <p className="text-slate-500">
                   Please select your preferred language to start chatting
@@ -516,7 +516,7 @@ export default function VoiceBot() {
                   : "bg-green-600 hover:bg-white hover:text-green-600 hover:border hover:border-green-600 cursor-pointer"
               }`}
             >
-              <Pipette className="mr-2 h-5 w-5" /> Start
+              <Pipette className="mr-2 h-5 w-5" /> Speak
             </Button>
 
             <Button
@@ -533,7 +533,7 @@ export default function VoiceBot() {
             </Button>
 
             <div className="flex flex-col items-start gap-2">
-              <div className="flex items-center gap-2">
+              {/* <div className="flex items-center gap-2">
                 <label className="text-sm text-slate-600">Continuous</label>
                 <Button
                   size="sm"
@@ -549,7 +549,7 @@ export default function VoiceBot() {
                 <Button size="sm" onClick={requestMicPermission} className="h-8 bg-yellow-500 text-white px-3">
                   Allow Microphone
                 </Button>
-              )}
+              )} */}
             </div>
           </div>
         )}
