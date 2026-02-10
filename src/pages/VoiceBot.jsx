@@ -1,35 +1,32 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Loader2,  Pipette, Pause } from "lucide-react";
+import { User, Loader2, Pipette, Pause, HospitalIcon } from "lucide-react";
 import { Card } from "@/components/ui/shadcn/card";
 import { Avatar, AvatarFallback } from "@/components/ui/shadcn/avatar";
 import { Button } from "@/components/ui/shadcn/button";
 import { useDispatch, useSelector } from "react-redux";
 import { initiateChat } from "../store/voicebotSlice";
 import "regenerator-runtime/runtime";
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from "react-speech-recognition";
+import {
+  SpeechConfig,
+  AudioConfig,
+  SpeechRecognizer,
+  ResultReason,
+  CancellationReason,
+} from "microsoft-cognitiveservices-speech-sdk";
 
-// Ensure `webkitSpeechRecognition` is available as `window.SpeechRecognition` in browsers that use the prefixed API
-if (typeof window !== "undefined" && !window.SpeechRecognition && window.webkitSpeechRecognition) {
-  window.SpeechRecognition = window.webkitSpeechRecognition;
-}
+// iOS Detection - Apple forces all browsers to use WebKit
+const isIOS = () => {
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+};
 
 export default function VoiceBot() {
   const [language, setLanguage] = useState("gu-IN");
-  const [messages, setMessages] = useState([
-    // {
-    //   id: "welcome",
-    //   type: "bot",
-    //   text: "Hello! I am Dr. Sapan Shah's AI Assistant. Please select your language and press Start to begin chatting.",
-    //   timestamp: new Date(),
-    // },
-  ]);
+  const [messages, setMessages] = useState([]);
 
   const [isLanguageSelected, setIsLanguageSelected] = useState(false);
-
-  // UI / runtime states for speech behavior
-  const [continuous, setContinuous] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [permissionGranted, setPermissionGranted] = useState(false);
 
@@ -38,12 +35,9 @@ export default function VoiceBot() {
     (state) => state.voicebot,
   );
 
-  const {
-    transcript,
-    listening,
-    resetTranscript,
-    browserSupportsSpeechRecognition,
-  } = useSpeechRecognition();
+  const [transcript, setTranscript] = useState("");
+  const [listening, setListening] = useState(false);
+  const recognizerRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const isUserStartedRef = useRef(false);
@@ -54,18 +48,12 @@ export default function VoiceBot() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, loading, transcript]);
+  }, [messages, loading]);
 
   // Effect to handle new responses from Redux and speak them
   useEffect(() => {
     if (!loading && response) {
-      // Check if we need to add the bot message
       const lastMessage = messages[messages.length - 1];
-
-      // If we have a response, we should add it if:
-      // 1. It's the very first message (Welcome message after start)
-      // 2. The last message was from the user (Reply to user query)
-      // 3. To avoid duplicates, check if the last message is NOT the same bot response already
 
       const isWelcome = messages.length === 0;
       const followsUser = lastMessage?.type === "user";
@@ -86,85 +74,30 @@ export default function VoiceBot() {
         playAudioResponse(audioUrl, response);
       }
     }
+    
+    // Lock input during API loading
+    if (loading) {
+      shouldIgnoreInputRef.current = true;
+    }
   }, [response, audioUrl, loading]);
 
-  // Handle Speech-to-Text completion
-  useEffect(() => {
-    if (!listening && transcript && isUserStartedRef.current) {
-      handleSendMessage(transcript);
-      isUserStartedRef.current = false;
-    }
-  }, [listening, transcript]);
-
-  // Manual silence detection (Fix for iOS/Non-English languages not auto-stopping)
-  // Manual silence detection (Fix for iOS/Non-English languages not auto-stopping)
-  useEffect(() => {
-    if (!listening) return;
-
-    // 1. Initial Silence Timeout: If no speech detected within 4 seconds of starting
-    if (!transcript) {
-      const initialSilenceTimer = setTimeout(() => {
-        // Handle silence: Repeat last response
-        SpeechRecognition.stopListening();
-
-        // Find last bot message or use default
-        const lastBotMessage = [...messages]
-          .reverse()
-          .find((m) => m.type === "bot");
-        const textToRepeat =
-          lastBotMessage?.text || "I'm listening, please go ahead.";
-
-        // If we have the original audio URL cached in Redux for this response, we should use it.
-        // However, currently we only have the VERY LAST response's audio URL in `audioUrl`.
-        // If `lastBotMessage` is indeed the last response, we can use `audioUrl`.
-        let audioToPlay = null;
-        if (response && lastBotMessage?.text === response) {
-          audioToPlay = audioUrl;
-        }
-
-        // Ensure conversation stays active so it restarts after speaking
-        isConversationActive.current = true;
-
-        if (audioToPlay) {
-           playAudioResponse(audioToPlay, textToRepeat);
-        } else {
-           // If we don't have audio to replay, just restart listening quietly
-           // or maybe play a generic "I didn't hear you" sound if you had one.
-           // For now, just restart listening.
-           startListening();
-        }
-      }, 4000);
-
-      return () => clearTimeout(initialSilenceTimer);
-    }
-
-    // 2. End-of-Speech Timeout: If speech pauses for 2.5 seconds
-    const pauseTimer = setTimeout(() => {
-      SpeechRecognition.stopListening();
-    }, 2500);
-
-    return () => clearTimeout(pauseTimer);
-  }, [transcript, listening, messages]);
-
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  
+  // Ref to track if we should ignore input (API loading OR Bot speaking)
+  const shouldIgnoreInputRef = useRef(false);
 
   const playAudioResponse = (audioUrl, text) => {
-    // STRICT: Ensure Mic is OFF before playing
-    console.log("Mic OFF");
-    SpeechRecognition.stopListening();
-    
     console.log("Speaking message:", text);
     setIsPlayingAudio(true);
+    shouldIgnoreInputRef.current = true; // Gate input
+    
+    // Clear any lingering transcript from before audio started
+    setTranscript("");
 
     if (!audioUrl) {
       console.error("No audio URL provided for response:", text);
       setIsPlayingAudio(false);
-      // Wait a moment before restarting listening so it doesn't loop instantly on error
-      setTimeout(() => {
-        if (isConversationActive.current) {
-          startListening();
-        }
-      }, 1000);
+      shouldIgnoreInputRef.current = false;
       return;
     }
 
@@ -173,29 +106,27 @@ export default function VoiceBot() {
 
     // Define the handler so we can remove it later
     const handleEnded = () => {
-      console.log("Speaker OFF");
+      console.log("Speaker OFF - Audio playback ended");
       setIsPlayingAudio(false);
-      // Remove listener to avoid stacking
+      
+      // Small delay before re-enabling input to avoid picking up end of audio
+      setTimeout(() => {
+        shouldIgnoreInputRef.current = false;
+        console.log("Input re-enabled - Ready for user speech");
+      }, 300);
+      
+      // Remove listeners
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
-      
-      // Force start listening after audio ends - THE CONTINUOUS LOOP
-      if (isConversationActive.current) {
-        startListening();
-      }
     };
 
     const handleError = (e) => {
       console.error("Error playing audio:", e);
       console.log("Speaker OFF (Error)");
       setIsPlayingAudio(false);
+      shouldIgnoreInputRef.current = false;
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
-      
-      // If audio fails, just restart listening
-      if (isConversationActive.current) {
-          startListening();
-      }
     };
 
     // Add listeners
@@ -208,7 +139,6 @@ export default function VoiceBot() {
   };
 
   // Create a persistent Audio object for iOS compatibility
-  // This is required because iOS blocks dynamic audio creation
   const playbackAudioRef = useRef(new Audio());
 
   const handleLanguageSelect = async (selectedLang) => {
@@ -216,9 +146,8 @@ export default function VoiceBot() {
     const unlockAudio = () => {
       const audio = playbackAudioRef.current;
       audio.src =
-        "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjYwLjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD//////////////////////////////////////////////////////////////////wAAADFMYXZjNTYuNjAAAAAAAAAAAAAAAAAAAAAAACQAAAAAAAAAAAAAAAAAAAD/84TTOHWWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEz2ZMmMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg=="; // Silent MP3 for better compatibility
+        "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjYwLjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD//////////////////////////////////////////////////////////////////wAAADFMYXZjNTYuMAAAAAAAAAAAAAAAAAAAAAAACQAAAAAAAAAAAAAAAAAAAD/84TTOHWWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEz2ZMmMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg==";
       
-      // Play and immediately pause to "unlock" the audio element on iOS
       audio.play().then(() => {
         audio.pause();
         audio.currentTime = 0;
@@ -226,34 +155,25 @@ export default function VoiceBot() {
     };
     unlockAudio();
 
-    // Request Mic Permission immediately
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop()); // Stop immediately, just needed permission
-      setPermissionGranted(true);
-      setErrorMessage("");
-    } catch (err) {
-      console.error("Microphone permission denied", err);
-      setErrorMessage("Microphone permission denied. Please enable it in settings.");
-      // We continue anyway, but user might need to enable it manually later
-    }
-
     setLanguage(selectedLang);
     setIsLanguageSelected(true);
-
-    // Enable conversation so audio playback triggers listening on completion
     isConversationActive.current = true;
     isUserStartedRef.current = true;
 
-    // Convert full language code to short code for API if needed
-    // 'gu-IN' -> 'gu', 'hi-IN' -> 'hi', 'en-IN' -> 'en'
     const shortLang = selectedLang.split("-")[0];
+    
+    // Start listening FIRST to secure the stream
+    await startListening(selectedLang);
 
+    // Then initiate chat (which might play welcome audio)
     dispatch(initiateChat({ start: true, language: shortLang }));
   };
 
   const handleSendMessage = (text) => {
     if (!text.trim()) return;
+
+    // LOCK INPUT IMMEDIATELY
+    shouldIgnoreInputRef.current = true;
 
     setMessages((prev) => [
       ...prev,
@@ -266,80 +186,127 @@ export default function VoiceBot() {
     ]);
 
     dispatch(initiateChat({ text }));
-    resetTranscript();
+    setTranscript("");
   };
 
   const isConversationActive = useRef(false);
 
-  const startListening = () => {
-    // STRICT: Ensure Audio is OFF before listening
-    playbackAudioRef.current.pause();
-    playbackAudioRef.current.currentTime = 0;
-    setIsPlayingAudio(false);
-
-    // iOS Safari requires a user interaction to unlock speech synthesis.
-    // We play a silent utterance when the user manually clicks "Start".
-    // This allows subsequent programmatic speech (from the bot) to work.
-    console.log("start button pressed");
-    // Removed legacy speech synthesis hack because we use persistent Audio object now.
-
-    resetTranscript();
-    isUserStartedRef.current = true;
-    isConversationActive.current = true;
-    setErrorMessage("");
-    console.log("Mic ON");
-    try {
-      SpeechRecognition.startListening({ continuous: continuous, language: language });
-    } catch (e) {
-      console.error("startListening failed:", e);
-      setErrorMessage(
-        "Could not start speech recognition. Check microphone permissions or try a Chromium-based browser."
-      );
+  const startListening = async (forceLanguage) => {
+    // Clean up existing recognizer
+    if (recognizerRef.current) {
+      try {
+        recognizerRef.current.stopContinuousRecognitionAsync();
+        recognizerRef.current.close();
+      } catch (e) {
+        console.warn("Error cleaning up old recognizer", e);
+      }
+      recognizerRef.current = null;
     }
-  };
 
-  const stopListening = () => {
-    console.log("Mic OFF (Manual Stop)");
-    isConversationActive.current = false;
-    SpeechRecognition.stopListening();
-    
-    // Also stop audio if playing
-    playbackAudioRef.current.pause();
-    playbackAudioRef.current.currentTime = 0;
-    setIsPlayingAudio(false);
+    // Azure Configuration
+    const speechKey = import.meta.env.VITE_AZURE_SPEECH_KEY;
+    const speechRegion = import.meta.env.VITE_AZURE_SPEECH_REGION;
 
-    // If stopped manually and no transcript was captured
-    if (isUserStartedRef.current && !transcript) {
-      isUserStartedRef.current = false;
-      // Optional: You could show a toast here, but the alert in useEffect might be enough
-      // keeping it clean for manual stops to avoid double alerts if the timer also fired
-    }
-  };
-
-  const requestMicPermission = async () => {
-    setErrorMessage("");
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setErrorMessage("getUserMedia not supported by this browser.");
+    if (!speechKey || !speechRegion) {
+      console.error("Azure Speech credentials missing");
+      setErrorMessage("Azure configuration missing. Please check .env file.");
       return;
     }
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Immediately stop tracks — this was only to trigger the permission prompt
-      stream.getTracks().forEach((t) => t.stop());
-      setPermissionGranted(true);
-      // Optionally start listening right away
-      startListening();
-    } catch (err) {
-      console.error("Microphone permission denied", err);
-      setErrorMessage("Microphone permission denied. Please allow microphone access.");
-      setPermissionGranted(false);
-    }
+    const currentLang = forceLanguage || language;
+    const speechConfig = SpeechConfig.fromSubscription(speechKey, speechRegion);
+    speechConfig.speechRecognitionLanguage = currentLang;
+    
+    const audioConfig = AudioConfig.fromDefaultMicrophoneInput();
+    const recognizer = new SpeechRecognizer(speechConfig, audioConfig);
+    recognizerRef.current = recognizer;
+
+    // Event Handlers
+    recognizer.recognizing = (s, e) => {
+      // IGNORE input if bot is speaking OR loading
+      if (shouldIgnoreInputRef.current) {
+        console.log("🔇 Ignored input (Bot busy):", e.result.text);
+        return;
+      }
+      console.log(`🎤 RECOGNIZING: ${e.result.text}`);
+      setTranscript(e.result.text);
+    };
+
+    recognizer.recognized = (s, e) => {
+      // IGNORE input if bot is speaking OR loading
+      if (shouldIgnoreInputRef.current) {
+        console.log("🔇 Ignored recognized (Bot busy):", e.result.text);
+        return;
+      }
+
+      if (e.result.reason === ResultReason.RecognizedSpeech) {
+        console.log(`✅ RECOGNIZED: ${e.result.text}`);
+        if (e.result.text && e.result.text.trim()) {
+          handleSendMessage(e.result.text);
+          // Mic stays ON - we don't stop listening
+        }
+      } else if (e.result.reason === ResultReason.NoMatch) {
+        console.log("❌ NOMATCH: Speech could not be recognized.");
+        setTranscript("");
+      }
+    };
+
+    recognizer.canceled = (s, e) => {
+      console.log(`⚠️ CANCELED: Reason=${e.reason}`);
+      if (e.reason === CancellationReason.Error) {
+        console.log(`❌ CANCELED: ErrorCode=${e.errorCode}`);
+        setErrorMessage("Speech recognition error. Please restart.");
+      }
+      setListening(false);
+    };
+
+    recognizer.sessionStarted = (s, e) => {
+      console.log("🎙️ Session started - Mic is ON");
+      setListening(true);
+      setErrorMessage("");
+      isUserStartedRef.current = true;
+      isConversationActive.current = true;
+    };
+
+    recognizer.sessionStopped = (s, e) => {
+      console.log("🛑 Session stopped - Mic is OFF");
+      setListening(false);
+    };
+
+    // Start continuous recognition
+    console.log("▶️ Starting Azure Speech Recognition...");
+    recognizer.startContinuousRecognitionAsync(
+      () => {
+        console.log("✅ Recognition started successfully");
+      },
+      (err) => {
+        console.error("❌ Failed to start recognition:", err);
+        setErrorMessage("Failed to start microphone. Please try again.");
+      }
+    );
   };
 
-  if (!browserSupportsSpeechRecognition) {
-    return <span>Browser doesn't support speech recognition.</span>;
-  }
+  const stopListening = (disableConversation = true) => {
+    console.log("🛑 Stopping microphone...");
+    if (disableConversation) {
+      isConversationActive.current = false;
+    }
+    
+    if (recognizerRef.current) {
+      recognizerRef.current.stopContinuousRecognitionAsync(() => {
+        setListening(false);
+      });
+    }
+    
+    // Also stop audio if playing
+    if (playbackAudioRef.current) {
+      playbackAudioRef.current.pause();
+      playbackAudioRef.current.currentTime = 0;
+    }
+    setIsPlayingAudio(false);
+    shouldIgnoreInputRef.current = false;
+    setTranscript("");
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 relative">
@@ -347,41 +314,30 @@ export default function VoiceBot() {
         {/* Header */}
         <div className="border-b border-slate-400 p-2 md:p-4 flex items-center justify-between bg-gray-200 z-10">
           <h1 className="text-xl font-bold flex gap-2 text-slate-900">
-              Shah's Voice Bot 
+            Shah's AI Voice Bot
           </h1>
-          {/* <p>
-             {listening && !isPlayingAudio && (
-                <div className="flex flex-col items-center py-4 gap-2">
-                  <div className="text-sm text-slate-500 italic animate-pulse font-medium">
-                    {transcript || "Listening..."}
-                  </div>
-                  <div className="flex items-center gap-1.5 h-8">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-1.5 bg-blue-500 rounded-full animate-[pulse_0.6s_ease-in-out_infinite]"
-                        style={{
-                          height: `${Math.random() * 20 + 10}px`,
-                          animationDelay: `${i * 0.1}s`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-          </p> */}
-
-          <div className="flex items-center gap-3"></div>
+          
+          {/* Status Indicator */}
+          <div className="flex items-center gap-2">
+            {listening && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-green-100 rounded-full">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs font-medium text-green-700">
+                  {isPlayingAudio ? "Bot Speaking" : "Listening"}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1  overflow-y-auto bg-slate-50/30 p-1 md:p-2 space-y-6 scroll-smooth relative">
+        <div className="flex-1 overflow-y-auto bg-slate-50/30 p-1 md:p-2 space-y-6 scroll-smooth relative">
           {!isLanguageSelected ? (
             <div className="flex flex-col items-center justify-center h-full space-y-8 p-6">
               <div className="text-center space-y-4">
                 <div className="flex justify-center mb-4">
                   <div className="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                   
+                    <HospitalIcon size={50} />
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800">
@@ -416,7 +372,7 @@ export default function VoiceBot() {
                   variant="outline"
                   className="h-16 text-lg font-medium hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all justify-start px-8 shadow-sm"
                 >
-                  <span className="mr-4 text-2xl"></span>
+                  <span className="mr-4 text-2xl">🇮🇳</span>
                   English
                 </Button>
               </div>
@@ -443,7 +399,7 @@ export default function VoiceBot() {
                   </Avatar>
                   <div className="flex flex-col gap-2">
                     <div
-                      className={`border p-2 rounded-xl  text-sm md:text-base ${
+                      className={`border p-2 rounded-xl text-sm md:text-base ${
                         msg.type === "bot"
                           ? "bg-white border-slate-100 rounded-tl-sm text-slate-700"
                           : "bg-blue-600 border-blue-600 rounded-tr-sm text-white"
@@ -483,8 +439,8 @@ export default function VoiceBot() {
                 </div>
               )}
 
-              {/* Visualizer / Transcript Preview - Hide if playing audio to avoid confusion */}
-              {listening && !isPlayingAudio && (
+              {/* Visualizer / Transcript Preview - Always show when listening and not during bot response */}
+              {listening && !isPlayingAudio && !loading && (
                 <div className="flex flex-col items-center py-4 gap-2">
                   <div className="text-sm text-slate-500 italic animate-pulse font-medium">
                     {transcript || "Listening..."}
@@ -504,60 +460,61 @@ export default function VoiceBot() {
                 </div>
               )}
 
+              {/* Bot speaking indicator */}
+              {isPlayingAudio && (
+                <div className="flex flex-col items-center py-4 gap-2">
+                  <div className="text-sm text-blue-600 font-medium">
+                    🔊 Bot is speaking...
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    (Microphone active, waiting for response to finish)
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </>
           )}
         </div>
 
-        {/* Footer Controls - Only show when language is selected */}
+        {/* Footer Controls */}
         {isLanguageSelected && (
-          <div className="py-2  border-t border-slate-400 flex items-center justify-center gap-8">
-            {/* Error / Permission message */}
+          <div className="py-2 border-t border-slate-400 flex items-center justify-center gap-8">
             {errorMessage && (
               <div className="absolute left-4 bottom-20 bg-red-50 text-red-600 px-3 py-1 rounded-md text-sm">
                 {errorMessage}
               </div>
             )}
+            
             <Button
               size="lg"
-              onClick={startListening}
+              onClick={() => {
+                isConversationActive.current = true;
+                startListening();
+              }}
               disabled={listening || loading}
-              className={`w-36 h-12 text-base text-white font-medium border-2 border-white  transition-all ${
+              className={`w-36 h-12 text-base text-white font-medium border-2 border-white transition-all ${
                 listening
-                  ? "opacity-50"
+                  ? "opacity-50 cursor-not-allowed bg-green-600"
                   : "bg-green-600 hover:bg-white hover:text-green-600 hover:border hover:border-green-600 cursor-pointer"
               }`}
             >
-              <Pipette className="mr-2 h-5 w-5" /> Start
+              <Pipette className="mr-2 h-5 w-5" />
+              {listening ? "Listening…" : "Speak"}
             </Button>
 
             <Button
               size="lg"
               onClick={stopListening}
-              className="w-36 h-12 text-base bg-red-600 text-white font-medium border-2 border-white transition-all hover:bg-white hover:text-red-600 hover:border hover:border-red-600 cursor-pointer"
+              disabled={!listening}
+              className={`w-36 h-12 text-base font-medium border-2 border-white transition-all ${
+                !listening
+                  ? "opacity-50 cursor-not-allowed bg-red-600 text-white"
+                  : "bg-red-600 text-white hover:bg-white hover:text-red-600 hover:border hover:border-red-600 cursor-pointer"
+              }`}
             >
               <Pause className="mr-2 h-5 w-5 fill-current" /> Stop
             </Button>
-
-            <div className="flex flex-col items-start gap-2">
-              {/* <div className="flex items-center gap-2">
-                <label className="text-sm text-slate-600">Continuous</label>
-                <Button
-                  size="sm"
-                  onClick={() => setContinuous((c) => !c)}
-                  variant={continuous ? "default" : "ghost"}
-                  className={`h-8 ${continuous ? 'bg-green-600 text-white' : 'bg-white text-slate-700'} px-3`}
-                >
-                  {continuous ? "On" : "Off"}
-                </Button>
-              </div> */}
-
-              {/* {!permissionGranted && (
-                <Button size="sm" onClick={requestMicPermission} className="h-8 bg-yellow-500 text-white px-3">
-                  Allow Microphone
-                </Button>
-              )} */}
-            </div>
           </div>
         )}
       </Card>
