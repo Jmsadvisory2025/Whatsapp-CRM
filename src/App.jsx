@@ -185,9 +185,7 @@ const router = createBrowserRouter([
   {
     path: "/voicebot",
     element: (
-      <Suspense fallback={<LoaderDemo   />}>
-        <VoiceBot />
-      </Suspense>
+      <VoiceBot />
     ),
   },
   

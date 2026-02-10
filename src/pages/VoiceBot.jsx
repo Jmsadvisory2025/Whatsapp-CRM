@@ -74,7 +74,7 @@ export default function VoiceBot() {
         playAudioResponse(audioUrl, response);
       }
     }
-    
+
     // Lock input during API loading
     if (loading) {
       shouldIgnoreInputRef.current = true;
@@ -82,7 +82,7 @@ export default function VoiceBot() {
   }, [response, audioUrl, loading]);
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  
+
   // Ref to track if we should ignore input (API loading OR Bot speaking)
   const shouldIgnoreInputRef = useRef(false);
 
@@ -90,7 +90,7 @@ export default function VoiceBot() {
     console.log("Speaking message:", text);
     setIsPlayingAudio(true);
     shouldIgnoreInputRef.current = true; // Gate input
-    
+
     // Clear any lingering transcript from before audio started
     setTranscript("");
 
@@ -108,16 +108,16 @@ export default function VoiceBot() {
     const handleEnded = () => {
       console.log("Speaker OFF - Audio playback ended");
       setIsPlayingAudio(false);
-      
+
       // Small delay before re-enabling input to avoid picking up end of audio
       setTimeout(() => {
         shouldIgnoreInputRef.current = false;
         console.log("Input re-enabled - Ready for user speech");
       }, 300);
-      
+
       // Remove listeners
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
     };
 
     const handleError = (e) => {
@@ -125,13 +125,13 @@ export default function VoiceBot() {
       console.log("Speaker OFF (Error)");
       setIsPlayingAudio(false);
       shouldIgnoreInputRef.current = false;
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
     };
 
     // Add listeners
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
 
     audio.play().catch((e) => {
       handleError(e);
@@ -147,11 +147,14 @@ export default function VoiceBot() {
       const audio = playbackAudioRef.current;
       audio.src =
         "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjYwLjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD//////////////////////////////////////////////////////////////////wAAADFMYXZjNTYuMAAAAAAAAAAAAAAAAAAAAAAACQAAAAAAAAAAAAAAAAAAAD/84TTOHWWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEz2ZMmMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg==";
-      
-      audio.play().then(() => {
-        audio.pause();
-        audio.currentTime = 0;
-      }).catch((e) => console.log("Audio unlock failed", e));
+
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        })
+        .catch((e) => console.log("Audio unlock failed", e));
     };
     unlockAudio();
 
@@ -161,7 +164,7 @@ export default function VoiceBot() {
     isUserStartedRef.current = true;
 
     const shortLang = selectedLang.split("-")[0];
-    
+
     // Start listening FIRST to secure the stream
     await startListening(selectedLang);
 
@@ -216,7 +219,7 @@ export default function VoiceBot() {
     const currentLang = forceLanguage || language;
     const speechConfig = SpeechConfig.fromSubscription(speechKey, speechRegion);
     speechConfig.speechRecognitionLanguage = currentLang;
-    
+
     const audioConfig = AudioConfig.fromDefaultMicrophoneInput();
     const recognizer = new SpeechRecognizer(speechConfig, audioConfig);
     recognizerRef.current = recognizer;
@@ -282,7 +285,7 @@ export default function VoiceBot() {
       (err) => {
         console.error("❌ Failed to start recognition:", err);
         setErrorMessage("Failed to start microphone. Please try again.");
-      }
+      },
     );
   };
 
@@ -291,13 +294,13 @@ export default function VoiceBot() {
     if (disableConversation) {
       isConversationActive.current = false;
     }
-    
+
     if (recognizerRef.current) {
       recognizerRef.current.stopContinuousRecognitionAsync(() => {
         setListening(false);
       });
     }
-    
+
     // Also stop audio if playing
     if (playbackAudioRef.current) {
       playbackAudioRef.current.pause();
@@ -310,13 +313,13 @@ export default function VoiceBot() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 relative">
-      <Card className="w-full max-w-2xl h-[85vh] md:h-[800px] flex flex-col border-slate-400 overflow-hidden bg-white">
+      <Card className="w-full max-w-2xl h-[85vh] md:h-[800px] flex flex-col border-blue-600 overflow-hidden bg-white">
         {/* Header */}
-        <div className="border-b border-slate-400 p-2 md:p-4 flex items-center justify-between bg-gray-200 z-10">
-          <h1 className="text-xl font-bold flex gap-2 text-slate-900">
-            Shah's AI Voice Bot
+        <div className="border-b border-slate-400 p-2 md:p-4 flex items-center justify-between bg-blue-600 z-10">
+          <h1 className="text-md md:text-xl font-bold flex gap-2 text-white">
+            Dr.Sapan Shah's AI Voice Bot
           </h1>
-          
+
           {/* Status Indicator */}
           <div className="flex items-center gap-2">
             {listening && (
@@ -336,12 +339,12 @@ export default function VoiceBot() {
             <div className="flex flex-col items-center justify-center h-full space-y-8 p-6">
               <div className="text-center space-y-4">
                 <div className="flex justify-center mb-4">
-                  <div className="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                  <div className="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center text-green-600">
                     <HospitalIcon size={50} />
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold text-slate-800">
-                  Welcome to Shah's AI Voicebot
+                  Welcome to Dr.Sapan Shah's AI Voicebot
                 </h2>
                 <p className="text-slate-500">
                   Please select your preferred language to start chatting.
@@ -350,30 +353,26 @@ export default function VoiceBot() {
 
               <div className="grid grid-cols-1 w-full max-w-xs gap-4">
                 <Button
+                  onClick={() => handleLanguageSelect("en-IN")}
+                  variant="outline"
+                  className="h-full w-full m-auto text-lg font-medium hover:bg-green-100 hover:text-green-700 hover:border-green-200 transition-all justify-center px-8 "
+                >
+                  English
+                </Button>
+                <Button
                   onClick={() => handleLanguageSelect("gu-IN")}
                   variant="outline"
-                  className="h-16 text-lg font-medium hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all justify-start px-8 shadow-sm"
+                  className="h-full w-full m-auto text-lg font-medium hover:bg-green-100 hover:text-green-700 hover:border-green-200 transition-all justify-center px-8 "
                 >
-                  <span className="mr-4 text-2xl">🇮🇳</span>
-                  Gujarati (ગુજરાતી)
+                  ગુજરાતી
                 </Button>
 
                 <Button
                   onClick={() => handleLanguageSelect("hi-IN")}
                   variant="outline"
-                  className="h-16 text-lg font-medium hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all justify-start px-8 shadow-sm"
+                  className="h-full w-full m-auto text-lg font-medium hover:bg-green-100 hover:text-green-700 hover:border-green-200 transition-all justify-center px-8 "
                 >
-                  <span className="mr-4 text-2xl">🇮🇳</span>
-                  Hindi (हिंदी)
-                </Button>
-
-                <Button
-                  onClick={() => handleLanguageSelect("en-IN")}
-                  variant="outline"
-                  className="h-16 text-lg font-medium hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all justify-start px-8 shadow-sm"
-                >
-                  <span className="mr-4 text-2xl">🇮🇳</span>
-                  English
+                  हिंदी
                 </Button>
               </div>
             </div>
@@ -394,7 +393,11 @@ export default function VoiceBot() {
                           : "bg-blue-600 text-white"
                       } text-xs shadow-sm`}
                     >
-                      {msg.type === "bot" ? "AI" : <User className="h-4 w-4" />}
+                      {msg.type === "bot" ? (
+                        <HospitalIcon className="h-4 w-4" />
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col gap-2">
@@ -419,10 +422,8 @@ export default function VoiceBot() {
 
               {loading && (
                 <div className="flex gap-4 max-w-[85%]">
-                  <Avatar className="h-8 w-8 mt-1 border border-slate-200">
-                    <AvatarFallback className="bg-white text-blue-600 text-xs shadow-sm">
-                      AI
-                    </AvatarFallback>
+                  <Avatar className="h-8 w-8 mt-1 border justify-center items-center border-slate-200">
+                    <HospitalIcon className="h-4 w-4 text-blue-600" />
                   </Avatar>
                   <div className="bg-white border border-slate-100 p-4 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
@@ -485,7 +486,7 @@ export default function VoiceBot() {
                 {errorMessage}
               </div>
             )}
-            
+
             <Button
               size="lg"
               onClick={() => {
@@ -500,7 +501,7 @@ export default function VoiceBot() {
               }`}
             >
               <Pipette className="mr-2 h-5 w-5" />
-              {listening ? "Listening…" : "Speak"}
+              {"Speak"}
             </Button>
 
             <Button
