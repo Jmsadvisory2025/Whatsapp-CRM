@@ -72,18 +72,28 @@ const Leads = () => {
   );
 
   // Filter today's leads
+  // const todaysLeads = filteredLeads.filter(lead => {
+  //   if (lead.visit_date && lead.visit_date !== "-") {
+  //     try {
+  //       const leadDate = new Date(lead.visit_date).toISOString().split('T')[0];
+  //       const today = new Date().toISOString().split('T')[0];
+  //       return leadDate === today;
+  //     } catch (error) {
+  //       return false;
+  //     }
+  //   }
+  //   return false;
+  // });
   const todaysLeads = filteredLeads.filter(lead => {
-    if (lead.visit_date && lead.visit_date !== "-") {
-      try {
-        const leadDate = new Date(lead.visit_date).toISOString().split('T')[0];
-        const today = new Date().toISOString().split('T')[0];
-        return leadDate === today;
-      } catch (error) {
-        return false;
-      }
-    }
-    return false;
-  });
+  if (lead.created_at) {
+    try {
+      const leadDate = new Date(lead.created_at).toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      return leadDate === today;
+    } catch (error) { return false; }
+  }
+  return false;
+});
 
   // Handle next page using API's next URL
   const handleNextPage = () => {
@@ -314,11 +324,11 @@ const Leads = () => {
               <span className="text-sm font-semibold text-gray-900">{pagination.count}</span>
               <span className="text-sm text-gray-600">Total Leads</span>
             </div>
-            {/* <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-gray-200">
               <Calendar className="h-4 w-4 text-green-600" />
               <span className="text-sm font-semibold text-gray-900">{todaysLeads.length}</span>
               <span className="text-sm text-gray-600">Today's Leads</span>
-            </div> */}
+            </div>
             <ExportCSVButton
               data={transformedCsvData}
               headers={csvHeaders}
@@ -373,14 +383,15 @@ const Leads = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[50px]">#</th>
-                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[150px]">Name</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[50px]">ID</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[150px] max-w-[150px]">Name</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[130px]">Phone</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[140px]">Disease</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[80px]">Assets</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[130px]">Assigned To</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Location</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[110px]">Status</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Contact Date</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Visit Date</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Visit Time</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Relation</th>
@@ -416,13 +427,18 @@ const Leads = () => {
                     <td className="px-3 py-3 text-gray-600 font-medium text-sm whitespace-nowrap">
                       {(currentPage - 1) * itemsPerPage + getIndex(filteredLeads, lead, true)}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    {/* <td className="px-3 py-3 whitespace-nowrap">
                       <span className="font-medium text-gray-900 text-sm">
+                        {toCamelCase(lead.patient_name) || "No Data Found"}
+                      </span>
+                    </td> */}
+                    <td className="px-3 py-3 min-w-[150px] max-w-[150px]">
+                      <span className="font-medium text-gray-900 text-sm block truncate" title={toCamelCase(lead.patient_name) || "No Data Found"}>
                         {toCamelCase(lead.patient_name) || "No Data Found"}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
-                      {lead.phone?.replace("whatsapp:", "") || "No Data Found"}
+                      {lead.phone?.replace("whatsapp:", "+") || "No Data Found"}
                     </td>
                     <td className="px-3 py-3">
                       {editLead?.conversation_id === lead.conversation_id ? (
@@ -481,6 +497,9 @@ const Leads = () => {
                           {lead.status || "No Data Found"}
                         </span>
                       )}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
+                      {lead.created_at ? new Date(lead.created_at).toISOString().split('T')[0] : "-"}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm">
                       {editLead?.conversation_id === lead.conversation_id ? (

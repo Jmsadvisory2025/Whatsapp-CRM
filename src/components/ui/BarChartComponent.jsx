@@ -11,13 +11,13 @@ const BarChartComponent = ({ data, height = 460 }) => {
             axisLine={false}
             tickLine={false}
             tick={{ fill: "#64748b", fontSize: 12 }}
-            tickFormatter={(value) => `Date ${value}`}
+            tickFormatter={(value) => ` ${value}`}
             interval={0}
           />
           <YAxis axisLine={false} tickLine={false} tick={{ fill: "#64748b", fontSize: 12 }} />
           <Tooltip
             formatter={(value) => [value, "Inquiries"]}
-            labelFormatter={(label) => `Day ${label}`}
+            labelFormatter={(label) => ` ${label}`}
             contentStyle={{
               backgroundColor: "white",
               border: "none",

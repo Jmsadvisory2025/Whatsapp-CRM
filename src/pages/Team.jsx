@@ -182,7 +182,7 @@ const Team = () => {
           <table className="w-full text-left">
             <thead className="bg-gray-100 text-gray-700">
               <tr className="border-b border-gray-200">
-                <th className="p-3 text-sm font-semibold uppercase tracking-wider">#</th>
+                <th className="p-3 text-sm font-semibold uppercase tracking-wider">ID</th>
                 <th className="p-3 text-sm font-semibold uppercase tracking-wider">
                   Name
                 </th>

@@ -137,7 +137,7 @@ const Dashboard = () => {
     .sort((a, b) => new Date(b.day) - new Date(a.day))
     .slice(0, 7)
     .map((item) => ({
-      day: new Date(item.day).getDate(),
+      day: new Date(item.day).toISOString().split('T')[0].split('-').slice(1).reverse().join('-'),
       count: item.count,
     }));
 

@@ -291,7 +291,7 @@ const Prospects = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[50px]">#</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[50px]">ID</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[150px]">Name</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[130px]">Phone</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[140px]">Disease</th>
@@ -326,7 +326,7 @@ const Prospects = () => {
                     <td className="px-3 py-3 text-gray-600 font-medium text-sm whitespace-nowrap">
                       {(currentPage - 1) * itemsPerPage + getIndex(filteredProspects, prospect, false)}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    {/* <td className="px-3 py-3 whitespace-nowrap">
                       {editProspect?.conversation_id === prospect.conversation_id ? (
                         <input
                           type="text"
@@ -340,9 +340,24 @@ const Prospects = () => {
                           {toCamelCase(prospect.patient_name || prospect.customer_name || "Not Available")}
                         </span>
                       )}
+                    </td> */}
+                     <td className="px-3 py-3 min-w-[150px] max-w-[150px]">
+                      {editProspect?.conversation_id === prospect.conversation_id ? (
+                        <input
+                          type="text"
+                          name="patient_name"
+                          value={editForm.patient_name}
+                          onChange={handleInputChange}
+                          className="border border-gray-300 rounded px-2 py-1 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      ) : (
+                        <span className="font-medium text-gray-900 text-sm block truncate" title={toCamelCase(prospect.patient_name || prospect.customer_name || "Not Available")}>
+                          {toCamelCase(prospect.patient_name || prospect.customer_name || "Not Available")}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
-                      {prospect.phone ? prospect.phone.replace("whatsapp:", "") : "Not Available"}
+                      {prospect.phone ? prospect.phone.replace("whatsapp:", "+") : "Not Available"}
                     </td>
                     <td className="px-3 py-3">
                       {editProspect?.conversation_id === prospect.conversation_id ? (
@@ -366,7 +381,7 @@ const Prospects = () => {
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
                       {prospect.contact_date
-                        ? new Date(prospect.contact_date).toLocaleDateString()
+                        ? new Date(prospect.contact_date).toISOString().split('T')[0]
                         : "Not Available"}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">{prospect.relation || "Not Available"}</td>

@@ -233,7 +233,7 @@ const Patients = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-100">
                   <tr>
-                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[50px]">#</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[50px]">ID</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[150px]">Name</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[130px]">Phone</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[140px]">Disease</th>
@@ -269,13 +269,18 @@ const Patients = () => {
                     <td className="px-3 py-3 text-gray-600 font-medium text-sm whitespace-nowrap">
                       {(currentPage - 1) * itemsPerPage + getIndex(filteredPatients, patient, true)}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    {/* <td className="px-3 py-3 whitespace-nowrap">
                       <span className="font-medium text-gray-900 text-sm">
+                        {toCamelCase(patient.name || "No Data Found")}
+                      </span>
+                    </td> */}
+                    <td className="px-3 py-3 min-w-[150px] max-w-[150px]">
+                      <span className="font-medium text-gray-900 text-sm block truncate" title={toCamelCase(patient.name || "No Data Found")}>
                         {toCamelCase(patient.name || "No Data Found")}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
-                      {patient.phone?.replace("whatsapp:", "") || "No Data Found"}
+                      {patient.phone?.replace("whatsapp:", "+") || "No Data Found"}
                     </td>
                     <td className="px-3 py-3">
                       <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full border border-blue-200 whitespace-nowrap">
