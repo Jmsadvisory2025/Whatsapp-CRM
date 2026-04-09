@@ -388,10 +388,10 @@ const Leads = () => {
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[130px]">Phone</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[140px]">Disease</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[80px]">Assets</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Contact Date</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[130px]">Assigned To</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Location</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[110px]">Status</th>
-                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Contact Date</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Visit Date</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Visit Time</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Relation</th>
@@ -438,7 +438,8 @@ const Leads = () => {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
-                      {lead.phone?.replace("whatsapp:", "+") || "No Data Found"}
+                      {/* {lead.phone?.replace("whatsapp:", "+") || "No Data Found"} */}
+                      {lead.phone ? `+${lead.phone.replace("whatsapp:", "").replace(/^\+/, "")}` : "No Data Found"}
                     </td>
                     <td className="px-3 py-3">
                       {editLead?.conversation_id === lead.conversation_id ? (
@@ -478,6 +479,9 @@ const Leads = () => {
                       )}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
+                      {lead.created_at ? new Date(lead.created_at).toLocaleDateString("en-GB").replace(/\//g, "-") : "-"}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
                       {lead.assigned_to?.name || "Not Assigned"}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
@@ -498,9 +502,7 @@ const Leads = () => {
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
-                      {lead.created_at ? new Date(lead.created_at).toISOString().split('T')[0] : "-"}
-                    </td>
+                    
                     <td className="px-3 py-3 text-gray-600 text-sm">
                       {editLead?.conversation_id === lead.conversation_id ? (
                         <input
@@ -511,7 +513,9 @@ const Leads = () => {
                           className="border border-gray-300 rounded px-2 py-1 text-xs min-w-[110px] focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                         />
                       ) : (
-                        <span className="whitespace-nowrap">{lead.visit_date || "Not Scheduled"}</span>
+                        // <span className="whitespace-nowrap">{lead.visit_date || "Not Scheduled"}</span>
+                        <span className="whitespace-nowrap">{lead.visit_date ? new Date(lead.visit_date).toLocaleDateString("en-GB").replace(/\//g, "-") : "Not Scheduled"}</span>
+
                       )}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm">

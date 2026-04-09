@@ -272,12 +272,18 @@ const Reminders = () => {
                     <td className="px-3 py-3 text-gray-600 font-medium text-sm whitespace-nowrap">
                       {(currentPage - 1) * itemsPerPage + index + 1}
                     </td>
-                    <td className="px-3 py-3 text-gray-900 font-medium text-sm whitespace-nowrap">
+                    {/* <td className="px-3 py-3 text-gray-900 font-medium text-sm whitespace-nowrap">
                       {reminder.patient_name}
+                    </td> */}
+                    <td className="px-3 py-3 text-gray-900 font-medium text-sm max-w-[150px]">
+                      <span className="block truncate" title={reminder.patient_name}>
+                        {reminder.patient_name}
+                      </span>
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
-                      {reminder.phone?.replace("whatsapp:", "") ||
-                        "No Data Found"}
+                      {/* {reminder.phone?.replace("whatsapp:", "") ||
+                        "No Data Found"} */}
+                      {reminder.phone ? `+${reminder.phone.replace("whatsapp:", "").replace(/^\+/, "")}` : "No Data Found"}
                     </td>
                     <td className="px-3 py-3">
                       <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full border border-blue-200 whitespace-nowrap">

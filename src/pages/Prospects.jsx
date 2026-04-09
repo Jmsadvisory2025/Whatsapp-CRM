@@ -357,7 +357,8 @@ const Prospects = () => {
                       )}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
-                      {prospect.phone ? prospect.phone.replace("whatsapp:", "+") : "Not Available"}
+                      {/* {prospect.phone ? prospect.phone.replace("whatsapp:", "") : "Not Available"} */}
+                      {prospect.phone ? `+${prospect.phone.replace("whatsapp:", "").replace(/^\+/, "")}` : "Not Available"}
                     </td>
                     <td className="px-3 py-3">
                       {editProspect?.conversation_id === prospect.conversation_id ? (
@@ -381,8 +382,8 @@ const Prospects = () => {
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
                       {prospect.contact_date
-                        ? new Date(prospect.contact_date).toISOString().split('T')[0]
-                        : "Not Available"}
+                          ? new Date(prospect.contact_date).toLocaleDateString("en-GB").replace(/\//g, "-")
+                          : "Not Available"}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">{prospect.relation || "Not Available"}</td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">{prospect.location || "Not Available"}</td>

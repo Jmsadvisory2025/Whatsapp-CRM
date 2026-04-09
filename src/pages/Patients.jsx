@@ -237,7 +237,7 @@ const Patients = () => {
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[150px]">Name</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[130px]">Phone</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[140px]">Disease</th>
-                                        <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[80px]">Assets</th>
+                    <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[80px]">Assets</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Visit Date</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[120px]">Visit Time</th>
                     <th className="px-3 py-3 text-left font-semibold text-gray-700 text-xs uppercase whitespace-nowrap min-w-[150px]">Location</th>
@@ -280,7 +280,8 @@ const Patients = () => {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
-                      {patient.phone?.replace("whatsapp:", "+") || "No Data Found"}
+                      {/* {patient.phone?.replace("whatsapp:", "+") || "No Data Found"} */}
+                      {patient.phone ? `+${patient.phone.replace("whatsapp:", "").replace(/^\+/, "")}` : "No Data Found"}
                     </td>
                     <td className="px-3 py-3">
                       <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full border border-blue-200 whitespace-nowrap">
@@ -311,7 +312,7 @@ const Patients = () => {
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
                       {patient.visit_date
-                        ? new Date(patient.visit_date).toLocaleDateString()
+                        ? new Date(patient.visit_date).toLocaleDateString("en-GB").replace(/\//g, "-")
                         : "No Data Found"}
                     </td>
                     <td className="px-3 py-3 text-gray-600 text-sm whitespace-nowrap">
