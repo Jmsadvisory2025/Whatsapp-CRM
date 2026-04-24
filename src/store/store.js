@@ -6,7 +6,8 @@ import leadsReducer from './leadsSlice';
 import prospectsReducer from './prospectsSlice';
 import patientsReducer from './patientsSlice';
 import teamReducer from './teamSlice';
-import voicebotReducer from './voicebotSlice'; // ✅ added
+import voicebotReducer from './voicebotSlice';
+import whatsappReducer from './whatsappSlice';
 
 export const store = configureStore({
   reducer: {
@@ -17,7 +18,8 @@ export const store = configureStore({
     prospects: prospectsReducer,
     patients: patientsReducer,
     team: teamReducer,
-    voicebot: voicebotReducer, // ✅ added
+    voicebot: voicebotReducer,
+    whatsapp: whatsappReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
