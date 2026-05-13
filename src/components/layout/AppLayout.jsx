@@ -1,17 +1,23 @@
 import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const AppLayout = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const location = useLocation();
+
+  const handleToggleCollapse = (collapsed) => {
+    setIsCollapsed(collapsed);
+  };
 
   return (
     <div className="flex h-screen bg-background text-text-primary font-sans">
       {/* Desktop Sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
-        <Sidebar />
+        <Sidebar isCollapsed={isCollapsed} onToggle={handleToggleCollapse} />
       </div>
 
       {/* Mobile Sidebar */}
@@ -33,7 +39,7 @@ const AppLayout = () => {
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="fixed inset-y-0 left-0 z-40 lg:hidden"
             >
-              <Sidebar />
+              <Sidebar isCollapsed={false} onToggle={() => {}} />
             </motion.div>
           </>
         )}
@@ -43,11 +49,15 @@ const AppLayout = () => {
         {/* Mobile Header */}
         <div className="flex items-center justify-between p-4 bg-surface border-b lg:hidden">
           <span className="font-bold text-xl text-primary">LeadFlow</span>
-          <button onClick={() => setSidebarOpen(true)} className="text-gray-600">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="text-gray-600 hover:text-gray-900 transition-colors"
+            aria-label="Toggle sidebar"
+          >
             <Menu size={24} />
           </button>
         </div>
-        
+
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           <AnimatePresence mode="wait">
             <motion.div

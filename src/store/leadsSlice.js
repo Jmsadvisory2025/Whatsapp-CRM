@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-// Async thunk to fetch confirmed leads
+
+// Async thunk to fetch confirmed leads with pagination
 const fetchConfirmedLeads = createAsyncThunk(
   "leads/fetchConfirmed",
-  async (_, { getState, rejectWithValue }) => {
+  async (pageUrl = null, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem("accessToken");
 
@@ -13,7 +14,10 @@ const fetchConfirmedLeads = createAsyncThunk(
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/leads/confirmed/`, {
+      // Use provided page URL or default to first page
+      const url = pageUrl || `${API_BASE_URL}/api/v1/leads/confirmed/`;
+      
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -28,7 +32,13 @@ const fetchConfirmedLeads = createAsyncThunk(
         );
       }
 
-      return data;
+      return {
+        results: data.results || [],
+        count: data.count || 0,
+        next: data.next,
+        previous: data.previous,
+        currentPageUrl: url
+      };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -169,6 +179,12 @@ const updateLeadActionWithReminder = createAsyncThunk(
 
 const initialState = {
   leads: [],
+  pagination: {
+    count: 0,
+    next: null,
+    previous: null,
+    currentPageUrl: null
+  },
   isLoading: false,
   error: null,
 };
@@ -189,7 +205,15 @@ const leadsSlice = createSlice({
       })
       .addCase(fetchConfirmedLeads.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.leads = action.payload || [];
+        // Store pagination data
+        state.pagination = {
+          count: action.payload.count || 0,
+          next: action.payload.next,
+          previous: action.payload.previous,
+          currentPageUrl: action.payload.currentPageUrl
+        };
+        // Store results
+        state.leads = action.payload.results || [];
         state.error = null;
       })
       .addCase(fetchConfirmedLeads.rejected, (state, action) => {

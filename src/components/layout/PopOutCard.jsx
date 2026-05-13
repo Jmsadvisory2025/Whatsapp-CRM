@@ -1,13 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, X } from "lucide-react";
 import { toCamelCase } from "../../hooks/utils";
-import { useNavigate } from "react-router-dom";
 
 // Enhanced PopOutCard Component
 const PopOutCard = ({ date, totalVisits, items, onClose }) => {
   // Log items to debug
   // console.log("PopOutCard items:", items);
-  const navigate = useNavigate();
+
   return (
     <AnimatePresence>
       <motion.div

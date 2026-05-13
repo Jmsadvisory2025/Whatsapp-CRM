@@ -103,7 +103,7 @@ const AddMember = () => {
               >
                 <option value="sales">Sales Person</option>
                 <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
+                {/* <option value="admin">Admin</option> */}
               </select>
             </div>
           </div>

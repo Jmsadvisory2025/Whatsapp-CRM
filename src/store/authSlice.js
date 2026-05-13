@@ -21,6 +21,7 @@ export const sendOtp = createAsyncThunk(
       
       return { email, message: data.message };
     } catch (error) {
+      console.log(error)
       return rejectWithValue(error.message);
     }
   }

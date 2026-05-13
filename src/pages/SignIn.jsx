@@ -154,11 +154,13 @@ const SignIn = () => {
                     </p> */}
                 </div>
 
-                <div className="text-center mt-6 bg-surface p-4 rounded-lg shadow-md border flex items-center gap-4 max-w-xs mx-auto">
-                    <ShieldCheck className="text-primary" size={32}/>
-                    <div>
-                        <p className="font-semibold text-text-primary">Secure Access</p>
-                        <p className="text-sm text-text-secondary">Choose your login method based on your role.</p>
+                <div className="m-2 bg-surface p-3 rounded-xl shadow-sm border border-gray-200 flex items-start gap-4 max-w-sm mx-auto">
+                    
+                        <ShieldCheck className="text-primary" size={40}/>
+                    
+                    <div className="text-left">
+                        <p className="font-semibold text-text-primary text-sm">Secure Access</p>
+                        <p className="text-text-secondary text-xs mt-1 leading-relaxed">Your data is protected with enterprise-grade security</p>
                     </div>
                 </div>
             </motion.div>

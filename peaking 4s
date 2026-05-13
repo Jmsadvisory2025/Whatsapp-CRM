@@ -1,0 +1,21 @@
+[33mb11700b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mvoicebot[m[33m, [m[1;31morigin/voicebot[m[33m)[m Revert "bug fixes"
+[33ma483058[m Revert "delay added for speaking 4s"
+[33m94760f3[m delay added for speaking 4s
+[33m6172bcc[m bug fixes
+[33m8cc487f[m mic btn added
+[33ma13ea08[m[33m ([m[1;31morigin/v2[m[33m, [m[1;32mv2[m[33m)[m Rename upcomingRemindersIcon.png to UpcomingRemindersIcon.png
+[33mfdb0cb2[m voice bot changed and case sensitive fixed
+[33m452a77c[m voicebot added
+[33mdff8095[m full pagination , popoutcard updated
+[33m57488e0[m diseases dropdown fixed
+[33m1bbbcaa[m added diseases sorting with azure backend url
+[33m4083a49[m react strict mode removed
+[33m670b528[m added Leads and Patient popoutcards
+[33m13e03b9[m[33m ([m[1;32mapi/integration[m[33m)[m updated latest
+[33m97d5036[m build 3
+[33mc04a68b[m build 2
+[33m2009101[m[33m ([m[1;31morigin/merge-api-integration[m[33m, [m[1;32mmerge-api-integration[m[33m)[m env updated
+[33m8bd20e3[m integration completed
+[33m0f7befc[m api integrated
+[33m6032c80[m[33m ([m[1;32mmain[m[33m)[m api integrated
+[33madebf80[m Initial commit with .gitignore

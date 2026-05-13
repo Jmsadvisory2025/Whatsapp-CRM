@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-// Async thunk to fetch prospects
+
+// Async thunk to fetch prospects with pagination
 export const fetchProspects = createAsyncThunk(
   "prospects/fetch",
-  async (_, { getState, rejectWithValue }) => {
+  async (pageUrl = null, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem("accessToken");
 
@@ -13,22 +14,87 @@ export const fetchProspects = createAsyncThunk(
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/leads/prospects/`, {
+      // Use provided page URL or default to first page
+      const url = pageUrl || `${API_BASE_URL}/api/v1/leads/prospects/`;
+      
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
+      
       const data = await response.json();
-      // console.log("prospect data ", data);
+      
       if (!response.ok) {
         throw new Error(
-          data.message || "Sorry , you are not the part of the organization"
+          data.message || "Sorry, you are not part of the organization"
         );
       }
 
-      return data;
+      return {
+        results: data.results || [],
+        count: data.count || 0,
+        next: data.next,
+        previous: data.previous,
+        currentPageUrl: url
+      };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Async thunk to search prospects
+export const searchProspects = createAsyncThunk(
+  "prospects/search",
+  async (query, { getState, rejectWithValue }) => {
+    const { auth } = getState();
+    const token = auth.accessToken || localStorage.getItem("accessToken");
+
+    if (!token) {
+      throw new Error("No authentication token available");
+    }
+
+    try {
+      const url = `${API_BASE_URL}/api/v1/conversations/search/?q=${encodeURIComponent(query)}`;
+      
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to search prospects"
+        );
+      }
+
+      // Transform the search response to match the pagination structure
+      // Normalize the data structure to match regular prospects
+      const normalizedData = Array.isArray(data) ? data.map(item => ({
+        ...item,
+        // Ensure assigned_to is consistent (string format)
+        assigned_to: typeof item.assigned_to === 'object' && item.assigned_to !== null 
+          ? item.assigned_to.name 
+          : item.assigned_to,
+        // Ensure patient_name is populated (fallback to customer_name if needed)
+        patient_name: item.patient_name || item.customer_name || "",
+      })) : [];
+
+      return {
+        results: normalizedData || [],
+        count: normalizedData.length || 0,
+        next: null,
+        previous: null,
+        currentPageUrl: url
+      };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -80,7 +146,7 @@ export const convertProspectToLead = createAsyncThunk(
 export const updateProspect = createAsyncThunk(
   "prospects/update",
   async (
-    { conversation_id, patient_name, disease },
+    { conversation_id, patient_name, disease, notes },
     { getState, rejectWithValue }
   ) => {
     const { auth } = getState();
@@ -99,7 +165,7 @@ export const updateProspect = createAsyncThunk(
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ patient_name, disease }),
+          body: JSON.stringify({ patient_name, disease, notes }),
         }
       );
       const data = await response.json();
@@ -117,8 +183,16 @@ export const updateProspect = createAsyncThunk(
 
 const initialState = {
   prospects: [],
+  pagination: {
+    count: 0,
+    next: null,
+    previous: null,
+    currentPageUrl: null
+  },
   isLoading: false,
   error: null,
+  isSearching: false,
+  searchResults: [],
 };
 
 const prospectsSlice = createSlice({
@@ -144,11 +218,40 @@ const prospectsSlice = createSlice({
       })
       .addCase(fetchProspects.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.prospects = action.payload || [];
+        // Store pagination data
+        state.pagination = {
+          count: action.payload.count || 0,
+          next: action.payload.next,
+          previous: action.payload.previous,
+          currentPageUrl: action.payload.currentPageUrl
+        };
+        // Store results
+        state.prospects = action.payload.results || [];
         state.error = null;
       })
       .addCase(fetchProspects.rejected, (state, action) => {
         state.isLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(searchProspects.pending, (state) => {
+        state.isSearching = true;
+        state.error = null;
+      })
+      .addCase(searchProspects.fulfilled, (state, action) => {
+        state.isSearching = false;
+        // Store pagination data
+        state.pagination = {
+          count: action.payload.count || 0,
+          next: action.payload.next,
+          previous: action.payload.previous,
+          currentPageUrl: action.payload.currentPageUrl
+        };
+        // Store search results
+        state.prospects = action.payload.results || [];
+        state.error = null;
+      })
+      .addCase(searchProspects.rejected, (state, action) => {
+        state.isSearching = false;
         state.error = action.payload;
       })
       .addCase(convertProspectToLead.pending, (state) => {
