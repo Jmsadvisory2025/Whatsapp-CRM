@@ -248,12 +248,11 @@ formData.append("purpose", finalPurpose);
 
     // ✅ After 2.5s → redirect to WhatsApp
     setTimeout(() => {
-      window.open(
-        "https://api.whatsapp.com/send?phone=919274916851&text=Hi",
-        "_blank"
-      );
-      setSuccess(false);
-    }, 2500);
+  window.location.href =
+    "https://api.whatsapp.com/send?phone=919274916851&text=Hi";
+
+  setSuccess(false);
+}, 2500);
 
   } catch (err) {
     console.log(err);
@@ -1483,8 +1482,6 @@ className="
 
   <a
   href="https://api.whatsapp.com/send?phone=919274916851&text=whatsapp"
-  target="_blank"
-  rel="noopener noreferrer"
   className="fixed bottom-6 right-6 z-50 group flex items-center gap-3"
   aria-label="Chat on WhatsApp"
 >
