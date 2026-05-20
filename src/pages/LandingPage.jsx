@@ -118,7 +118,7 @@ const LandingPage = () => {
 });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [purpose, setPurpose] = useState("");
+  const [purpose, setPurpose] = useState([]);
   const [otherMsg, setOtherMsg] = useState("");
 
   const purposes = [
@@ -230,8 +230,12 @@ const handleSubmit = async (e) => {
     formData.append("email", form.email);
     formData.append("phone", countryCode + form.phone);
     formData.append("location", form.location);
-    formData.append("purpose", purpose === "Other" ? otherMsg : purpose);
+const finalPurpose = purpose
+  .map((p) => (p === "Other" ? otherMsg : p))
+  .filter(Boolean)
+  .join(", ");
 
+formData.append("purpose", finalPurpose);
     await axios.post(GOOGLE_SCRIPT_URL, formData);
 
     // ✅ Show thank-you banner
@@ -520,17 +524,16 @@ useEffect(() => {
               <motion.div variants={item} className="mb-7">
                 <span className="tag-pill">
                   <ShieldCheck size={12} />
-                  Official Meta Partner · WhatsApp Business API
+                  Official Meta Partner 
                 </span>
               </motion.div>
 
               {/* Headline */}
               <motion.h1
                 variants={item}
-                className="text-5xl sm:text-6xl xl:text-[72px] font-black leading-[1.05] text-gray-900 tracking-tight"
+                className="text-4xl sm:text-6xl xl:text-[72px] font-black leading-[1.05] text-gray-900 tracking-tight"
               >
-                Grow Faster
-                <br />
+                Grow Faster{" "}
                 with{" "}
                 <span
                   className="relative"
@@ -679,7 +682,7 @@ useEffect(() => {
               <Sparkles size={12} />
               Platform Capabilities
             </span>
-           <h2 className="text-4xl md:text-5xl font-black text-gray-900 mt-4 leading-tight whitespace-nowrap">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 mt-4 leading-tight text-center break-words">
   Everything to Scale on{" "}
   <span className="text-[#25D366]">WhatsApp</span>
 </h2>
@@ -879,8 +882,12 @@ className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch"     >
               </span>
             </div>
 
-<h2 className="text-3xl md:text-4xl font-black text-white leading-tight whitespace-nowrap">
-  Build on Meta's Official <span className="border-b-4 border-[#25D366] pb-1">WhatsApp  Business</span> API
+<h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight text-center break-words">
+  Build on Meta's Official{" "}
+  <span className="border-b-4 border-[#25D366] pb-1 inline-block">
+    WhatsApp Business
+  </span>{" "}
+  API
 </h2>
             <p className="mt-6 text-lg text-blue-200 leading-relaxed max-w-3xl mx-auto">
               As an officially recognised Meta Tech Provider, JMS TechNova grants you
@@ -1049,10 +1056,9 @@ className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch"     >
           {/* top accent */}
           <div className="h-1.5 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700" />
 
-          <div className="p-8 md:p-14">
-
+<div className="p-5 sm:p-7 md:p-10 lg:p-14">
             {/* TWO COLUMN LAYOUT */}
-            <div className="grid md:grid-cols-2 gap-14 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-stretch">
 
               {/* ================= LEFT SIDE ================= */}
               <motion.div
@@ -1187,13 +1193,13 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
   viewport={{ once: true }}
   className="relative phone-dropdown-wrapper"
 >
-  <div
-    className={`flex items-center border bg-white rounded-xl overflow-visible transition-all duration-300 ${
-      showDropdown
-        ? "border-blue-400 shadow-[0_0_0_4px_rgba(59,130,246,0.12)]"
-        : "border-blue-100"
-    }`}
-  >
+<div
+  className={`flex items-center w-full border bg-white rounded-xl overflow-hidden transition-all duration-300 ${
+    showDropdown
+      ? "border-blue-400 shadow-[0_0_0_4px_rgba(59,130,246,0.12)]"
+      : "border-blue-100"
+  }`}
+>
     {/* Dropdown trigger */}
     <button
       type="button"
@@ -1201,9 +1207,18 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
         setShowDropdown(!showDropdown);
         setCountrySearch("");
       }}
-      className="flex items-center gap-1.5 px-3 py-3 border-r border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors shrink-0 rounded-l-xl"
-    >
-      <span className="text-base leading-none">{selectedCountry.flag}</span>
+className="
+  flex items-center gap-1
+  px-2 sm:px-3
+  py-3
+  border-r border-blue-100
+  bg-blue-50 hover:bg-blue-100
+  transition-colors
+  shrink-0
+  rounded-l-xl
+  min-w-fit
+"    >
+      {/* <span className="text-base leading-none">{selectedCountry.flag}</span> */}
       <span className="text-sm font-bold text-blue-700">{countryCode}</span>
       <svg
         className={`w-3 h-3 text-blue-500 transition-transform duration-200 ${showDropdown ? "rotate-180" : ""}`}
@@ -1214,20 +1229,34 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
     </button>
 
     {/* Phone number input */}
-    <input
-      type="tel"
-      name="phone"
-      value={form.phone}
-      onChange={handleChange}
-      placeholder="📱 Phone Number"
-      required
-      className="flex-1 px-4 py-3 text-gray-800 text-sm bg-transparent outline-none"
-    />
+<input
+  type="tel"
+  name="phone"
+  value={form.phone}
+  onChange={handleChange}
+  placeholder="📱 Phone Number"
+  required
+  className="
+    flex-1
+    w-full
+    min-w-0
+    px-2 sm:px-3
+    py-3
+    text-sm
+    sm:text-base
+    text-gray-800
+    bg-transparent
+    outline-none
+    overflow-hidden
+    whitespace-nowrap
+    text-ellipsis
+  "
+/>
   </div>
 
   {/* Dropdown menu */}
   {showDropdown && (
-    <div className="absolute z-50 top-full left-0 mt-2 w-72 bg-white border border-blue-100 rounded-2xl shadow-[0_16px_48px_rgba(37,99,235,0.15)] overflow-hidden">
+    <div className="absolute z-50 top-full left-0 mt-2 w-full sm:w-72 max-w-full bg-white border border-blue-100 rounded-2xl shadow-[0_16px_48px_rgba(37,99,235,0.15)] overflow-hidden">
       
       {/* Search */}
       <div className="p-3 border-b border-blue-50">
@@ -1303,15 +1332,22 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
       <button
         key={p.label}
         type="button"
-        onClick={() => {
-          setPurpose(p.label);
-          if (p.label !== "Other") setOtherMsg("");
-        }}
+       onClick={() => {
+  if (purpose.includes(p.label)) {
+    setPurpose(purpose.filter((item) => item !== p.label));
+
+    if (p.label === "Other") {
+      setOtherMsg("");
+    }
+  } else {
+    setPurpose([...purpose, p.label]);
+  }
+}}
         className={`
           flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold
           border transition-all duration-200
           ${
-            purpose === p.label
+            purpose.includes(p.label)
               ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105"
               : "bg-white text-gray-600 border-blue-100 hover:border-blue-400 hover:text-blue-700"
           }
@@ -1324,7 +1360,7 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
   </div>
 
   {/* Show text area only when "Other" is selected */}
-  {purpose === "Other" && (
+  {purpose.includes("Other") && (
     <motion.textarea
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
@@ -1345,9 +1381,24 @@ placeholder="✍️ What do you want to use WhatsApp for?"
 </div>
                   <button
   type="submit"
-  disabled={loading || !purpose || (purpose === "Other" && !otherMsg.trim())}
-  className="btn-primary justify-center py-4 w-full rounded-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
->
+  disabled={
+  loading ||
+  purpose.length === 0 ||
+  (purpose.includes("Other") && !otherMsg.trim())
+}
+className="
+  btn-primary
+  justify-center
+  w-full
+  py-3 sm:py-4
+  rounded-xl
+  flex items-center justify-center
+  gap-2
+  text-xs sm:text-sm md:text-base
+  whitespace-nowrap
+  overflow-hidden
+  disabled:opacity-50
+  disabled:cursor-not-allowed">
                     {loading ? (
                       <>
                         <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
