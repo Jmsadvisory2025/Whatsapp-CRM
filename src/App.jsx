@@ -7,7 +7,6 @@ import {
 } from "react-router-dom";
 import { store } from './store/store';
 import LoaderDemo from "./components/ui/ProfessionalMedicalLoader ";
-import { RequireSignIn } from "./components/guards/AuthGuards";
 
 // Simple Loading Component
 // const Loading = () => (
@@ -20,6 +19,8 @@ import { RequireSignIn } from "./components/guards/AuthGuards";
 // );
 
 // Lazy load components for better performance
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const SignUp = lazy(() => import("./pages/SignUp"));
 const SignIn = lazy(() => import("./pages/SignIn"));
 const Verification = lazy(() => import("./pages/Verification"));
 const CreateOrganization = lazy(() => import("./pages/CreateOrganization"));
@@ -35,12 +36,21 @@ const Whatsapp = lazy(() => import("./pages/Whatsapp"));
 const AddMember = lazy(() => import("./subpages/AddMember"));
 const ErrorPage = lazy(() => import("./pages/ErrorPage"));
 const VoiceBot = lazy(() => import("./pages/VoiceBot"));
-
+const HomeResolver = lazy(() =>import("./components/guards/HomeResolver"));
 // Define routes with appropriate access control  
 const router = createBrowserRouter([
   // Public routes (no auth required)
-  { 
-    path: "/signin", 
+ 
+{
+  path: "/signup",
+  element: (
+    <Suspense fallback={<LoaderDemo />}>
+      <SignUp />
+    </Suspense>
+  ),
+},
+{
+  path: "/signin",
     element: (
       <Suspense fallback={ <LoaderDemo   />}>
         <SignIn />
@@ -76,18 +86,12 @@ const router = createBrowserRouter([
   
   // Protected app routes (requires sign-in, verification, and organization)
   {
-    path: "/",
-    element: (
-      <Suspense fallback={<LoaderDemo   />}>
-        <RequireSignIn>
-          {/* <RequireVerification> */}
-            {/* <RequireOrganization> */}
-              <AppLayout />
-            {/* </RequireOrganization> */}
-          {/* </RequireVerification> */}
-        </RequireSignIn>
-      </Suspense>
-    ),
+  path: "/",
+  element: (
+    <Suspense fallback={<LoaderDemo />}>
+      <HomeResolver />
+    </Suspense>
+  ),
     children: [
       { 
         index: true, 

@@ -8,6 +8,7 @@ import patientsReducer from './patientsSlice';
 import teamReducer from './teamSlice';
 import voicebotReducer from './voicebotSlice';
 import whatsappReducer from './whatsappSlice';
+import metaConnectReducer from './metaConnectSlice'; 
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     team: teamReducer,
     voicebot: voicebotReducer,
     whatsapp: whatsappReducer,
+    metaConnect: metaConnectReducer, // ← NEW
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

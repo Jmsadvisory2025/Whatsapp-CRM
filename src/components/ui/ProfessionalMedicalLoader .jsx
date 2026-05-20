@@ -1,203 +1,431 @@
 import React from "react";
-import "./ProfessionalMedicalLoader.css"; // import the css file
 
-const ProfessionalMedicalLoader = ({ text = "Loading..." }) => {
+const styles = `
+  * {
+    box-sizing: border-box;
+  }
+
+  @keyframes float-gentle {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes pulse-dot {
+    0%, 80%, 100% {
+      opacity: 0.3;
+      transform: scale(0.8);
+    }
+    40% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+  }
+
+  @keyframes dash-move {
+    0% { stroke-dashoffset: 120; }
+    100% { stroke-dashoffset: 0; }
+  }
+
+  @keyframes pop-in {
+    0% {
+      transform: scale(0.7);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes tick-appear {
+    0%, 60% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes text-blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes orbit {
+    from {
+      transform: rotate(0deg) translateX(120px) rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg) translateX(120px) rotate(-360deg);
+    }
+  }
+
+  @keyframes center-pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(37,211,102,0.35);
+    }
+    50% {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 14px rgba(37,211,102,0);
+    }
+  }
+
+  @keyframes progress-move {
+    0% {
+      width: 0%;
+    }
+    50% {
+      width: 75%;
+    }
+    100% {
+      width: 100%;
+    }
+  }
+`;
+
+const WhatsAppCRMLoader = ({
+  text = "Loading ...",
+}) => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen  p-8">
-      <div className="relative">
-        {/* Main scene container */}
-        <div className="w-96 h-80 relative">
-          {/* ECG background */}
-          <div className="absolute inset-0 opacity-10">
-            <svg className="w-full h-full" viewBox="0 0 400 300">
-              <path
-                d="M0,150 L50,150 L60,100 L70,200 L80,50 L90,250 L100,150 L400,150"
-                stroke="#3b82f6"
-                strokeWidth="2"
-                fill="none"
-                className="animate-pulse"
+    <>
+      <style>{styles}</style>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          padding: "2rem",
+          background:
+            "linear-gradient(135deg, #EFF3FB 0%, #F7FAFF 50%, #EEF4FF 100%)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: 360,
+            height: 360,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {/* Background Dots */}
+          <svg
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              opacity: 0.08,
+            }}
+            viewBox="0 0 360 360"
+          >
+            {[40, 70, 100, 130, 160, 190, 220, 250, 280, 310].flatMap((cx) =>
+              [40, 70, 100, 130].map((cy) => (
+                <circle
+                  key={`${cx}-${cy}`}
+                  cx={cx}
+                  cy={cy}
+                  r="2.5"
+                  fill="#1A73E8"
+                />
+              ))
+            )}
+          </svg>
+
+          {/* Main CRM Loader */}
+          <div
+            style={{
+              position: "relative",
+              width: 150,
+              height: 150,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {/* Outer Ring */}
+            <div
+              style={{
+                position: "absolute",
+                width: 150,
+                height: 150,
+                borderRadius: "50%",
+                border: "2px dashed rgba(26,115,232,0.25)",
+                animation: "spin 12s linear infinite",
+              }}
+            />
+
+            {/* Center WhatsApp Circle */}
+            <div
+              style={{
+                width: 84,
+                height: 84,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg,#25D366,#18b857)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                animation: "center-pulse 2s ease-in-out infinite",
+                boxShadow: "0 10px 30px rgba(37,211,102,0.35)",
+                zIndex: 5,
+              }}
+            >
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="white">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.116.549 4.099 1.514 5.82L.054 23.166a.5.5 0 00.61.637l5.543-1.446A11.936 11.936 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.932 9.932 0 01-5.07-1.384l-.36-.214-3.734.974.999-3.639-.234-.374A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+              </svg>
+            </div>
+
+            {/* Orbit Icons */}
+            {[
+              {
+                icon: "📢",
+                bg: "#E8F0FE",
+                delay: "0s",
+              },
+              {
+                icon: "💬",
+                bg: "#E9FFF1",
+                delay: "-4s",
+              },
+              {
+                icon: "👥",
+                bg: "#EEF3FF",
+                delay: "-8s",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  width: 46,
+                  height: 46,
+                  borderRadius: "50%",
+                  background: item.bg,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 20,
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+                  animation: `orbit 12s linear infinite`,
+                  animationDelay: item.delay,
+                }}
+              >
+                {item.icon}
+              </div>
+            ))}
+          </div>
+
+          {/* Left Floating Menu */}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              animation: "float-gentle 5s ease-in-out infinite",
+            }}
+          >
+            {[].map((label) => (
+              <div
+                key={label}
+                style={{
+                  background: "#fff",
+                  padding: "10px 14px",
+                  borderRadius: 14,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#42526E",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+                }}
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+
+          {/* Typing Bubble */}
+          <div
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 80,
+              animation: "float-gentle 4s ease-in-out infinite",
+            }}
+          >
+            <div
+              style={{
+                background: "#DCE8FF",
+                borderRadius: "16px 16px 16px 4px",
+                padding: "12px 16px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: 5,
+                  alignItems: "center",
+                }}
+              >
+                {[0, 0.2, 0.4].map((delay, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: "#1A73E8",
+                      animation: `pulse-dot 1.4s ease-in-out infinite ${delay}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Success Bubble */}
+          <div
+            style={{
+              position: "absolute",
+              right: 20,
+              bottom: 60,
+              animation: "pop-in 1s ease-out infinite alternate",
+            }}
+          >
+            <div
+              style={{
+                background: "#fff",
+                padding: "12px 14px",
+                borderRadius: 16,
+                boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+                minWidth: 120,
+              }}
+            >
+              <div
+                style={{
+                  height: 6,
+                  background: "#E6EEFF",
+                  borderRadius: 999,
+                  marginBottom: 8,
+                }}
               />
-            </svg>
-          </div>
+              <div
+                style={{
+                  height: 6,
+                  width: "70%",
+                  background: "#E6EEFF",
+                  borderRadius: 999,
+                  marginBottom: 10,
+                }}
+              />
 
-          {/* Floating medical equipment */}
-          <div className="absolute top-8 left-8">
-            <div className="relative" style={{ animation: "float-gentle 4s ease-in-out infinite" }}>
-              {/* Stethoscope */}
-              <div className="w-8 h-8 relative">
-                <div className="w-6 h-6 border-4 border-gray-600 rounded-full bg-gray-100"></div>
-                <div className="absolute top-2 -right-1 w-4 h-1 bg-gray-600 rounded-full transform rotate-45"></div>
-                <div className="absolute top-4 right-1 w-4 h-1 bg-gray-600 rounded-full transform rotate-45"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute top-4 right-16">
-            <div
-              className="relative"
-              style={{ animation: "float-gentle 4s ease-in-out infinite 1s" }}
-            >
-              {/* Medical chart */}
-              <div className="w-6 h-8 bg-white border-2 border-gray-300 rounded shadow-sm">
-                <div className="h-1 bg-blue-400 mx-1 mt-1 rounded"></div>
-                <div className="h-1 bg-green-400 mx-1 mt-1 rounded"></div>
-                <div className="h-1 bg-red-400 mx-1 mt-1 rounded"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute top-12 right-8">
-            <div
-              className="relative"
-              style={{ animation: "float-gentle 4s ease-in-out infinite 0.5s" }}
-            >
-              {/* Pills */}
-              <div className="flex space-x-1">
-                <div className="w-3 h-3 bg-gradient-to-b from-red-400 to-red-600 rounded-full shadow-sm"></div>
-                <div className="w-3 h-3 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full shadow-sm"></div>
-                <div className="w-3 h-3 bg-gradient-to-b from-green-400 to-green-600 rounded-full shadow-sm"></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Patient */}
-          <div className="absolute bottom-8 left-12">
-            <div className="relative">
-              {/* Patient head */}
-              <div className="w-16 h-16 bg-gradient-to-b from-yellow-200 to-yellow-300 rounded-full border-2 border-yellow-400 shadow-lg relative mb-2">
-                {/* Hair */}
-                <div className="absolute -top-2 left-2 right-2 h-4 bg-gradient-to-b from-amber-900 to-amber-800 rounded-t-full"></div>
-                {/* Eyes */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
                 <div
-                  className="absolute top-4 left-3 w-2 h-2 bg-black rounded-full"
-                  style={{ animation: "blink 3s ease-in-out infinite" }}
-                ></div>
-                <div
-                  className="absolute top-4 right-3 w-2 h-2 bg-black rounded-full"
-                  style={{ animation: "blink 3s ease-in-out infinite" }}
-                ></div>
-                {/* Nervous smile */}
-                <div
-                  className="absolute bottom-3 left-1/2 transform -translate-x-1/2 w-6 h-2 border-b-2 border-gray-700 rounded-full"
-                  style={{ animation: "nervous-smile 2s ease-in-out infinite" }}
-                ></div>
-                {/* Sweat drop */}
-                <div
-                  className="absolute top-2 right-1 w-1 h-2 bg-blue-300 rounded-full opacity-70"
-                  style={{ animation: "sweat-drop 2s ease-in-out infinite" }}
-                ></div>
-              </div>
-
-              {/* Patient body */}
-              <div className="w-20 h-24 bg-gradient-to-b from-sky-200 to-sky-400 rounded-t-2xl border-2 border-sky-500 shadow-lg relative">
-                <div className="absolute top-2 left-2 right-2 h-1 bg-sky-600 opacity-30 rounded"></div>
-                <div className="absolute top-4 left-2 right-2 h-1 bg-sky-600 opacity-30 rounded"></div>
-
-                {/* Arm */}
-                <div
-                  className="absolute -right-10 top-6 w-16 h-4 bg-gradient-to-r from-yellow-200 to-yellow-300 border border-yellow-400 rounded-full origin-left shadow-md"
-                  style={{ animation: "patient-arm-shake 1.5s ease-in-out infinite" }}
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    background: "#1A73E8",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    animation: "tick-appear 1.5s ease-out infinite",
+                  }}
                 >
-                  <div className="absolute -right-3 -top-1 w-6 h-6 bg-gradient-to-b from-yellow-200 to-yellow-300 border border-yellow-400 rounded-full shadow-sm"></div>
-                  <div className="absolute left-0 -top-1 w-4 h-6 bg-gradient-to-b from-sky-200 to-sky-400 border border-sky-500 rounded-l-full"></div>
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 10 10"
+                    fill="none"
+                  >
+                    <path
+                      d="M2 5l2.5 2.5L8 3"
+                      stroke="white"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </div>
-              </div>
-
-              {/* Legs */}
-              <div className="flex space-x-1 mt-1">
-                <div className="w-8 h-16 bg-gradient-to-b from-blue-600 to-blue-800 rounded-b-2xl border border-blue-700 shadow-md"></div>
-                <div className="w-8 h-16 bg-gradient-to-b from-blue-600 to-blue-800 rounded-b-2xl border border-blue-700 shadow-md"></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Doctor */}
-          <div className="absolute bottom-8 right-12">
-            <div className="relative">
-              {/* Doctor head */}
-              <div className="w-16 h-16 bg-gradient-to-b from-pink-200 to-pink-300 rounded-full border-2 border-pink-400 shadow-lg relative mb-2">
-                <div className="absolute -top-2 left-2 right-2 h-4 bg-gradient-to-b from-gray-700 to-gray-800 rounded-t-full"></div>
-                <div className="absolute top-3 left-1 right-1 h-4 border-2 border-gray-800 rounded bg-white bg-opacity-20"></div>
-                <div className="absolute top-4 left-2 w-1.5 h-1.5 bg-black rounded-full"></div>
-                <div className="absolute top-4 right-2 w-1.5 h-1.5 bg-black rounded-full"></div>
-                <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 w-6 h-2 border-t-2 border-gray-700 rounded-full"></div>
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-12 h-4 bg-white border border-gray-300 rounded-t-2xl shadow-sm">
-                  <div className="absolute top-1 left-1/2 transform -translate-x-1/2 text-red-500 text-xs font-bold">
-                    ✚
-                  </div>
-                </div>
-              </div>
-
-              {/* Coat */}
-              <div className="w-20 h-24 bg-gradient-to-b from-white to-gray-50 rounded-t-2xl border-2 border-gray-200 shadow-lg relative">
-                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-12 h-2 border-4 border-gray-600 rounded-full bg-gray-100"></div>
-                <div className="absolute top-3 left-2 w-3 h-3 bg-gray-700 rounded-full shadow-sm"></div>
-                <div className="absolute top-3 right-2 w-3 h-3 bg-gray-700 rounded-full shadow-sm"></div>
-
-                <div className="absolute top-6 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-400 rounded-full"></div>
-                <div className="absolute top-10 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-400 rounded-full"></div>
-                <div className="absolute top-14 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-400 rounded-full"></div>
-
-                <div className="absolute top-6 right-2 w-6 h-4 bg-blue-100 border border-blue-300 rounded text-xs flex items-center justify-center">
-                  <span className="text-blue-800 font-bold text-xs">Dr</span>
-                </div>
-
-                {/* Arm with syringe */}
-                <div
-                  className="absolute -left-12 top-8 w-16 h-4 bg-gradient-to-r from-pink-200 to-pink-300 border border-pink-400 rounded-full origin-right shadow-md"
-                  style={{ animation: "doctor-inject-smooth 2.5s ease-in-out infinite" }}
-                >
-                  <div className="absolute -left-10 top-1/2 transform -translate-y-1/2">
-                    <div className="relative w-8 h-3 bg-gradient-to-r from-gray-200 to-gray-300 border border-gray-400 rounded-l-lg shadow-sm">
-                      <div className="absolute top-0 left-1 w-px h-full bg-gray-500 opacity-50"></div>
-                      <div className="absolute top-0 left-2 w-px h-full bg-gray-500 opacity-50"></div>
-                      <div className="absolute top-0 left-3 w-px h-full bg-gray-500 opacity-50"></div>
-                      <div
-                        className="absolute top-1 left-1 right-2 bottom-1 bg-gradient-to-r from-blue-400 to-green-400 rounded opacity-70"
-                        style={{ animation: "medicine-flow 2.5s ease-in-out infinite" }}
-                      ></div>
-                    </div>
-
-                    <div
-                      className="absolute -left-4 top-1/2 transform -translate-y-1/2 w-4 h-0.5 bg-gradient-to-r from-gray-500 to-gray-700 shadow-sm"
-                      style={{ animation: "needle-shine 1s ease-in-out infinite" }}
-                    >
-                      <div className="absolute top-0 left-2 w-px h-full bg-white opacity-60"></div>
-                    </div>
-
-                    <div
-                      className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-gradient-to-b from-red-400 to-red-600 rounded-full shadow-sm"
-                      style={{ animation: "plunger-action 2.5s ease-in-out infinite" }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Legs */}
-              <div className="flex space-x-1 mt-1">
-                <div className="w-8 h-16 bg-gradient-to-b from-gray-700 to-gray-900 rounded-b-2xl border border-gray-600 shadow-md"></div>
-                <div className="w-8 h-16 bg-gradient-to-b from-gray-700 to-gray-900 rounded-b-2xl border border-gray-600 shadow-md"></div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Loading text */}
-      <div className="mt-4 text-sm text-gray-500 font-medium">
-        {text || "Please wait while we prepare everything for you"}
+        {/* Loading Text + Progress */}
+        <div
+          style={{
+            width: 280,
+            marginTop: 10,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              marginBottom: 16,
+              fontSize: 15,
+              color: "#42526E",
+              fontWeight: 600,
+              animation: "text-blink 2s ease-in-out infinite",
+            }}
+          >
+            {text}
+          </div>
+
+          {/* Progress Bar */}
+          <div
+            style={{
+              width: "100%",
+              height: 8,
+              borderRadius: 999,
+              background: "#DCE7FA",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                borderRadius: 999,
+                background:
+                  "linear-gradient(90deg,#1A73E8,#25D366)",
+                animation: "progress-move 2.5s ease-in-out infinite",
+              }}
+            />
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
-// Demo wrapper
-const LoaderDemo = () => {
-  return (
-    <div>
-      <ProfessionalMedicalLoader text="Loading your medical dashboard..." />
-    </div>
-  );
-};
-
-export default LoaderDemo;
+export default WhatsAppCRMLoader;
