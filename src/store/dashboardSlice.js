@@ -51,6 +51,9 @@ const dashboardSlice = createSlice({
       });
   },
 });
+export const {
+  clearDashboard,
+  clearDashboardError,
+} = dashboardSlice.actions;
 
-export const { clearDashboard } = dashboardSlice.actions;
 export default dashboardSlice.reducer;
