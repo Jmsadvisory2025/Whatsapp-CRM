@@ -109,51 +109,147 @@ const LandingPage = () => {
   const demoRef = useRef(null);
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwPAPOn1zkdnOEnErujK6nq5lcXgCCq3ayC_OAr6eVqDmnmkTDCAKXeTHC4oOBFq9wS7A/exec"
   const [form, setForm] = useState({
-    name: "",
-    company: "",
-    phone: "",
-    email: "",
-    message: "",
-  });
+  name: "",
+  company: "",
+  phone: "",
+  email: "",
+  location: "",
+  message: "",
+});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [purpose, setPurpose] = useState("");
+  const [otherMsg, setOtherMsg] = useState("");
+
+  const purposes = [
+    { label: "Sales", emoji: "💰" },
+    { label: "Lead Generation", emoji: "🎯" },
+    { label: "Marketing", emoji: "📣" },
+    { label: "Customer Support", emoji: "🎧" },
+    { label: "Other", emoji: "✍️" },
+  ];
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
+const [countryCode, setCountryCode] = useState("+91");
+const [countrySearch, setCountrySearch] = useState("");
+const [showDropdown, setShowDropdown] = useState(false);
 
-  const handleSubmit = async (e) => {
+const countries = [
+  { code: "+91",  flag: "🇮🇳", name: "India" },
+  { code: "+1",   flag: "🇺🇸", name: "USA" },
+  { code: "+1",   flag: "🇨🇦", name: "Canada" },
+  { code: "+44",  flag: "🇬🇧", name: "UK" },
+  { code: "+61",  flag: "🇦🇺", name: "Australia" },
+  { code: "+971", flag: "🇦🇪", name: "UAE" },
+  { code: "+966", flag: "🇸🇦", name: "Saudi Arabia" },
+  { code: "+974", flag: "🇶🇦", name: "Qatar" },
+  { code: "+968", flag: "🇴🇲", name: "Oman" },
+  { code: "+973", flag: "🇧🇭", name: "Bahrain" },
+  { code: "+965", flag: "🇰🇼", name: "Kuwait" },
+  { code: "+60",  flag: "🇲🇾", name: "Malaysia" },
+  { code: "+65",  flag: "🇸🇬", name: "Singapore" },
+  { code: "+64",  flag: "🇳🇿", name: "New Zealand" },
+  { code: "+49",  flag: "🇩🇪", name: "Germany" },
+  { code: "+33",  flag: "🇫🇷", name: "France" },
+  { code: "+39",  flag: "🇮🇹", name: "Italy" },
+  { code: "+34",  flag: "🇪🇸", name: "Spain" },
+  { code: "+31",  flag: "🇳🇱", name: "Netherlands" },
+  { code: "+7",   flag: "🇷🇺", name: "Russia" },
+  { code: "+86",  flag: "🇨🇳", name: "China" },
+  { code: "+81",  flag: "🇯🇵", name: "Japan" },
+  { code: "+82",  flag: "🇰🇷", name: "South Korea" },
+  { code: "+92",  flag: "🇵🇰", name: "Pakistan" },
+  { code: "+880", flag: "🇧🇩", name: "Bangladesh" },
+  { code: "+94",  flag: "🇱🇰", name: "Sri Lanka" },
+  { code: "+977", flag: "🇳🇵", name: "Nepal" },
+  { code: "+55",  flag: "🇧🇷", name: "Brazil" },
+  { code: "+52",  flag: "🇲🇽", name: "Mexico" },
+  { code: "+27",  flag: "🇿🇦", name: "South Africa" },
+  { code: "+234", flag: "🇳🇬", name: "Nigeria" },
+  { code: "+20",  flag: "🇪🇬", name: "Egypt" },
+  { code: "+254", flag: "🇰🇪", name: "Kenya" },
+];
+
+const selectedCountry = countries.find((c) => c.code === countryCode) || countries[0];
+
+const filteredCountries = countries.filter(
+  (c) =>
+    c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+    c.code.includes(countrySearch)
+);
+//   const handleSubmit = async (e) => {
+//   e.preventDefault();
+
+//   try {
+//     setLoading(true);
+
+//     // ✅ FormData create
+//     const formData = new FormData();
+
+//     formData.append("name", form.name);
+//     formData.append("company", form.company);
+//     formData.append("email", form.email);
+//     formData.append("phone", form.phone);
+//     formData.append("message", form.message);
+
+//     // ✅ Send request
+//     await axios.post(
+//       GOOGLE_SCRIPT_URL,
+//       formData
+//     );
+
+//     // ✅ Success
+//     setSuccess(true);
+
+//     setForm({
+//       name: "",
+//       company: "",
+//       phone: "",
+//       email: "",
+//       message: "",
+//     });
+//     setTimeout(() => {
+//       setSuccess(false);
+//     }, 10000);
+
+//   } catch (err) {
+//     console.log(err);
+//     alert("Something went wrong");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+const handleSubmit = async (e) => {
   e.preventDefault();
-
   try {
     setLoading(true);
-
-    // ✅ FormData create
     const formData = new FormData();
-
     formData.append("name", form.name);
     formData.append("company", form.company);
     formData.append("email", form.email);
-    formData.append("phone", form.phone);
-    formData.append("message", form.message);
+    formData.append("phone", countryCode + form.phone);
+    formData.append("location", form.location);
+    formData.append("purpose", purpose === "Other" ? otherMsg : purpose);
 
-    // ✅ Send request
-    await axios.post(
-      GOOGLE_SCRIPT_URL,
-      formData
-    );
+    await axios.post(GOOGLE_SCRIPT_URL, formData);
 
-    // ✅ Success
+    // ✅ Show thank-you banner
     setSuccess(true);
 
-    setForm({
-      name: "",
-      company: "",
-      phone: "",
-      email: "",
-      message: "",
-    });
+    // Reset form
+    setForm({ name: "", company: "", phone: "", email: "", location: "", message: "" });
+    setPurpose("");
+    setOtherMsg("");
+
+    // ✅ After 2.5s → redirect to WhatsApp
     setTimeout(() => {
+      window.open(
+        "https://api.whatsapp.com/send?phone=919274916851&text=Hi",
+        "_blank"
+      );
       setSuccess(false);
-    }, 10000);
+    }, 2500);
 
   } catch (err) {
     console.log(err);
@@ -162,6 +258,15 @@ const LandingPage = () => {
     setLoading(false);
   }
 };
+useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (!e.target.closest(".phone-dropdown-wrapper")) {
+      setShowDropdown(false);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
   const scrollToDemo = () =>
     demoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -1040,9 +1145,9 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
     </p>
 
     <div className="mt-8 flex items-center gap-2 text-sm text-green-700 font-semibold">
-      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-      Redirecting back to form...
-    </div>
+  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+  Redirecting you to WhatsApp...
+</div>
   </motion.div>
 ) : (
   <form
@@ -1050,38 +1155,128 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
     className="w-full bg-[#F8FBFF] border border-blue-100 rounded-3xl p-7 md:p-9 flex flex-col gap-5 shadow-sm"
   >
 
-                  {[
-                    { name: "name", placeholder: "👤 Full Name", type: "text" },
-                    { name: "company", placeholder: "🏢 Company Name", type: "text" },
-                    { name: "email", placeholder: "📧 Work Email", type: "email" },
-                    { name: "phone", placeholder: "📱 Phone Number", type: "text" },
-                  ].map((field, i) => (
-                    <motion.input
-                      key={field.name}
-                      type={field.type}
-                      name={field.name}
-                      value={form[field.name]}
-                      onChange={handleChange}
-                      placeholder={field.placeholder}
-                      required
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: i * 0.08 }}
-                      viewport={{ once: true }}
-                      className="
-                        w-full
-                        border border-blue-100
-                        bg-white
-                        rounded-xl px-4 py-3
-                        text-gray-800 text-sm
-                        transition-all duration-300
-                        focus:scale-[1.02]
-                        focus:shadow-[0_0_0_4px_rgba(59,130,246,0.12)]
-                      "
-                    />
-                  ))}
 
-                  <textarea
+ {[
+  { name: "name", placeholder: "👤  Name", type: "text" },
+  { name: "company", placeholder: "🏢 Company", type: "text" },
+  { name: "email", placeholder: "📧  Email", type: "email" },
+  { name: "location", placeholder: "📍 Location", type: "text" },
+].map((field, i) => (
+  <motion.input
+    key={field.name}
+    type={field.type}
+    name={field.name}
+    value={form[field.name]}
+    onChange={handleChange}
+    placeholder={field.placeholder}
+    required
+    initial={{ opacity: 0, y: 10 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, delay: i * 0.08 }}
+    viewport={{ once: true }}
+    className="w-full border border-blue-100 bg-white rounded-xl px-4 py-3 text-gray-800 text-sm transition-all duration-300 focus:scale-[1.02] focus:shadow-[0_0_0_4px_rgba(59,130,246,0.12)]"
+  />
+))}
+
+{/* Phone Number with +91 prefix */}
+{/* Phone with Country Code Dropdown */}
+<motion.div
+  initial={{ opacity: 0, y: 10 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.4, delay: 0.24 }}
+  viewport={{ once: true }}
+  className="relative phone-dropdown-wrapper"
+>
+  <div
+    className={`flex items-center border bg-white rounded-xl overflow-visible transition-all duration-300 ${
+      showDropdown
+        ? "border-blue-400 shadow-[0_0_0_4px_rgba(59,130,246,0.12)]"
+        : "border-blue-100"
+    }`}
+  >
+    {/* Dropdown trigger */}
+    <button
+      type="button"
+      onClick={() => {
+        setShowDropdown(!showDropdown);
+        setCountrySearch("");
+      }}
+      className="flex items-center gap-1.5 px-3 py-3 border-r border-blue-100 bg-blue-50 hover:bg-blue-100 transition-colors shrink-0 rounded-l-xl"
+    >
+      <span className="text-base leading-none">{selectedCountry.flag}</span>
+      <span className="text-sm font-bold text-blue-700">{countryCode}</span>
+      <svg
+        className={`w-3 h-3 text-blue-500 transition-transform duration-200 ${showDropdown ? "rotate-180" : ""}`}
+        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+
+    {/* Phone number input */}
+    <input
+      type="tel"
+      name="phone"
+      value={form.phone}
+      onChange={handleChange}
+      placeholder="📱 Phone Number"
+      required
+      className="flex-1 px-4 py-3 text-gray-800 text-sm bg-transparent outline-none"
+    />
+  </div>
+
+  {/* Dropdown menu */}
+  {showDropdown && (
+    <div className="absolute z-50 top-full left-0 mt-2 w-72 bg-white border border-blue-100 rounded-2xl shadow-[0_16px_48px_rgba(37,99,235,0.15)] overflow-hidden">
+      
+      {/* Search */}
+      <div className="p-3 border-b border-blue-50">
+        <input
+          type="text"
+          value={countrySearch}
+          onChange={(e) => setCountrySearch(e.target.value)}
+          placeholder="🔍 Search country or code..."
+          autoFocus
+          className="w-full border border-blue-100 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:border-blue-400"
+        />
+      </div>
+
+      {/* List */}
+      <ul className="max-h-52 overflow-y-auto divide-y divide-blue-50">
+        {filteredCountries.length > 0 ? (
+          filteredCountries.map((c, i) => (
+            <li key={i}>
+              <button
+                type="button"
+                onClick={() => {
+                  setCountryCode(c.code);
+                  setShowDropdown(false);
+                  setCountrySearch("");
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors text-left ${
+                  countryCode === c.code && selectedCountry.name === c.name
+                    ? "bg-blue-50 font-semibold text-blue-700"
+                    : "text-gray-700"
+                }`}
+              >
+                <span className="text-base">{c.flag}</span>
+                <span className="flex-1">{c.name}</span>
+                <span className="text-blue-500 font-bold text-xs">{c.code}</span>
+              </button>
+            </li>
+          ))
+        ) : (
+          <li className="px-4 py-4 text-sm text-gray-400 text-center">
+            No country found
+          </li>
+        )}
+      </ul>
+    </div>
+  )}
+</motion.div>
+
+
+                  {/* <textarea
                     rows="4"
                     name="message"
                     value={form.message}
@@ -1097,13 +1292,62 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
                       focus:scale-[1.02]
                       focus:shadow-[0_0_0_4px_rgba(59,130,246,0.12)]
                     "
-                  />
+                  /> */}
+                  {/* Purpose selector */}
+<div className="flex flex-col gap-2">
+  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1">
+    Purpose
+  </p>
+  <div className="flex flex-wrap gap-2">
+    {purposes.map((p) => (
+      <button
+        key={p.label}
+        type="button"
+        onClick={() => {
+          setPurpose(p.label);
+          if (p.label !== "Other") setOtherMsg("");
+        }}
+        className={`
+          flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold
+          border transition-all duration-200
+          ${
+            purpose === p.label
+              ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105"
+              : "bg-white text-gray-600 border-blue-100 hover:border-blue-400 hover:text-blue-700"
+          }
+        `}
+      >
+        <span>{p.emoji}</span>
+        {p.label}
+      </button>
+    ))}
+  </div>
 
+  {/* Show text area only when "Other" is selected */}
+  {purpose === "Other" && (
+    <motion.textarea
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      rows={3}
+      value={otherMsg}
+      onChange={(e) => setOtherMsg(e.target.value)}
+placeholder="✍️ What do you want to use WhatsApp for?"
+      required
+      className="
+        w-full border border-blue-100 bg-white
+        rounded-xl px-4 py-3 text-gray-800 text-sm
+        resize-none mt-1
+        focus:scale-[1.02]
+        focus:shadow-[0_0_0_4px_rgba(59,130,246,0.12)]
+      "
+    />
+  )}
+</div>
                   <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn-primary justify-center py-4 w-full rounded-xl flex items-center gap-2"
-                  >
+  type="submit"
+  disabled={loading || !purpose || (purpose === "Other" && !otherMsg.trim())}
+  className="btn-primary justify-center py-4 w-full rounded-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+>
                     {loading ? (
                       <>
                         <span className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -1182,6 +1426,50 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
           </div>
         </div>
       </footer>
+      {/* ═══════════════════════════════════════════════════
+    FLOATING WHATSAPP BUTTON
+═══════════════════════════════════════════════════ */}
+
+  <a
+  href="https://api.whatsapp.com/send?phone=919274916851&text=whatsapp"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="fixed bottom-6 right-6 z-50 group flex items-center gap-3"
+  aria-label="Chat on WhatsApp"
+>
+  {/* Tooltip */}
+  <span className="
+    hidden group-hover:flex
+    bg-gray-900 text-white
+    text-xs font-semibold
+    px-3 py-2 rounded-xl
+    shadow-lg whitespace-nowrap
+    transition-all duration-200
+  ">
+    Chat with us on WhatsApp
+  </span>
+
+  {/* Button */}
+  <div className="relative w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(37,211,102,0.45)] hover:shadow-[0_12px_40px_rgba(37,211,102,0.6)] transition-all duration-300 hover:scale-110"
+    style={{ background: "linear-gradient(135deg, #25D366, #128C7E)" }}
+  >
+    {/* Ping ring */}
+    <span className="absolute inset-0 rounded-full animate-ping opacity-25"
+      style={{ background: "#25D366" }}
+    />
+
+    {/* WhatsApp SVG icon */}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 32 32"
+      className="w-7 h-7"
+      fill="white"
+    >
+      <path d="M16.003 2.667C8.639 2.667 2.667 8.638 2.667 16c0 2.364.638 4.572 1.745 6.481L2.667 29.333l7.09-1.718A13.276 13.276 0 0 0 16.003 29.333C23.365 29.333 29.333 23.362 29.333 16S23.365 2.667 16.003 2.667zm0 2.4c6.033 0 10.93 4.897 10.93 10.933s-4.897 10.933-10.93 10.933a10.88 10.88 0 0 1-5.637-1.565l-.402-.243-4.207 1.02 1.062-4.083-.268-.418A10.878 10.878 0 0 1 5.07 16c0-6.036 4.897-10.933 10.933-10.933zm-3.29 5.333c-.213 0-.558.08-.85.4-.293.32-1.117 1.09-1.117 2.656s1.143 3.082 1.302 3.295c.16.213 2.24 3.413 5.44 4.651 2.666 1.05 3.2.84 3.776.787.577-.053 1.867-.76 2.134-1.494.266-.733.266-1.36.186-1.493-.08-.134-.293-.214-.613-.374s-1.893-.933-2.187-1.04c-.293-.106-.506-.16-.72.16-.213.32-.826 1.04-.986 1.253-.16.213-.32.24-.64.08s-1.244-.458-2.37-1.463c-.876-.781-1.468-1.746-1.64-2.04-.174-.293-.02-.452.13-.597.134-.13.294-.347.44-.52.147-.173.196-.293.294-.493.097-.2.048-.373-.027-.52-.08-.146-.712-1.72-.976-2.36-.254-.617-.517-.528-.71-.534-.18-.008-.387-.01-.6-.01z"/>
+    </svg>
+  </div>
+</a>
+
     </div>
   );
 };

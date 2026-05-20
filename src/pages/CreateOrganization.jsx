@@ -203,36 +203,41 @@ export default function CreateOrganization() {
   }, []);
 
   const openPopup = () => {
-    dispatch(setSignupStep("popup_open"));
+  dispatch(setSignupStep("popup_open"));
 
-    window.FB.login(
-      async (response) => {
-        if (response.authResponse) {
-          const { code } = response.authResponse;
-          const { waba_id, phone_number_id, business_id } = wabaRef.current;
-
-          try {
-            await dispatch(
-              startEmbeddedSignup({ code, waba_id, phone_number_id, business_id })
-            ).unwrap();
-            setUiStep(3);
-          } catch { /* metaError shown below */ }
-        } else {
-          dispatch(setSignupStep("idle"));
-        }
-      },
-      {
-        config_id: META_CONFIG_ID,
-        response_type: "code",
-        override_default_response_type: true,
-        extras: {
-          setup: {},
-          featureType: "",
-          sessionInfoVersion: "3",
-        },
+  window.FB.login(
+    // ✅ NOT async — FB SDK requires a plain function
+    (response) => {
+      if (!response.authResponse) {
+        dispatch(setSignupStep("idle"));
+        return;
       }
-    );
-  };
+
+      const { code } = response.authResponse;
+      const { waba_id, phone_number_id, business_id } = wabaRef.current;
+
+      // ✅ async work outside the callback — dispatch returns a Promise
+      dispatch(startEmbeddedSignup({ code, waba_id, phone_number_id, business_id }))
+        .unwrap()
+        .then(() => {
+          setUiStep(3);
+        })
+        .catch(() => {
+          // metaError Redux state માં set થઈ જશે — UI automatically show કરશે
+        });
+    },
+    {
+      config_id: META_CONFIG_ID,
+      response_type: "code",
+      override_default_response_type: true,
+      extras: {
+        setup: {},
+        featureType: "",
+        sessionInfoVersion: "3",
+      },
+    }
+  );
+};
 
   /* ── render ── */
   return (
