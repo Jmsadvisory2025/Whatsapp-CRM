@@ -1090,7 +1090,7 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
                 <div className="mt-8 space-y-5">
 
                   {[
-                    { icon: "⚡", text: "Automate 90% customer replies with AI Agents flows." },
+                    { icon: "⚡", text: "Automate 90% Customer Replies with AI Agents Flows." },
                     { icon: "📊", text: "Track leads, campaigns & conversions in one CRM." },
                     { icon: "📣", text: "Run bulk WhatsApp campaigns with 98% delivery rate." },
                     { icon: "🤖", text: "AI handles support, booking & follow-ups 24/7." },
