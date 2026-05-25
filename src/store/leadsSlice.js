@@ -14,9 +14,8 @@ const fetchConfirmedLeads = createAsyncThunk(
     }
 
     try {
-      // Use provided page URL or default to first page
       const url = pageUrl || `${API_BASE_URL}/api/v1/leads/confirmed/`;
-      
+
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -25,10 +24,10 @@ const fetchConfirmedLeads = createAsyncThunk(
         },
       });
       const data = await response.json();
-      // console.log("leads data", data);
+
       if (!response.ok) {
         throw new Error(
-          data.message || "Sorry , you are not the part of the organization"
+          data.message || "Sorry, you are not part of the organization"
         );
       }
 
@@ -37,7 +36,7 @@ const fetchConfirmedLeads = createAsyncThunk(
         count: data.count || 0,
         next: data.next,
         previous: data.previous,
-        currentPageUrl: url
+        currentPageUrl: url,
       };
     } catch (error) {
       return rejectWithValue(error.message);
@@ -45,9 +44,10 @@ const fetchConfirmedLeads = createAsyncThunk(
   }
 );
 
-// Async thunk to convert lead to patient
-const convertToPatient = createAsyncThunk(
-  "leads/convertToPatient",
+// Async thunk to mark lead as "Closed / Won"
+// Replaces the old healthcare-specific "convert to patient" action
+const closeLead = createAsyncThunk(
+  "leads/closeLead",
   async ({ conversation_id }, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem("accessToken");
@@ -58,20 +58,20 @@ const convertToPatient = createAsyncThunk(
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/leads/convert-to-patient/`,
+        `${API_BASE_URL}/api/v1/leads/${conversation_id}/action/`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ conversation_id }),
+          body: JSON.stringify({ action: "closed_won" }),
         }
       );
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to convert lead to patient");
+        throw new Error(data.message || "Failed to close lead");
       }
 
       return data;
@@ -90,7 +90,7 @@ const updateLeadAction = createAsyncThunk(
     const {
       conversation_id,
       phone,
-      disease,
+      interest,   // was: disease
       visit_date,
       visit_time,
       relation,
@@ -113,7 +113,9 @@ const updateLeadAction = createAsyncThunk(
           },
           body: JSON.stringify({
             phone,
-            disease,
+            interest,
+            // Send legacy alias so backend (leads app) still works
+            disease: interest,
             visit_date,
             visit_time,
             relation,
@@ -137,7 +139,7 @@ const updateLeadAction = createAsyncThunk(
   }
 );
 
-// New async thunk for dropdown actions with reminder
+// Async thunk for dropdown actions with reminder
 const updateLeadActionWithReminder = createAsyncThunk(
   "leads/updateActionWithReminder",
   async (payload, { getState, rejectWithValue }) => {
@@ -183,7 +185,7 @@ const initialState = {
     count: 0,
     next: null,
     previous: null,
-    currentPageUrl: null
+    currentPageUrl: null,
   },
   isLoading: false,
   error: null,
@@ -205,14 +207,12 @@ const leadsSlice = createSlice({
       })
       .addCase(fetchConfirmedLeads.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Store pagination data
         state.pagination = {
           count: action.payload.count || 0,
           next: action.payload.next,
           previous: action.payload.previous,
-          currentPageUrl: action.payload.currentPageUrl
+          currentPageUrl: action.payload.currentPageUrl,
         };
-        // Store results
         state.leads = action.payload.results || [];
         state.error = null;
       })
@@ -220,18 +220,18 @@ const leadsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-      .addCase(convertToPatient.pending, (state) => {
+      .addCase(closeLead.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(convertToPatient.fulfilled, (state, action) => {
+      .addCase(closeLead.fulfilled, (state, action) => {
         state.isLoading = false;
         state.leads = state.leads.filter(
           (l) => l.conversation_id !== action.meta.arg.conversation_id
         );
         state.error = null;
       })
-      .addCase(convertToPatient.rejected, (state, action) => {
+      .addCase(closeLead.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
@@ -277,7 +277,7 @@ const leadsSlice = createSlice({
 export const { clearLeadsError } = leadsSlice.actions;
 export {
   fetchConfirmedLeads,
-  convertToPatient,
+  closeLead,
   updateLeadAction,
   updateLeadActionWithReminder,
 };

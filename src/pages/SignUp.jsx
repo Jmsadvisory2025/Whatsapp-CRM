@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import { Mail, ShieldCheck, UserPlus } from "lucide-react";
+import { Mail, ShieldCheck, UserPlus, Building2, Globe, User } from "lucide-react";
 import { motion } from "framer-motion";
 import axios from "axios";
 
@@ -10,9 +10,13 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const [email, setEmail]     = useState("");
+
+  const [fullName, setFullName] = useState("");
+  const [name,    setName]    = useState("");
+  const [email,   setEmail]   = useState("");
+  const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
+  const [error,   setError]   = useState("");
   const [success, setSuccess] = useState("");
 
   const validateEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
@@ -20,10 +24,18 @@ const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateEmail(email)) { setError("Please enter a valid email"); return; }
+    if (!fullName.trim()) { setError("Your name is required"); return; }
+    if (!name.trim()) { setError("Organisation name is required"); return; }
 
     try {
       setLoading(true);
-      const res = await axios.post(`${API_BASE_URL}api/signup/`, { email });
+      setError("");
+      const res = await axios.post(`${API_BASE_URL}api/signup/`, {
+        full_name: fullName.trim(),
+        email:     email.trim(),
+        name:      name.trim(),
+        website:   website.trim() || undefined,
+      });
       setSuccess(res.data.message || "Account created successfully");
       setTimeout(() => navigate("/signin"), 1500);
     } catch (err) {
@@ -32,6 +44,8 @@ const SignUp = () => {
       setLoading(false);
     }
   };
+
+  const isValid = validateEmail(email) && name.trim().length > 0 && fullName.trim().length > 0;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -47,10 +61,50 @@ const SignUp = () => {
               <UserPlus className="text-white" size={24} />
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Create Account</h1>
-            <p className="text-text-secondary mt-2">Start managing your WhatsApp CRM</p>
+            <p className="text-text-secondary mt-2">Set up your organisation and get started</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            {/* Your Name */}
+            <div>
+              <label className="text-sm font-medium text-text-secondary mb-1 block">
+                Your Name
+              </label>
+              <div className="relative">
+                <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => { setFullName(e.target.value); setError(""); }}
+                  placeholder=" John Doe "
+                  required
+                  disabled={loading}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Organisation Name */}
+            <div>
+              <label className="text-sm font-medium text-text-secondary mb-1 block">
+                Organisation Name
+              </label>
+              <div className="relative">
+                <Building2 size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="text"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setError(""); }}
+                  placeholder="JMS TechNova"
+                  required
+                  disabled={loading}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
             <div>
               <label className="text-sm font-medium text-text-secondary mb-1 block">
                 Email Address
@@ -61,7 +115,7 @@ const SignUp = () => {
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(""); }}
-                  placeholder="Enter your email address"
+                  placeholder="admin@example.com"
                   required
                   disabled={loading}
                   className="pl-10"
@@ -69,6 +123,25 @@ const SignUp = () => {
               </div>
             </div>
 
+            {/* Website (optional) */}
+            <div>
+              <label className="text-sm font-medium text-text-secondary mb-1 block">
+                Website <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <div className="relative">
+                <Globe size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="url"
+                  value={website}
+                  onChange={(e) => { setWebsite(e.target.value); setError(""); }}
+                  placeholder="https://example.com"
+                  disabled={loading}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Error / Success */}
             {error && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -84,7 +157,7 @@ const SignUp = () => {
 
             <Button
               type="submit"
-              disabled={loading || !validateEmail(email)}
+              disabled={loading || !isValid}
               className="w-full !py-3 !text-base bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
             >
               {loading ? (
@@ -99,7 +172,7 @@ const SignUp = () => {
               <ShieldCheck size={20} />
               <div>
                 <h4 className="font-semibold">Secure Registration</h4>
-                <p>You'll set up your organization in the next step.</p>
+                <p>You'll connect WhatsApp after signing in.</p>
               </div>
             </div>
           </form>

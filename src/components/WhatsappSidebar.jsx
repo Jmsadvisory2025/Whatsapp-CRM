@@ -14,12 +14,11 @@ import {
   SlidersHorizontal,
   Search,
   X,
+  CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import shaheye from '../assets/images/whatsapp/shaheye.png';
-
-/* ─── Config ─────────────────────────────────────────────── */
+/* ─── Status config ──────────────────────────────────────────────────────── */
 
 const statusConfig = {
   prospect:  { label: "Prospect",  text: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200"   },
@@ -43,7 +42,7 @@ const PALETTES = [
 ];
 const getPalette = (id) => PALETTES[Number(id) % PALETTES.length];
 
-/* ─── Helpers ────────────────────────────────────────────── */
+/* ─── Helpers ────────────────────────────────────────────────────────────── */
 
 const stripPlus = (str) => String(str ?? "").replace(/^\+/, "");
 
@@ -83,26 +82,40 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 };
 
-/* ─── Component ──────────────────────────────────────────── */
+/* ─── Component ──────────────────────────────────────────────────────────── */
 
 const WhatsappSidebar = ({ onSelectCustomer }) => {
   const dispatch = useDispatch();
-  const { customers, selectedCustomer, isLoading, error, pagination } = useSelector(
-    (s) => s.whatsapp
-  );
+  const {
+    customers,
+    selectedCustomer,
+    isLoading,
+    error,
+    pagination,
+    wabaPhone,           // ← verified business number from Redux
+  } = useSelector((s) => s.whatsapp);
 
   const [showFilters, setShowFilters] = useState(false);
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText]   = useState("");
   const [filters, setFilters] = useState({
-    number: "",
-    from_date: "",
-    to_date: "",
-    status: "",
+    number: "", from_date: "", to_date: "", status: "",
   });
 
+  // ── Fetch on mount ─────────────────────────────────────────────────────────
   useEffect(() => {
     dispatch(fetchCustomers());
   }, [dispatch]);
+
+  // ── Auto-select first conversation when list loads ─────────────────────────
+  // This is the KEY FIX: jevi conversations load thay, pehli conversation
+  // automatically select thay — user ne click karvani jaroor nahi.
+  useEffect(() => {
+    if (!selectedCustomer && customers.length > 0) {
+      const first = customers[0];
+      dispatch(setSelectedCustomer(first));
+      dispatch(fetchConversationMessages(first.conversation_id));
+    }
+  }, [customers, selectedCustomer, dispatch]);
 
   const handleApplyFilters = () => {
     dispatch(fetchCustomers({ filters }));
@@ -118,131 +131,106 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
   const handleSelect = (customer) => {
     dispatch(setSelectedCustomer(customer));
     dispatch(fetchConversationMessages(customer.conversation_id));
-    onSelectCustomer?.(customer);
+    onSelectCustomer?.();
   };
 
-  const activeFilterList = [];
-  if (filters.number) activeFilterList.push({ key: "number", label: "Phone", value: filters.number });
-  if (filters.status) activeFilterList.push({ key: "status", label: "Status", value: getStatus(filters.status).label });
-  if (filters.from_date) activeFilterList.push({ key: "from_date", label: "From", value: filters.from_date });
-  if (filters.to_date) activeFilterList.push({ key: "to_date", label: "To", value: filters.to_date });
-
-  const removeFilter = (key) => {
-    const newFilters = { ...filters, [key]: "" };
-    setFilters(newFilters);
-    dispatch(fetchCustomers({ filters: newFilters }));
-  };
-
-  const filtered = customers.filter((c) => {
-    if (!searchText.trim()) return true;
-    const q = searchText.toLowerCase();
-    const name = (c.name ?? "").toLowerCase();
-    const phone = stripPlus(c.phone).toLowerCase();
-    return name.includes(q) || phone.includes(q);
-  });
-
-  const hasActiveFilters =
-    filters.number || filters.from_date || filters.to_date || filters.status;
+  // ── Client-side search ─────────────────────────────────────────────────────
+  const filtered = searchText.trim()
+    ? customers.filter((c) => {
+        const q = searchText.toLowerCase();
+        return (
+          (c.name  || "").toLowerCase().includes(q) ||
+          (c.phone || "").toLowerCase().includes(q)
+        );
+      })
+    : customers;
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "#fff" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "#fff" }}>
 
       {/* ── Header ── */}
       <div
-        className="px-4 flex items-center justify-between flex-shrink-0"
-        style={{ background: "#f0f2f5", height: "59px" }}
+        className="flex-shrink-0 px-4 pt-3 pb-2"
+        style={{ borderBottom: "1px solid #e9edef", background: "#f0f2f5" }}
       >
-        <div className="flex items-center gap-2.5">
-          <img src={shaheye} alt="" className="w-[50px] rounded-full" />
-          <div className="hidden sm:block">
-            <h2 className="text-[15px] font-semibold text-[#111b21] leading-tight">Chats</h2>
-            <p className="text-[11px] leading-tight text-[#667781]">Total Chats {(pagination.count || customers.length || 0).toLocaleString()} 
-            </p>
-          </div>
-        </div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col">
+            <span className="text-[15px] font-semibold" style={{ color: "#111b21" }}>
+              Chats
+            </span>
 
-        <div className="flex items-center gap-1">
-          {isLoading && (
-            <Loader2 size={16} className="text-[#54656f] animate-spin mr-2" />
-          )}
+            {/* ── Verified number badge ── */}
+            {wabaPhone && (
+              <span
+                className="flex items-center gap-1 text-[11px] font-medium mt-0.5"
+                style={{ color: "#008069" }}
+                title="WhatsApp Business verified number"
+              >
+                <CheckCircle2 size={11} />
+                +{stripPlus(wabaPhone)}
+              </span>
+            )}
+          </div>
+
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className="relative p-2 rounded-full transition-colors hover:bg-gray-200"
-            style={{ color: showFilters ? "#00a884" : "#54656f" }}
+            className={`p-2 rounded-full transition-colors ${
+              showFilters ? "bg-[#008069] text-white" : "hover:bg-gray-200 text-[#54656f]"
+            }`}
+            title="Filters"
           >
-            <SlidersHorizontal size={20} strokeWidth={2} />
-            {hasActiveFilters && (
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#00a884] border border-[#f0f2f5]" />
-            )}
+            <SlidersHorizontal size={18} />
           </button>
+        </div>
+
+        {/* ── Search bar ── */}
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+          style={{ background: "#fff", border: "1px solid #e9edef" }}
+        >
+          <Search size={14} style={{ color: "#667781" }} />
+          <input
+            type="text"
+            placeholder="Search by name or number"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="flex-1 text-sm bg-transparent focus:outline-none placeholder-[#667781]"
+            style={{ color: "#111b21" }}
+          />
+          {searchText && (
+            <button onClick={() => setSearchText("")} className="text-[#667781] hover:text-gray-700">
+              <X size={14} />
+            </button>
+          )}
         </div>
       </div>
 
-
-
-      {/* ── Active Filters ── */}
-      <AnimatePresence>
-        {hasActiveFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="px-3 py-2.5 flex flex-wrap gap-2 border-b border-[#e9edef] bg-white">
-              {activeFilterList.map((f) => (
-                <div
-                  key={f.key}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#f0f2f5] border border-[#e9edef]"
-                >
-                  <span className="text-[10px] font-bold text-[#667781] uppercase tracking-wider">{f.label}</span>
-                  <span className="text-[11px] font-medium text-[#111b21]">{f.value}</span>
-                  <button
-                    onClick={() => removeFilter(f.key)}
-                    className="p-0.5 hover:bg-gray-300 rounded-full text-[#667781] transition-colors"
-                  >
-                    <X size={10} strokeWidth={3} />
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={handleClearFilters}
-                className="text-[10px] font-bold text-[#008069] hover:bg-[#f0f2f5] px-2 py-1 rounded uppercase tracking-wider transition-colors"
-              >
-                Clear All
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Filter Panel ── */}
+      {/* ── Filters panel ── */}
       <AnimatePresence>
         {showFilters && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
             className="overflow-hidden flex-shrink-0"
-            style={{ borderBottom: "1px solid #e9edef", background: "#f0f2f5" }}
           >
-            <div className="p-4 space-y-3">
-              {/* Phone */}
+            <div
+              className="px-4 py-3 flex flex-col gap-2.5"
+              style={{ background: "#f7f8fa", borderBottom: "1px solid #e9edef" }}
+            >
+              {/* Number */}
               <div>
                 <label className="text-[10px] font-semibold mb-1 block" style={{ color: "#667781" }}>
                   PHONE NUMBER
                 </label>
                 <input
                   type="text"
+                  placeholder="e.g. 9876543210"
                   value={filters.number}
                   onChange={(e) => setFilters({ ...filters, number: e.target.value })}
-                  placeholder="e.g. 9664838362"
-                  className="w-full text-xs px-3 py-2 rounded-lg focus:outline-none"
-                  style={{
-                    background: "#fff",
-                    border: "1px solid #e9edef",
-                    color: "#111b21",
-                  }}
+                  className="w-full text-xs px-2.5 py-2 rounded-lg focus:outline-none"
+                  style={{ background: "#fff", border: "1px solid #e9edef", color: "#111b21" }}
                 />
               </div>
 
@@ -345,15 +333,20 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
             <p className="text-xs font-medium">
               {searchText ? "No results found" : "No conversations yet"}
             </p>
+            {!searchText && wabaPhone && (
+              <p className="text-[10px] text-center px-6" style={{ color: "#aaa" }}>
+                Waiting for messages on +{stripPlus(wabaPhone)}
+              </p>
+            )}
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
             {filtered.map((c, i) => {
-              const active = selectedCustomer?.customer_id === c.customer_id;
-              const st = getStatus(c.status);
-              const dname = getDisplayName(c.name, c.phone);
+              const active  = selectedCustomer?.customer_id === c.customer_id;
+              const st      = getStatus(c.status);
+              const dname   = getDisplayName(c.name, c.phone);
               const phoneOnly = dname.startsWith("+");
-              const pal = getPalette(c.customer_id);
+              const pal     = getPalette(c.customer_id);
 
               return (
                 <motion.button
@@ -363,9 +356,7 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
                   transition={{ delay: Math.min(i * 0.03, 0.2) }}
                   onClick={() => handleSelect(c)}
                   className="relative w-full text-left flex items-center gap-3 px-3 py-3 transition-colors duration-100"
-                  style={{
-                    background: active ? "#f0f2f5" : "transparent",
-                  }}
+                  style={{ background: active ? "#f0f2f5" : "transparent" }}
                   onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "#f5f6f6"; }}
                   onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                 >
@@ -393,7 +384,6 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
 
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        {/* Status badge */}
                         <span
                           className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${st.bg} ${st.text} ${st.border} flex-shrink-0`}
                         >
@@ -407,6 +397,11 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Active indicator */}
+                  {active && (
+                    <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full" style={{ background: "#008069" }} />
+                  )}
                 </motion.button>
               );
             })}

@@ -4,27 +4,34 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   TrendingUp,
-  Users,
   Bell,
-  MessageCircle,
   PanelLeftClose,
   PanelLeftOpen,
   Users2,
+  FileText,
+  Bot,
+  Megaphone,
+  LogOut,
 } from "lucide-react";
 import { RiUserSearchFill } from "react-icons/ri";
 import { FaWhatsapp } from "react-icons/fa";
-
+import { useNavigate } from "react-router-dom";
+// ── Nav items — Healthcare ("Patient") removed, "Knowledge Base" added ─────────
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: RiUserSearchFill, label: "Prospect", path: "/prospects" },
-  { icon: TrendingUp, label: "Leads", path: "/leads" },
-  { icon: Users, label: "Patient", path: "/patients" },
-  { icon: Bell, label: "Reminders", path: "/reminders" },
-  { icon: Users2, label: "Team", path: "/team" },
-  { icon: FaWhatsapp, label: "Whatsapp", path: "/whatsapp" },
+  { icon: LayoutDashboard,    label: "Dashboard",      path: "/" },
+  // { icon: RiUserSearchFill,   label: "Prospect",       path: "/prospects" },
+  { icon: TrendingUp,         label: "Leads & Prospects",          path: "/leads-prospects" },
+  // { icon: Bell,               label: "Reminders",      path: "/reminders" },
+  { icon: FaWhatsapp,         label: "Whatsapp",       path: "/whatsapp" },
+  { icon: FileText,           label: "Templates",      path: "/templates" },
+  { icon: Megaphone,          label: "Campaign",        path: "/campaign" },
+  { icon: Bot,                label: "Knowledge Base", path: "/knowledge-base" },
+  { icon: Users2,             label: "Profile",           path: "/team" },
+
 ];
 
 const Sidebar = ({ onToggle = () => {} }) => {
+  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem("sidebar-collapsed");
@@ -42,6 +49,17 @@ const Sidebar = ({ onToggle = () => {} }) => {
   }, [isCollapsed]);
 
   const handleToggle = () => setIsCollapsed((prev) => !prev);
+  const handleLogout = () => {
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+
+  sessionStorage.clear();
+
+  navigate("/signin", {
+    replace: true,
+  });
+};
 
   return (
     <motion.aside
@@ -77,7 +95,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
                 className="flex flex-col min-w-0"
               >
                 <span className="text-base font-bold leading-tight whitespace-nowrap tracking-wide text-text-primary">
-                  LeadFlow
+                  JMS TechNova
                 </span>
                 <span className="text-[10px] font-medium tracking-widest uppercase text-text-secondary opacity-50">
                   CRM Suite
@@ -112,7 +130,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
               <li key={item.label} className="relative">
                 <NavLink
                   to={item.path}
-                  end
+                  end={item.path === "/"}
                   onMouseEnter={() => setHoveredItem(item.label)}
                   onMouseLeave={() => setHoveredItem(null)}
                   className="relative flex items-center rounded-xl transition-all duration-200 cursor-pointer"
@@ -204,75 +222,89 @@ const Sidebar = ({ onToggle = () => {} }) => {
         </ul>
       </nav>
 
-      {/* Bottom: User info + Collapse button */}
-      <div className="relative z-10 flex-shrink-0 border-t border-gray-200">
+      {/* Bottom Section */}
+<div className="relative z-10 flex-shrink-0 border-t border-gray-200">
+  <div className="p-4 space-y-2">
 
-        {/* User pill — expanded state */}
-        {/* <AnimatePresence>
-          {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.2 }}
-              className="mx-2.5 mt-3 mb-2 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gray-50 border border-gray-200"
-            >
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 bg-primary text-white">
-                A
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold truncate text-text-primary">
-                  Admin User
-                </span>
-                <span className="text-[10px] truncate text-text-secondary opacity-60">
-                  admin@leadflow.io
-                </span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence> */}
-
-        {/* User avatar — collapsed state */}
-       
-
-        {/* Collapse toggle button */}
-        <div className="p-4">
-          <motion.button
-            onClick={handleToggle}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            className="w-full flex items-center rounded-xl transition-all duration-200 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-text-secondary cursor-pointer"
-            style={{
-              padding: isCollapsed ? "9px 0" : "9px 12px",
-              justifyContent: isCollapsed ? "center" : "flex-start",
-              gap: isCollapsed ? 0 : "10px",
-            }}
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <div className="flex-shrink-0 opacity-60">
-              {isCollapsed ? (
-                <PanelLeftOpen size={17} strokeWidth={1.8} />
-              ) : (
-                <PanelLeftClose size={17} strokeWidth={1.8} />
-              )}
-            </div>
-
-            <AnimatePresence>
-              {!isCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -6 }}
-                  transition={{ duration: 0.18 }}
-                  className="text-xs font-medium whitespace-nowrap opacity-60"
-                >
-                  Collapse sidebar
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        </div>
+    {/* Logout */}
+    <motion.button
+      onClick={handleLogout}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.97 }}
+      className="
+        w-full
+        flex
+        items-center
+        rounded-xl
+        transition-all
+        duration-200
+        hover:bg-red-50
+        text-red-500
+        cursor-pointer
+      "
+      style={{
+        padding: isCollapsed ? "10px 0" : "10px 12px",
+        justifyContent: isCollapsed ? "center" : "flex-start",
+        gap: isCollapsed ? 0 : "10px",
+      }}
+    >
+      <div className="flex-shrink-0">
+        <LogOut size={18} strokeWidth={2} />
       </div>
+
+      <AnimatePresence>
+        {!isCollapsed && (
+          <motion.span
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -6 }}
+            transition={{ duration: 0.18 }}
+            className="text-sm font-semibold whitespace-nowrap"
+          >
+            Logout
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.button>
+
+    {/* Collapse Button */}
+    <motion.button
+      onClick={handleToggle}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.97 }}
+      className="w-full flex items-center rounded-xl transition-all duration-200 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-text-secondary cursor-pointer"
+      style={{
+        padding: isCollapsed ? "9px 0" : "9px 12px",
+        justifyContent: isCollapsed ? "center" : "flex-start",
+        gap: isCollapsed ? 0 : "10px",
+      }}
+      aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+    >
+      <div className="flex-shrink-0 opacity-60">
+        {isCollapsed ? (
+          <PanelLeftOpen size={17} strokeWidth={1.8} />
+        ) : (
+          <PanelLeftClose size={17} strokeWidth={1.8} />
+        )}
+      </div>
+
+      <AnimatePresence>
+        {!isCollapsed && (
+          <motion.span
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -6 }}
+            transition={{ duration: 0.18 }}
+            className="text-xs font-medium whitespace-nowrap opacity-60"
+          >
+            Collapse sidebar
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.button>
+
+  </div>
+</div>
     </motion.aside>
   );
 };

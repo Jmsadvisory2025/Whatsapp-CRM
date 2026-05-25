@@ -85,7 +85,7 @@ const useCases = [
   { icon: <Clock size={18} />, label: "Appointment Booking" },
   { icon: <Zap size={18} />, label: "Order Notifications" },
   { icon: <Star size={18} />, label: "Loyalty Programs" },
-  { icon: <Globe size={18} />, label: "Multi-language Bots" },
+  { icon: <Globe size={18} />, label: "Multi-language Agents" },
 ];
 
 /* ─── COUNTER ANIMATION ─────────────────────────────────── */
@@ -411,22 +411,33 @@ useEffect(() => {
       
       {/* LOGO */}
       <div className="flex items-center gap-3">
-        <img src={logo} alt="JMS TechNova" className="h-10 w-auto" />
+  <a
+    href="https://jmstechnova.com/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-3 group"
+  >
+    <img
+      src={logo}
+      alt="JMS TechNova"
+      className="h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+    />
 
-        <div>
-          <span className="font-black text-gray-900 text-lg tracking-tight">
-            JMS TechNova
-          </span>
+    <div>
+      <span className="font-black text-gray-900 text-lg tracking-tight group-hover:text-blue-700 transition-colors">
+        JMS TechNova
+      </span>
 
-          <div className="flex items-center gap-1 mt-0.5">
-            <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+      <div className="flex items-center gap-1 mt-0.5">
+        <div className="w-2 h-2 rounded-full bg-blue-600"></div>
 
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
-              Official Meta Partner
-            </span>
-          </div>
-        </div>
+        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+          Official Meta Partner
+        </span>
       </div>
+    </div>
+  </a>
+</div>
 
       {/* DESKTOP BUTTONS */}
       <div className="hidden md:flex items-center gap-3">
@@ -434,7 +445,7 @@ useEffect(() => {
           onClick={() => navigate("/signup")}
           className="btn-secondary text-sm py-2.5 px-5"
         >
-          Sign Up Free
+          Sign Up 
         </button> */}
 
         <button
@@ -475,7 +486,7 @@ useEffect(() => {
           }}
           className="btn-secondary w-full justify-center text-sm py-3"
         >
-          Sign Up Free
+          Sign Up 
         </button> */}
 
         <button
@@ -557,7 +568,7 @@ useEffect(() => {
     Official Meta Tech Provider
   </span>
   , JMS TechNova gives businesses direct access to the WhatsApp Business API
-  with built in CRM, AI chatbots, bulk campaigns and a shared team inbox.
+  with built in CRM, AI Agents, bulk campaigns and a shared team inbox.
 </motion.p>
 
               {/* CTA Row */}
@@ -843,7 +854,7 @@ className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch"     >
                   <Bot size={18} />
                 </div>
                 <div>
-                  <p className="text-xs font-black text-gray-900">AI Chatbot Active</p>
+                  <p className="text-xs font-black text-gray-900">AI Agents Active</p>
                   <p className="text-xs text-gray-400">Responding instantly</p>
                 </div>
               </motion.div>
@@ -891,7 +902,7 @@ className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch"     >
             <p className="mt-6 text-lg text-blue-200 leading-relaxed max-w-3xl mx-auto">
               As an officially recognised Meta Tech Provider, JMS TechNova grants you
               compliant, high throughput access to WhatsApp's Business API
-              enabling enterprise grade messaging, bots and CRM at any scale.
+              enabling enterprise grade messaging, Agents and CRM at any scale.
             </p>
 
             <div className="mt-10 grid sm:grid-cols-3 gap-6 text-left max-w-3xl mx-auto">
@@ -1079,7 +1090,7 @@ Turn  <span className="text-[#25D366]">WhatsApp</span> into a Powerful Growth En
                 <div className="mt-8 space-y-5">
 
                   {[
-                    { icon: "⚡", text: "Automate 90% customer replies with AI chatbot flows." },
+                    { icon: "⚡", text: "Automate 90% customer replies with AI Agents flows." },
                     { icon: "📊", text: "Track leads, campaigns & conversions in one CRM." },
                     { icon: "📣", text: "Run bulk WhatsApp campaigns with 98% delivery rate." },
                     { icon: "🤖", text: "AI handles support, booking & follow-ups 24/7." },
@@ -1435,19 +1446,23 @@ className="
         <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-7">
           <div className="flex flex-col md:flex-row items-center justify-between gap-5">
             {/* LEFT */}
-<div className="flex items-center gap-4">
+<div className="flex items-center gap-3">
   <a
     href="https://jmstechnova.com/"
     target="_blank"
     rel="noopener noreferrer"
-    className="flex items-center gap-4"
+    className="flex items-center gap-3 group"
   >
-    <img src={logo} alt="JMS TechNova" className="h-12 w-auto" />
+    <img
+      src={logo}
+      alt="JMS TechNova"
+      className="h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+    />
 
     <div>
-      <h3 className="text-lg font-bold text-gray-900">
+      <span className="font-black text-gray-900 text-lg tracking-tight group-hover:text-blue-700 transition-colors">
         JMS TechNova
-      </h3>
+      </span>
 
       <div className="flex items-center gap-1 mt-0.5">
         <div className="w-2 h-2 rounded-full bg-blue-600"></div>

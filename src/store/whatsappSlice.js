@@ -2,31 +2,30 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Async thunk to fetch customers
+// ── Fetch customers (conversations for verified WABA number) ─────────────────
 const fetchCustomers = createAsyncThunk(
   "whatsapp/fetchCustomers",
   async (arg = null, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem("accessToken");
 
-    if (!token) {
-      throw new Error("No authentication token available");
-    }
+    if (!token) throw new Error("No authentication token available");
 
     try {
-      let url = typeof arg === "string" ? arg : (arg?.url || `${API_BASE_URL}/api/v1/customers/`);
+      let url =
+        typeof arg === "string"
+          ? arg
+          : arg?.url || `${API_BASE_URL}/api/customer/`;
 
+      // Build query params from filters object
       if (arg !== null && typeof arg === "object" && arg.filters && !arg.url) {
         const queryParams = new URLSearchParams();
-        if (arg.filters.number) queryParams.append("number", arg.filters.number);
+        if (arg.filters.number)    queryParams.append("number",    arg.filters.number);
         if (arg.filters.from_date) queryParams.append("from_date", arg.filters.from_date);
-        if (arg.filters.to_date) queryParams.append("to_date", arg.filters.to_date);
-        if (arg.filters.status) queryParams.append("status", arg.filters.status);
-        
+        if (arg.filters.to_date)   queryParams.append("to_date",   arg.filters.to_date);
+        if (arg.filters.status)    queryParams.append("status",    arg.filters.status);
         const qs = queryParams.toString();
-        if (qs) {
-          url += `?${qs}`;
-        }
+        if (qs) url += `?${qs}`;
       }
 
       const response = await fetch(url, {
@@ -38,17 +37,16 @@ const fetchCustomers = createAsyncThunk(
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch customers");
-      }
+      if (!response.ok) throw new Error(data.message || "Failed to fetch customers");
 
       return {
-        results: data.results || [],
-        count: data.count || 0,
-        next: data.next,
-        previous: data.previous,
+        results:     data.results  || [],
+        count:       data.count    || 0,
+        next:        data.next,
+        previous:    data.previous,
         currentPageUrl: url,
+        // ← NEW: backend returns which WABA number is active
+        wabaPhone:   data.waba_phone || null,
       };
     } catch (error) {
       return rejectWithValue(error.message);
@@ -56,16 +54,13 @@ const fetchCustomers = createAsyncThunk(
   }
 );
 
-// Async thunk to send direct message
+// ── Send direct message ──────────────────────────────────────────────────────
 const sendDirectMessage = createAsyncThunk(
   "whatsapp/sendDirectMessage",
   async ({ conversation_id, message }, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem("accessToken");
-
-    if (!token) {
-      throw new Error("No authentication token available");
-    }
+    if (!token) throw new Error("No authentication token available");
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/send-direct-message/`, {
@@ -78,32 +73,22 @@ const sendDirectMessage = createAsyncThunk(
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to send message");
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to send message");
-      }
-
-      return {
-        ...data,
-        conversation_id,
-        sent_message: message
-      };
+      return { ...data, conversation_id, sent_message: message };
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// Async thunk to send bulk message
+// ── Send bulk message ────────────────────────────────────────────────────────
 const sendBulkMessage = createAsyncThunk(
   "whatsapp/sendBulkMessage",
   async ({ conversation_ids, message }, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem("accessToken");
-
-    if (!token) {
-      throw new Error("No authentication token available");
-    }
+    if (!token) throw new Error("No authentication token available");
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/send-bulk-message/`, {
@@ -116,32 +101,22 @@ const sendBulkMessage = createAsyncThunk(
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to send bulk message");
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to send bulk message");
-      }
-
-      return {
-        ...data,
-        conversation_ids,
-        sent_message: message,
-      };
+      return { ...data, conversation_ids, sent_message: message };
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// Async thunk to fetch conversation messages
+// ── Fetch messages for a conversation ───────────────────────────────────────
 const fetchConversationMessages = createAsyncThunk(
   "whatsapp/fetchMessages",
   async (conversationId, { getState, rejectWithValue }) => {
     const { auth } = getState();
     const token = auth.accessToken || localStorage.getItem("accessToken");
-
-    if (!token) {
-      throw new Error("No authentication token available");
-    }
+    if (!token) throw new Error("No authentication token available");
 
     try {
       const response = await fetch(
@@ -156,77 +131,67 @@ const fetchConversationMessages = createAsyncThunk(
       );
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to fetch messages");
 
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch messages");
-      }
-
-      return {
-        conversationId,
-        messages: data.messages || [],
-      };
+      return { conversationId, messages: data.messages || [] };
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
+// ── Slice ────────────────────────────────────────────────────────────────────
 const initialState = {
-  customers: [],
+  customers:        [],
   selectedCustomer: null,
-  messages: [],
+  messages:         [],
+  wabaPhone:        null,   // ← NEW: active verified number
   pagination: {
-    count: 0,
-    next: null,
-    previous: null,
+    count:          0,
+    next:           null,
+    previous:       null,
     currentPageUrl: null,
   },
-  isLoading: false,
+  isLoading:        false,
   isLoadingMessages: false,
-  error: null,
-  messagesError: null,
+  error:            null,
+  messagesError:    null,
 };
 
 const whatsappSlice = createSlice({
   name: "whatsapp",
   initialState,
   reducers: {
-    clearError: (state) => {
-      state.error = null;
-    },
-    clearMessagesError: (state) => {
-      state.messagesError = null;
-    },
-    setSelectedCustomer: (state, action) => {
-      state.selectedCustomer = action.payload;
-    },
-    clearMessages: (state) => {
-      state.messages = [];
-    },
+    clearError:        (state) => { state.error = null; },
+    clearMessagesError:(state) => { state.messagesError = null; },
+    setSelectedCustomer:(state, action) => { state.selectedCustomer = action.payload; },
+    clearMessages:     (state) => { state.messages = []; },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch customers
+      // fetchCustomers
       .addCase(fetchCustomers.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchCustomers.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.customers = action.payload.results || [];
+        state.wabaPhone = action.payload.wabaPhone;   // ← store active number
         state.pagination = {
-          count: action.payload.count || 0,
-          next: action.payload.next,
-          previous: action.payload.previous,
+          count:          action.payload.count || 0,
+          next:           action.payload.next,
+          previous:       action.payload.previous,
           currentPageUrl: action.payload.currentPageUrl,
         };
-        state.customers = action.payload.results || [];
         state.error = null;
       })
       .addCase(fetchCustomers.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || "Failed to fetch customers";
       })
-      // Fetch conversation messages
+
+      // fetchConversationMessages
       .addCase(fetchConversationMessages.pending, (state) => {
         state.isLoadingMessages = true;
         state.messagesError = null;
@@ -240,22 +205,37 @@ const whatsappSlice = createSlice({
         state.isLoadingMessages = false;
         state.messagesError = action.payload || "Failed to fetch messages";
       })
-      // Send direct message
+
+      // sendDirectMessage — optimistically append to chat
       .addCase(sendDirectMessage.fulfilled, (state, action) => {
-        if (state.selectedCustomer && state.selectedCustomer.conversation_id === action.payload.conversation_id) {
+        if (
+          state.selectedCustomer &&
+          state.selectedCustomer.conversation_id === action.payload.conversation_id
+        ) {
           state.messages.push({
-            id: `temp-${Date.now()}`,
-            user_msg: null,
+            id:             `temp-${Date.now()}`,
+            user_msg:       null,
             user_timestamp: null,
-            bot_msg: action.payload.sent_message,
-            bot_timestamp: new Date().toISOString(),
+            bot_msg:        action.payload.sent_message,
+            bot_timestamp:  new Date().toISOString(),
           });
         }
       });
   },
 });
 
-export const { clearError, clearMessagesError, setSelectedCustomer, clearMessages } =
-  whatsappSlice.actions;
-export { fetchCustomers, fetchConversationMessages, sendDirectMessage, sendBulkMessage };
+export const {
+  clearError,
+  clearMessagesError,
+  setSelectedCustomer,
+  clearMessages,
+} = whatsappSlice.actions;
+
+export {
+  fetchCustomers,
+  fetchConversationMessages,
+  sendDirectMessage,
+  sendBulkMessage,
+};
+
 export default whatsappSlice.reducer;

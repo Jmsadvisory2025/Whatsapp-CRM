@@ -8,7 +8,10 @@ import patientsReducer from './patientsSlice';
 import teamReducer from './teamSlice';
 import voicebotReducer from './voicebotSlice';
 import whatsappReducer from './whatsappSlice';
-import metaConnectReducer from './metaConnectSlice'; 
+import metaConnectReducer from './metaConnectSlice';
+import templateReducer from './templateSlice';
+import knowledgeBaseReducer from './knowledgeBaseSlice';
+import campaignReducer from './campaignSlice';           // ← ADD
 
 export const store = configureStore({
   reducer: {
@@ -21,7 +24,10 @@ export const store = configureStore({
     team: teamReducer,
     voicebot: voicebotReducer,
     whatsapp: whatsappReducer,
-    metaConnect: metaConnectReducer, // ← NEW
+    metaConnect: metaConnectReducer,
+    templates: templateReducer,
+    knowledgeBase: knowledgeBaseReducer,
+    campaign: campaignReducer,                           // ← ADD
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

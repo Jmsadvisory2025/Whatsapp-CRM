@@ -70,7 +70,7 @@ const SignIn = () => {
                                 <path d="M12 22V12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
                         </div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Sign in to META-CRM</h1>
+                        <h1 className="text-2xl md:text-3xl font-bold text-text-primary">Sign in</h1>
                         <p className="text-text-secondary mt-2">Access your account to manage leads effectively</p>
                     </div>
 

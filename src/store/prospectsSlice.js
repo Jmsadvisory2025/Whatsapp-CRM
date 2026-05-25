@@ -14,9 +14,8 @@ export const fetchProspects = createAsyncThunk(
     }
 
     try {
-      // Use provided page URL or default to first page
       const url = pageUrl || `${API_BASE_URL}/api/v1/leads/prospects/`;
-      
+
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -24,9 +23,9 @@ export const fetchProspects = createAsyncThunk(
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(
           data.message || "Sorry, you are not part of the organization"
@@ -38,7 +37,7 @@ export const fetchProspects = createAsyncThunk(
         count: data.count || 0,
         next: data.next,
         previous: data.previous,
-        currentPageUrl: url
+        currentPageUrl: url,
       };
     } catch (error) {
       return rejectWithValue(error.message);
@@ -59,7 +58,7 @@ export const searchProspects = createAsyncThunk(
 
     try {
       const url = `${API_BASE_URL}/api/v1/conversations/search/?q=${encodeURIComponent(query)}`;
-      
+
       const response = await fetch(url, {
         method: "GET",
         headers: {
@@ -67,33 +66,34 @@ export const searchProspects = createAsyncThunk(
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to search prospects"
-        );
+        throw new Error(data.message || "Failed to search prospects");
       }
 
-      // Transform the search response to match the pagination structure
       // Normalize the data structure to match regular prospects
-      const normalizedData = Array.isArray(data) ? data.map(item => ({
-        ...item,
-        // Ensure assigned_to is consistent (string format)
-        assigned_to: typeof item.assigned_to === 'object' && item.assigned_to !== null 
-          ? item.assigned_to.name 
-          : item.assigned_to,
-        // Ensure patient_name is populated (fallback to customer_name if needed)
-        patient_name: item.patient_name || item.customer_name || "",
-      })) : [];
+      const normalizedData = Array.isArray(data)
+        ? data.map((item) => ({
+            ...item,
+            // Ensure assigned_to is consistent (string format)
+            assigned_to:
+              typeof item.assigned_to === "object" && item.assigned_to !== null
+                ? item.assigned_to.name
+                : item.assigned_to,
+            // Normalize contact_name field
+            contact_name:
+              item.contact_name || item.customer_name || "",
+          }))
+        : [];
 
       return {
         results: normalizedData || [],
         count: normalizedData.length || 0,
         next: null,
         previous: null,
-        currentPageUrl: url
+        currentPageUrl: url,
       };
     } catch (error) {
       return rejectWithValue(error.message);
@@ -105,7 +105,7 @@ export const searchProspects = createAsyncThunk(
 export const convertProspectToLead = createAsyncThunk(
   "prospects/convert",
   async (
-    { conversation_id, phone, patient_name, disease },
+    { conversation_id, phone, contact_name, interest },
     { getState, rejectWithValue }
   ) => {
     const { auth } = getState();
@@ -116,8 +116,10 @@ export const convertProspectToLead = createAsyncThunk(
     }
 
     // Validate required fields
-    if (!conversation_id || !phone || !patient_name || !disease) {
-      throw new Error("Conversation ID, Phone, Name, and Disease are required");
+    if (!conversation_id || !phone || !contact_name || !interest) {
+      throw new Error(
+        "Conversation ID, Phone, Name, and Interest are required"
+      );
     }
 
     try {
@@ -127,7 +129,17 @@ export const convertProspectToLead = createAsyncThunk(
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ conversation_id, phone, patient_name, disease }),
+        // Send as contact_name & interest; backend also accepts patient_name & disease
+        // for backward-compatibility during migration
+        body: JSON.stringify({
+          conversation_id,
+          phone,
+          contact_name,
+          interest,
+          // legacy aliases kept for backend compatibility
+          patient_name: contact_name,
+          disease: interest,
+        }),
       });
       const data = await response.json();
 
@@ -146,7 +158,7 @@ export const convertProspectToLead = createAsyncThunk(
 export const updateProspect = createAsyncThunk(
   "prospects/update",
   async (
-    { conversation_id, patient_name, disease, notes },
+    { conversation_id, contact_name, interest, notes },
     { getState, rejectWithValue }
   ) => {
     const { auth } = getState();
@@ -160,12 +172,19 @@ export const updateProspect = createAsyncThunk(
       const response = await fetch(
         `${API_BASE_URL}/api/v1/conversations/${conversation_id}/update/`,
         {
-          method: "POST", // Adjust to PUT if required by API
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ patient_name, disease, notes }),
+          body: JSON.stringify({
+            contact_name,
+            interest,
+            notes,
+            // legacy aliases
+            patient_name: contact_name,
+            disease: interest,
+          }),
         }
       );
       const data = await response.json();
@@ -187,7 +206,7 @@ const initialState = {
     count: 0,
     next: null,
     previous: null,
-    currentPageUrl: null
+    currentPageUrl: null,
   },
   isLoading: false,
   error: null,
@@ -218,14 +237,12 @@ const prospectsSlice = createSlice({
       })
       .addCase(fetchProspects.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Store pagination data
         state.pagination = {
           count: action.payload.count || 0,
           next: action.payload.next,
           previous: action.payload.previous,
-          currentPageUrl: action.payload.currentPageUrl
+          currentPageUrl: action.payload.currentPageUrl,
         };
-        // Store results
         state.prospects = action.payload.results || [];
         state.error = null;
       })
@@ -239,14 +256,12 @@ const prospectsSlice = createSlice({
       })
       .addCase(searchProspects.fulfilled, (state, action) => {
         state.isSearching = false;
-        // Store pagination data
         state.pagination = {
           count: action.payload.count || 0,
           next: action.payload.next,
           previous: action.payload.previous,
-          currentPageUrl: action.payload.currentPageUrl
+          currentPageUrl: action.payload.currentPageUrl,
         };
-        // Store search results
         state.prospects = action.payload.results || [];
         state.error = null;
       })
@@ -262,7 +277,7 @@ const prospectsSlice = createSlice({
         state.isLoading = false;
         state.prospects = state.prospects.filter(
           (p) => p.conversation_id !== action.meta.arg.conversation_id
-        ); // Remove converted prospect
+        );
         state.error = null;
       })
       .addCase(convertProspectToLead.rejected, (state, action) => {
@@ -275,7 +290,6 @@ const prospectsSlice = createSlice({
       })
       .addCase(updateProspect.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Update the prospect with new data if returned by API
         const updatedProspect = action.payload;
         state.prospects = state.prospects.map((p) =>
           p.conversation_id === updatedProspect.conversation_id

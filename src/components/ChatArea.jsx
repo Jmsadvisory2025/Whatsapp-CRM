@@ -338,14 +338,7 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
         <p className="text-xs text-gray-400 mt-1 max-w-xs">
           Choose a contact from the list to view messages
         </p>
-        <button
-          onClick={onOpenBulkMessage}
-          className="mt-5 flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold text-white transition-all hover:opacity-90"
-          style={{ background: "#00a884" }}
-        >
-          <Send size={16} />
-          Send Bulk Messages
-        </button>
+        
       </div>
     );
   }
