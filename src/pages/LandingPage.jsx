@@ -413,7 +413,6 @@ useEffect(() => {
       <div className="flex items-center gap-3">
   <a
     href="https://jmstechnova.com/"
-    target="_blank"
     rel="noopener noreferrer"
     className="flex items-center gap-3 group"
   >
@@ -1449,7 +1448,7 @@ className="
 <div className="flex items-center gap-3">
   <a
     href="https://jmstechnova.com/"
-    target="_blank"
+    
     rel="noopener noreferrer"
     className="flex items-center gap-3 group"
   >
@@ -1480,7 +1479,6 @@ className="
   © {new Date().getFullYear()}{" "}
   <a
     href="https://jmstechnova.com/"
-    target="_blank"
     rel="noopener noreferrer"
     className="font-bold"
   >
