@@ -15,6 +15,7 @@ const saveAuthToStorage = ({
   access, refresh, role, organization, org_id,
   has_organization, waba_connected,
   org_email, org_website, owner_name, owner_email,
+  waba_status, waba_name, phone_number_id,   // ADD
 }) => {
   if (access)  localStorage.setItem('accessToken', access);
   if (refresh) localStorage.setItem('refreshToken', refresh);
@@ -24,27 +25,21 @@ const saveAuthToStorage = ({
   localStorage.setItem('userOrgId', org_id ?? '');
   localStorage.setItem('hasOrganization', String(has_organization ?? false));
   localStorage.setItem('wabaConnected', String(waba_connected ?? false));
-
-  // NEW
   localStorage.setItem('orgEmail', org_email ?? '');
   localStorage.setItem('orgWebsite', org_website ?? '');
   localStorage.setItem('ownerName', owner_name ?? '');
   localStorage.setItem('ownerEmail', owner_email ?? '');
+  localStorage.setItem('wabaStatus', waba_status ?? '');
+  localStorage.setItem('wabaName', waba_name ?? '');
+  localStorage.setItem('phoneNumberId', phone_number_id ?? '');
 };
 
 const clearAuthFromStorage = () => {
   [
-    'accessToken',
-    'refreshToken',
-    'userRole',
-    'userOrg',
-    'userOrgId',
-    'hasOrganization',
-    'wabaConnected',
-    'orgEmail',
-    'orgWebsite',
-    'ownerName',
-    'ownerEmail',
+    'accessToken', 'refreshToken', 'userRole', 'userOrg', 'userOrgId',
+    'hasOrganization', 'wabaConnected',
+    'orgEmail', 'orgWebsite', 'ownerName', 'ownerEmail',
+    'wabaStatus', 'wabaName', 'phoneNumberId',   
   ].forEach((k) => localStorage.removeItem(k));
 };
 
@@ -104,12 +99,13 @@ export const verifyOtp = createAsyncThunk(
         org_id: data.org_id ?? null,
         has_organization: data.has_organization ?? false,
         waba_connected: data.waba_connected ?? false,
-
-        // NEW
         org_email: data.org_email ?? null,
         org_website: data.org_website ?? null,
         owner_name: data.owner_name ?? null,
         owner_email: data.owner_email ?? null,
+        waba_status: data.waba_status ?? null,
+        waba_name: data.waba_name ?? null,
+        phone_number_id: data.phone_number_id ?? null,
       };
 
       saveAuthToStorage(payload);
@@ -155,12 +151,13 @@ export const fetchMe = createAsyncThunk(
         org_id: data.org_id ?? null,
         has_organization: data.has_organization ?? false,
         waba_connected: data.waba_connected ?? false,
-
-        // NEW
         org_email: data.org_email ?? null,
         org_website: data.org_website ?? null,
         owner_name: data.owner_name ?? null,
         owner_email: data.owner_email ?? null,
+        waba_status: data.waba_status ?? null,
+        waba_name: data.waba_name ?? null,
+        phone_number_id: data.phone_number_id ?? null,
       };
 
       saveAuthToStorage(payload);
@@ -195,12 +192,13 @@ const initialState = {
     localStorage.getItem('wabaConnected') === 'true',
 
   otpExpiryTime: null,
-
-  // NEW
   org_email: localStorage.getItem('orgEmail') || null,
   org_website: localStorage.getItem('orgWebsite') || null,
   owner_name: localStorage.getItem('ownerName') || null,
   owner_email: localStorage.getItem('ownerEmail') || null,
+  waba_status: localStorage.getItem('wabaStatus') || null,
+  waba_name: localStorage.getItem('wabaName') || null,
+  phone_number_id: localStorage.getItem('phoneNumberId') || null,
 };
 
 // ─── Slice ───────────────────────────────────────────────────────────────────
@@ -247,6 +245,7 @@ const authSlice = createSlice({
         org_website: null,
         owner_name: null,
         owner_email: null,
+        waba_status: null, waba_name: null, phone_number_id: null,
       };
     },
   },
@@ -293,11 +292,14 @@ const authSlice = createSlice({
         state.has_organization = action.payload.has_organization;
         state.waba_connected = action.payload.waba_connected;
 
-        // NEW
         state.org_email = action.payload.org_email;
         state.org_website = action.payload.org_website;
         state.owner_name = action.payload.owner_name;
         state.owner_email = action.payload.owner_email;
+
+        state.waba_status = action.payload.waba_status;
+        state.waba_name = action.payload.waba_name;
+        state.phone_number_id = action.payload.phone_number_id;
       })
 
       .addCase(verifyOtp.rejected, (state, action) => {
@@ -320,11 +322,14 @@ const authSlice = createSlice({
         state.has_organization = action.payload.has_organization;
         state.waba_connected = action.payload.waba_connected;
 
-        // NEW
         state.org_email = action.payload.org_email;
         state.org_website = action.payload.org_website;
         state.owner_name = action.payload.owner_name;
         state.owner_email = action.payload.owner_email;
+
+        state.waba_status = action.payload.waba_status;
+        state.waba_name = action.payload.waba_name;
+        state.phone_number_id = action.payload.phone_number_id;
       })
 
       .addCase(fetchMe.rejected, (state, action) => {

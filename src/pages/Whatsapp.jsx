@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import WhatsappSidebar from "../components/WhatsappSidebar";
 import ChatArea from "../components/ChatArea";
-import BulkMessage from "../components/BulkMessage";
 
 const Whatsapp = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true);

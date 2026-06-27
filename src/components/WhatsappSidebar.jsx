@@ -23,10 +23,6 @@ import { motion, AnimatePresence } from "framer-motion";
 const statusConfig = {
   prospect:  { label: "Prospect",  text: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200"   },
   lead:      { label: "Lead",      text: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200"  },
-  customer:  { label: "Customer",  text: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
-  patient:   { label: "Patient",   text: "text-violet-600",  bg: "bg-violet-50",  border: "border-violet-200"  },
-  confirmed: { label: "Confirmed", text: "text-green-700",   bg: "bg-green-50",   border: "border-green-200"  },
-  follow_up: { label: "Follow Up", text: "text-orange-600",  bg: "bg-orange-50",  border: "border-orange-200"  },
 };
 
 const getStatus = (key) =>
@@ -92,11 +88,12 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
     isLoading,
     error,
     pagination,
-    wabaPhone,           // ← verified business number from Redux
+    wabaPhone,
   } = useSelector((s) => s.whatsapp);
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchText, setSearchText]   = useState("");
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     number: "", from_date: "", to_date: "", status: "",
   });
@@ -107,8 +104,6 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
   }, [dispatch]);
 
   // ── Auto-select first conversation when list loads ─────────────────────────
-  // This is the KEY FIX: jevi conversations load thay, pehli conversation
-  // automatically select thay — user ne click karvani jaroor nahi.
   useEffect(() => {
     if (!selectedCustomer && customers.length > 0) {
       const first = customers[0];
@@ -118,13 +113,17 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
   }, [customers, selectedCustomer, dispatch]);
 
   const handleApplyFilters = () => {
-    dispatch(fetchCustomers({ filters }));
+    setPage(1);
+    setSearchText(""); // Clear search when filtering
+    dispatch(fetchCustomers({ filters, page: 1 }));
     setShowFilters(false);
   };
 
   const handleClearFilters = () => {
     setFilters({ number: "", from_date: "", to_date: "", status: "" });
-    dispatch(fetchCustomers());
+    setPage(1);
+    setSearchText("");
+    dispatch(fetchCustomers({ page: 1 }));
     setShowFilters(false);
   };
 
@@ -144,6 +143,9 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
         );
       })
     : customers;
+
+  // ── Check if filters are active ────────────────────────────────────────────
+  const hasActiveFilters = filters.number || filters.from_date || filters.to_date || filters.status;
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: "#fff" }}>
@@ -174,34 +176,20 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
 
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`p-2 rounded-full transition-colors ${
-              showFilters ? "bg-[#008069] text-white" : "hover:bg-gray-200 text-[#54656f]"
+            className={`p-2 rounded-full transition-colors relative ${
+              showFilters || hasActiveFilters ? "bg-[#008069] text-white" : "hover:bg-gray-200 text-[#54656f]"
             }`}
             title="Filters"
           >
             <SlidersHorizontal size={18} />
+            {/* ── Badge showing filters are active ── */}
+            {hasActiveFilters && (
+              <span
+                className="absolute top-1 right-1 w-2 h-2 rounded-full"
+                style={{ background: "#ff6b6b" }}
+              />
+            )}
           </button>
-        </div>
-
-        {/* ── Search bar ── */}
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-          style={{ background: "#fff", border: "1px solid #e9edef" }}
-        >
-          <Search size={14} style={{ color: "#667781" }} />
-          <input
-            type="text"
-            placeholder="Search by name or number"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="flex-1 text-sm bg-transparent focus:outline-none placeholder-[#667781]"
-            style={{ color: "#111b21" }}
-          />
-          {searchText && (
-            <button onClick={() => setSearchText("")} className="text-[#667781] hover:text-gray-700">
-              <X size={14} />
-            </button>
-          )}
         </div>
       </div>
 
@@ -262,22 +250,37 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
                 </div>
               </div>
 
-              {/* Status */}
+              {/* ✅ FIXED: Status dropdown with better styling ── */}
               <div>
                 <label className="text-[10px] font-semibold mb-1 block" style={{ color: "#667781" }}>
                   STATUS
                 </label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  className="w-full text-xs px-3 py-2 rounded-lg focus:outline-none appearance-none"
-                  style={{ background: "#fff", border: "1px solid #e9edef", color: "#111b21" }}
-                >
-                  <option value="">All Statuses</option>
-                  {Object.entries(statusConfig).map(([val, cfg]) => (
-                    <option key={val} value={val}>{cfg.label}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={filters.status}
+                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                    className="w-full text-xs px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008069]"
+                    style={{ 
+                      background: "#fff", 
+                      border: "1px solid #e9edef", 
+                      color: "#111b21",
+                      WebkitAppearance: "none",  // ← Remove browser default styling
+                      MozAppearance: "none",
+                      appearance: "none",
+                      paddingRight: "24px",  // Space for dropdown arrow
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667781' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 8px center",
+                    }}
+                  >
+                    <option value="">All Statuses</option>
+                    {Object.entries(statusConfig).map(([val, cfg]) => (
+                      <option key={val} value={val}>
+                        {cfg.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Buttons */}
@@ -321,6 +324,26 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
         )}
       </AnimatePresence>
 
+      {/* ── Active filter indicator ── */}
+      {hasActiveFilters && (
+        <div
+          className="px-4 py-2 flex items-center justify-between text-xs"
+          style={{ background: "#e8f5e9", borderBottom: "1px solid #c8e6c9" }}
+        >
+          <span style={{ color: "#2e7d32" }}>
+            🔍 {filters.status && `Status: ${statusConfig[filters.status]?.label || filters.status}`}
+            {filters.number && ` • Phone: ${filters.number}`}
+            {filters.from_date && ` • From: ${filters.from_date}`}
+          </span>
+          <button
+            onClick={handleClearFilters}
+            className="text-[#2e7d32] hover:text-[#1b5e20]"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* ── Conversation List ── */}
       <div className="flex-1 overflow-y-auto" style={{ background: "#fff" }}>
         {isLoading && customers.length === 0 ? (
@@ -331,9 +354,9 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
           <div className="flex flex-col items-center justify-center h-48 gap-2" style={{ color: "#667781" }}>
             <MessageCircle size={32} className="opacity-20" />
             <p className="text-xs font-medium">
-              {searchText ? "No results found" : "No conversations yet"}
+              {searchText ? "No results found" : hasActiveFilters ? "No conversations match your filters" : "No conversations yet"}
             </p>
-            {!searchText && wabaPhone && (
+            {!searchText && wabaPhone && !hasActiveFilters && (
               <p className="text-[10px] text-center px-6" style={{ color: "#aaa" }}>
                 Waiting for messages on +{stripPlus(wabaPhone)}
               </p>
@@ -410,25 +433,36 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
       </div>
 
       {/* ── Pagination ── */}
-      {(pagination.next || pagination.previous) && (
+      {pagination.totalPages > 1 && (
         <div
           className="px-4 py-2.5 flex items-center justify-between flex-shrink-0"
           style={{ borderTop: "1px solid #e9edef", background: "#f0f2f5" }}
         >
           <button
-            onClick={() => pagination.previous && dispatch(fetchCustomers(pagination.previous))}
-            disabled={!pagination.previous || isLoading}
+            onClick={() => {
+              const p = pagination.currentPage - 1;
+              setPage(p);
+              dispatch(fetchCustomers({ filters, page: p }));
+            }}
+            disabled={pagination.currentPage <= 1 || isLoading}
             className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             style={{ color: "#008069" }}
           >
             <ChevronLeft size={14} /> Prev
           </button>
+
           <span className="text-[11px] tabular-nums" style={{ color: "#667781" }}>
-            {customers.length} of {pagination.count?.toLocaleString()}
+            {((pagination.currentPage - 1) * pagination.pageSize) + 1}–
+            {Math.min(pagination.currentPage * pagination.pageSize, pagination.count)} of {pagination.count?.toLocaleString()}
           </span>
+
           <button
-            onClick={() => pagination.next && dispatch(fetchCustomers(pagination.next))}
-            disabled={!pagination.next || isLoading}
+            onClick={() => {
+              const p = pagination.currentPage + 1;
+              setPage(p);
+              dispatch(fetchCustomers({ filters, page: p }));
+            }}
+            disabled={pagination.currentPage >= pagination.totalPages || isLoading}
             className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             style={{ color: "#008069" }}
           >

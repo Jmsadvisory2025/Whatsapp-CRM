@@ -130,9 +130,12 @@ export default function ConnectWhatsApp() {
         const { code } = response.authResponse;
         const { waba_id, phone_number_id, business_id } = wabaRef.current;
 
+        // dispatch(startEmbeddedSignup({ code, waba_id, phone_number_id, business_id }))
+        //   .unwrap()
+        //   .then(() => navigate("/"))
         dispatch(startEmbeddedSignup({ code, waba_id, phone_number_id, business_id }))
-          .unwrap()
-          .then(() => navigate("/"))
+        .unwrap()
+        .then(() => navigate("/connected-business", { replace: true }))  
           .catch(() => {
             // metaError Redux state will show the error in UI
           });

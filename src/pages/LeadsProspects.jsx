@@ -1,23 +1,41 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+
 import {
-  User, Phone, MessageSquare, CheckCircle, Clock,
-  Search, Loader2, AlertCircle, Filter, ArrowRight,
+  User,
+  Phone,
+  MessageSquare,
+  CheckCircle2,
+  Clock3,
+  Search,
+  Loader2,
+  AlertCircle,
+  ArrowRight,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+
 import Card from "../components/ui/Card";
+import { isTechProvider } from "../store/authUtils";
+import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
+
 
 const API = import.meta.env.VITE_API_BASE_URL;
+// const BOT_API = import.meta.env.VITE_BOT_API_URL;
 
 const LeadsProspects = () => {
   const navigate = useNavigate();
+  const [globalCounts, setGlobalCounts] = useState({ all: 0, lead: 0, prospect: 0 });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [data, setData] = useState([]);
   const [count, setCount] = useState(0);
-  
-  // Filters
-  const [activeTab, setActiveTab] = useState("all"); // all | leads | prospects
+
+  const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
@@ -25,295 +43,849 @@ const LeadsProspects = () => {
     fetchData();
   }, [activeTab, search, page]);
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
+  // const fetchData = async () => {
+  //   setLoading(true);
+  //   setError(null);
 
-    try {
-      const token = localStorage.getItem("accessToken");
-      const res = await axios.get(`${API}/api/leads-prospects/`, {
+  //   try {
+  //     const token = localStorage.getItem("accessToken");
+
+  //     const res = await axios.get(`${API}/api/leads-prospects/`, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       params: {
+  //         tab: activeTab,
+  //         search,
+  //         page,
+  //         page_size: 20,
+  //       },
+  //     });
+
+  //     setData(res.data.results || []);
+  //     setCount(res.data.count || 0);
+  //   } catch (err) {
+  //     setError(
+  //       err.response?.data?.error ||
+  //         err.response?.data?.detail ||
+  //         "Failed to load data"
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const userEmail = localStorage.getItem("ownerEmail") || "";
+  const isTp      = isTechProvider(userEmail);
+
+  // const fetchData = async () => {
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     const token = localStorage.getItem("accessToken");
+
+  //     let res;
+  //     if (isTp) {
+  //       // ── TechProvider: all customers across all clients ────────────────
+  //       res = await axios.get(`${BOT_API}api/industry/customers/`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //         params: {
+  //           search,
+  //           page,
+  //           page_size: 20,
+  //         },
+  //       });
+  //       // Map to same shape LeadsProspects expects
+  //       const mapped = (res.data.results || []).map((c) => ({
+  //         id:              c.id,
+  //         name:            c.name,
+  //         phone:           c.phone,
+  //         status:          "Prospect",
+  //         chatbot_stage:   null,
+  //         message_count:   c.total_messages,
+  //         last_chat:       c.last_seen,
+  //         conversation_id: null, // TP customers — view disabled
+  //       }));
+  //       setData(mapped);
+  //       setCount(res.data.count || 0);
+  //     } else {
+  //       // ── Normal org: existing API ──────────────────────────────────────
+  //       res = await axios.get(`${API}/api/leads-prospects/`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //         params: { tab: activeTab, search, page, page_size: 20 },
+  //       });
+  //       setData(res.data.results || []);
+  //       setCount(res.data.count || 0);
+  //     }
+  //   } catch (err) {
+  //     setError(err.response?.data?.error || err.response?.data?.detail || "Failed to load data");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const fetchData = async () => {
+  setLoading(true);
+  setError(null);
+  try {
+    const token = localStorage.getItem("accessToken");
+    let res;
+
+    if (isTp) {
+      res = await axios.get(`${API}api/industry/customers/`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          search,
+          page,
+          page_size: 20,
+          ...(activeTab !== "all" && { status: activeTab }),
+        },
+      });
+
+      // Backend હવે આ fields return કરે છે
+      setGlobalCounts({
+        all:      res.data.total_count    || 0,
+        lead:     res.data.lead_count     || 0,
+        prospect: res.data.prospect_count || 0,
+      });
+
+      const mapped = (res.data.results || []).map((c) => ({
+        id:              c.id,
+        name:            c.name,
+        phone:           c.phone,
+        status:          c.status || "prospect",
+        chatbot_stage:   null,
+        message_count:   c.total_messages,
+        last_chat:       c.last_seen,
+        conversation_id: null,
+        bot_source:      c.bot_source || "unknown", 
+
+      }));
+      setData(mapped);
+      setCount(res.data.count || 0);  // filtered count for pagination
+
+    } else {
+      // ── Normal user: existing leads-prospects API ──────────────────
+      res = await axios.get(`${API}/api/leads-prospects/`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { tab: activeTab, search, page, page_size: 20 },
       });
-
       setData(res.data.results || []);
       setCount(res.data.count || 0);
-    } catch (err) {
-      setError(
-        err.response?.data?.error ||
-        err.response?.data?.detail ||
-        "Failed to load data"
-      );
-    } finally {
-      setLoading(false);
     }
-  };
 
-  const handleSearch = (e) => {
-    setSearch(e.target.value);
-    setPage(1); // Reset to page 1 on search
-  };
-
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setPage(1);
-  };
-
-  // ── Tab counts (you can fetch these separately or compute from data)
-  const leadCount = data.filter(d => d.status === "Lead").length;
-  const prospectCount = data.filter(d => d.status === "Prospect").length;
-
-  /* ── Loading ── */
-  if (loading && page === 1) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="animate-spin text-green-600 mx-auto" size={40} />
-          <p className="mt-4 text-gray-600">Loading leads & prospects...</p>
-        </div>
-      </div>
-    );
+   } catch (err) {
+    setError(err.response?.data?.error || "Failed to load data");
+  } finally {
+    setLoading(false);
   }
+};
+  const totalPages = Math.ceil(count / 20);
 
-  /* ── Error ── */
+  // const displayData = activeTab === "all"
+  // ? data
+  // : data.filter((item) => item.status === activeTab);
+
+  const displayData = isTp
+  ? data
+  : activeTab === "all"
+    ? data
+    : data.filter((item) => item.status === activeTab);
+  /* -------------------------------------------------------------------------- */
+  /*                                   LOADING                                  */
+  /* -------------------------------------------------------------------------- */
+
+  if (loading && page === 1) {
+  return <LoaderDemo />;
+}
+
+  /* -------------------------------------------------------------------------- */
+  /*                                    ERROR                                   */
+  /* -------------------------------------------------------------------------- */
+
   if (error) {
     return (
-      <div className="p-10">
-        <Card className="p-8 border-red-200 bg-red-50">
-          <div className="flex items-start gap-4">
-            <AlertCircle className="text-red-600" size={24} />
+      <div className="min-h-screen bg-[#f8fafc] p-4 lg:p-6">
+
+        <Card className="bg-white border border-red-100 rounded-[28px] shadow-sm">
+
+          <div className="p-6 flex items-start gap-4">
+
+            <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center">
+              <AlertCircle className="text-red-500" size={24} />
+            </div>
+
             <div>
-              <h2 className="text-xl font-bold text-red-700">Error</h2>
-              <p className="text-red-600 mt-2">{error}</p>
+
+              <h2 className="text-xl font-bold text-gray-800">
+                Something went wrong
+              </h2>
+
+              <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                {error}
+              </p>
+
               <button
                 onClick={fetchData}
-                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="
+                  mt-5 px-5 py-3 rounded-2xl
+                  bg-red-500 hover:bg-red-600
+                  text-white text-sm font-medium
+                  transition-all
+                "
               >
                 Retry
               </button>
+
             </div>
+
           </div>
+
         </Card>
+
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">Leads & Prospects</h1>
-        <p className="text-gray-500 mt-1">Customers from WhatsApp chatbot conversations</p>
+    <div className="min-h-screen bg-[#f8fafc] p-4 lg:p-6 space-y-6">
+
+      {/* ---------------------------------------------------------------------- */}
+      {/* HEADER */}
+      {/* ---------------------------------------------------------------------- */}
+
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+
+        <div>
+
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-800">
+            Leads & Prospects
+          </h1>
+
+          <p className="text-sm text-gray-500 mt-2">
+            WhatsApp conversation customers & pipeline
+          </p>
+
+        </div>
+
+        <button
+          onClick={fetchData}
+          className="
+            w-12 h-12 rounded-2xl
+            bg-white border border-gray-200
+            hover:bg-gray-50
+            flex items-center justify-center
+            transition-all shadow-sm
+          "
+        >
+          <RefreshCw size={18} className="text-gray-600" />
+        </button>
+
       </div>
 
-      {/* Tabs + Search */}
-      <Card className="p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Tabs */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleTabChange("all")}
-              className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${
-                activeTab === "all"
-                  ? "bg-green-600 text-white shadow-lg"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              All ({count})
-            </button>
-            <button
-              onClick={() => handleTabChange("leads")}
-              className={`px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-                activeTab === "leads"
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <CheckCircle size={16} /> Leads
-            </button>
-            <button
-              onClick={() => handleTabChange("prospects")}
-              className={`px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-                activeTab === "prospects"
-                  ? "bg-orange-600 text-white shadow-lg"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              <Clock size={16} /> Prospects
-            </button>
+      {/* ---------------------------------------------------------------------- */}
+      {/* FILTERS */}
+      {/* ---------------------------------------------------------------------- */}
+
+      <Card className="bg-white border border-gray-100 rounded-[28px] shadow-sm overflow-hidden">
+
+        <div className="p-5">
+
+          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+
+            {/* Tabs */}
+        
+            <div className="flex items-center gap-2 overflow-auto scrollbar-hide">
+
+             <button onClick={() => { setActiveTab("all"); setPage(1); }}
+  className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-all ${
+    activeTab === "all" ? "bg-green-600 text-white shadow-lg shadow-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+  }`}>
+  All ({isTp ? globalCounts.all : count})
+  </button>
+
+<button onClick={() => { setActiveTab("lead"); setPage(1); }}
+  className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all ${
+    activeTab === "lead" ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+  }`}>
+  <CheckCircle2 size={15} />
+  Leads ({isTp ? globalCounts.lead : data.filter(d => d.status === "lead").length})
+</button>
+
+<button onClick={() => { setActiveTab("prospect"); setPage(1); }}
+  className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all ${
+    activeTab === "prospect" ? "bg-orange-500 text-white shadow-lg shadow-orange-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+  }`}>
+  <Clock3 size={15} />
+  Prospects ({isTp ? globalCounts.prospect : data.filter(d => d.status === "prospect").length})
+</button>
+            </div>
+
+            {/* Search */}
+
+            <div className="relative w-full xl:w-96">
+
+              <Search
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+
+              <input
+                type="text"
+                placeholder="Search customer or phone..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="
+                  w-full pl-11 pr-4 py-3
+                  bg-gray-50 border border-gray-200
+                  rounded-2xl
+                  text-sm text-gray-700
+                  placeholder:text-gray-400
+                  focus:outline-none
+                  focus:ring-2 focus:ring-green-500
+                  focus:border-transparent
+                  transition-all
+                "
+              />
+
+            </div>
+
           </div>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search by name or phone..."
-              value={search}
-              onChange={handleSearch}
-              className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent w-full lg:w-80"
-            />
-          </div>
         </div>
+
       </Card>
 
-      {/* Table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* ---------------------------------------------------------------------- */}
+      {/* TABLE */}
+      {/* ---------------------------------------------------------------------- */}
+
+      <Card className="bg-white border border-gray-100 rounded-[30px] shadow-sm overflow-hidden">
+
+        {/* ------------------------------------------------------------------ */}
+        {/* DESKTOP TABLE */}
+        {/* ------------------------------------------------------------------ */}
+
+        <div className="hidden xl:block overflow-x-auto">
+
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+
+            <thead className="bg-gray-50 border-b border-gray-100">
+
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Customer</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Phone</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Stage</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Collected Info</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Messages</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Last Chat</th>
-                <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {data.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-16 text-center">
-                    <div className="text-gray-400">
-                      <User size={48} className="mx-auto mb-3 opacity-30" />
-                      <p className="text-lg font-medium">No {activeTab} found</p>
-                      <p className="text-sm mt-1">Try adjusting your filters</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                data.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/leads/${item.conversation_id}`)}
+
+               {(
+  isTp
+    ? [
+        "Customer",
+        "Phone",
+        "Bot",
+        "Status",
+        "Last Chat",
+      ]
+    : [
+        "Customer",
+        "Phone",
+        "Status",
+        "Stage",
+        "Messages",
+        "Last Chat",
+        "Action",
+      ]
+).map((head,i) => (
+                  <th
+                    key={i}
+                    className={`
+                      px-6 py-5
+                      text-xs font-semibold uppercase tracking-wide
+                      text-gray-400
+                      ${head === "Action" ? "text-center" : "text-left"}
+                    `}
                   >
-                    {/* Customer Name */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                          <User className="text-green-600" size={18} />
+                    {head}
+                  </th>
+
+                ))}
+
+              </tr>
+
+            </thead>
+
+            <tbody className="divide-y divide-gray-100">
+
+              {displayData.length === 0 ? (
+
+
+                <tr>
+
+                  <td colSpan="7" className="py-24 text-center">
+
+                    <div className="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mx-auto">
+                      <User size={36} className="text-gray-300" />
+                    </div>
+
+                    <h3 className="text-lg font-semibold text-gray-700 mt-5">
+                      No records found
+                    </h3>
+
+                    <p className="text-sm text-gray-400 mt-2">
+                      Try changing search or filters
+                    </p>
+
+                  </td>
+
+                </tr>
+
+              ) : (
+
+                displayData.map((item) => (
+
+                  // <tr
+                  //   key={item.id}
+                  //   onClick={() =>
+                  //     navigate(`/leads/${item.conversation_id}`)
+                  //   }
+                  //   className="
+                  //     hover:bg-green-50/40
+                  //     transition-all duration-200
+                  //     cursor-pointer
+                  //   "
+                  // >
+                  <tr
+  key={item.id}
+  onClick={() => !isTp && item.conversation_id && navigate(`/leads/${item.conversation_id}`)}
+  className={`transition-all duration-200 ${!isTp && item.conversation_id ? "hover:bg-green-50/40 cursor-pointer" : "cursor-default"}`}
+>
+
+                    {/* Customer */}
+
+                    <td className="px-6 py-5">
+
+                      <div className="flex items-center gap-4">
+
+                        <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center">
+                          <User
+                            size={18}
+                            className="text-green-600"
+                          />
                         </div>
+
                         <div>
-                          <p className="font-semibold text-gray-800">{item.name}</p>
+
+                          <p className="text-sm font-semibold text-gray-800">
+                            {item.name || "Unknown"}
+                          </p>
+
+                          <p className="text-xs text-gray-400 mt-1">
+                            Customer ID : {item.id}
+                          </p>
+
                         </div>
+
                       </div>
+
                     </td>
 
                     {/* Phone */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-600">
+
+                    <td className="px-6 py-5">
+
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+
                         <Phone size={14} />
-                        <span className="text-sm">{item.phone}</span>
+
+                        {item.phone}
+
                       </div>
-                    </td>
 
-                    {/* Status Badge */}
-                    <td className="px-6 py-4">
-                      {item.status === "Lead" ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-                          <CheckCircle size={14} /> Lead
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
-                          <Clock size={14} /> Prospect
-                        </span>
+                    </td>
+                    {/* Bot Source */}
+                      {isTp && (
+                        <td className="px-6 py-5">
+                          {{
+                            industry: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">Industry Bot</span>,
+                            jms:      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">JMS Bot</span>,
+                            whatsapp: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">Meta Bot</span>,
+                          }[item.bot_source] || <span className="text-xs text-gray-400">—</span>}
+                        </td>
                       )}
+
+                    {/* Status */}
+
+                    <td className="px-6 py-5">
+
+                      {item.status === "lead" ? (
+
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                          <CheckCircle2 size={13} />
+                          Lead
+                        </span>
+
+                      ) : (
+
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 text-orange-700 text-xs font-semibold">
+                          <Clock3 size={13} />
+                          Prospect
+                        </span>
+
+                      )}
+
                     </td>
 
-                    {/* Chatbot Stage */}
-                    <td className="px-6 py-4">
+                    {/* Stage */}
+{!isTp && (
+                    <td className="px-6 py-5">
+
                       <span className="text-sm text-gray-600 capitalize">
                         {item.chatbot_stage || "N/A"}
                       </span>
-                    </td>
 
-                    {/* Collected Fields */}
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1.5 max-w-xs">
-                        {Object.entries(item.collected_fields || {}).map(([key, val]) => (
-                          <span
-                            key={key}
-                            className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                            title={`${key}: ${val}`}
-                          >
-                            {key}: {val.length > 15 ? val.slice(0, 15) + "..." : val}
-                          </span>
-                        ))}
-                        {Object.keys(item.collected_fields || {}).length === 0 && (
-                          <span className="text-xs text-gray-400">No data yet</span>
-                        )}
-                      </div>
                     </td>
+)}
+                    {/* Messages */}
+{!isTp && (
+                    <td className="px-6 py-5">
 
-                    {/* Message Count */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-gray-600">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+
                         <MessageSquare size={14} />
-                        <span className="text-sm">{item.message_count}</span>
-                      </div>
-                    </td>
 
+                        {item.message_count || 0}
+
+                      </div>
+
+                    </td>
+)}
                     {/* Last Chat */}
-                    <td className="px-6 py-4">
+
+                    <td className="px-6 py-5">
+
                       <span className="text-sm text-gray-500">
+
                         {item.last_chat
-                          ? new Date(item.last_chat).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })
+                          ? new Date(item.last_chat).toLocaleDateString(
+                              "en-IN",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )
                           : "N/A"}
+
                       </span>
+
                     </td>
 
                     {/* Action */}
-                    <td className="px-6 py-4 text-center">
-                      <button
+{!isTp && (
+                    <td className="px-6 py-5 text-center">
+
+                      {/* <button
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/leads/${item.conversation_id}`);
                         }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm"
+                        className="
+                          inline-flex items-center gap-2
+                          px-4 py-2.5
+                          rounded-2xl
+                          bg-green-600 hover:bg-green-700
+                          text-white text-sm font-medium
+                          transition-all
+                          shadow-sm shadow-green-100
+                        "
                       >
-                        View <ArrowRight size={14} />
-                      </button>
+                        View
+                        <ArrowRight size={14} />
+                      </button> */}
+{!isTp && item.conversation_id ? (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/leads/${item.conversation_id}`);
+    }}
+    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-all shadow-sm shadow-green-100"
+  >
+    View
+    <ArrowRight size={14} />
+  </button>
+) : (
+  <span className="text-xs text-gray-400">—</span>
+)}
                     </td>
+)}
                   </tr>
+
                 ))
+
               )}
+
             </tbody>
+
           </table>
+
         </div>
 
-        {/* Pagination */}
+        {/* ------------------------------------------------------------------ */}
+        {/* MOBILE CARDS */}
+        {/* ------------------------------------------------------------------ */}
+
+        <div className="xl:hidden p-4 space-y-4">
+
+         {displayData.length === 0 ? (
+
+            <div className="py-20 text-center">
+
+              <div className="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mx-auto">
+                <User size={34} className="text-gray-300" />
+              </div>
+
+              <h3 className="text-lg font-semibold text-gray-700 mt-5">
+                No records found
+              </h3>
+
+              <p className="text-sm text-gray-400 mt-2">
+                Try changing filters
+              </p>
+
+            </div>
+
+          ) : (
+
+             displayData.map((item) => (
+
+              // <div
+              //   key={item.id}
+              //   onClick={() =>
+              //     navigate(`/leads/${item.conversation_id}`)
+              //   }
+              //   className="
+              //     border border-gray-100
+              //     rounded-3xl
+              //     p-5
+              //     hover:border-green-200
+              //     hover:bg-green-50/30
+              //     transition-all
+              //     cursor-pointer
+              //   "
+              // >
+              <div
+  key={item.id}
+  onClick={() => !isTp && item.conversation_id && navigate(`/leads/${item.conversation_id}`)}
+  className={`border border-gray-100 rounded-3xl p-5 transition-all ${!isTp && item.conversation_id ? "hover:border-green-200 hover:bg-green-50/30 cursor-pointer" : "cursor-default"}`}
+>
+
+                <div className="flex items-start justify-between gap-4">
+
+                  <div className="flex items-center gap-3">
+
+                    <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center">
+                      <User
+                        size={18}
+                        className="text-green-600"
+                      />
+                    </div>
+
+                    <div>
+
+                      <h3 className="text-sm font-semibold text-gray-800">
+                        {item.name || "Unknown"}
+                      </h3>
+
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                        <Phone size={12} />
+                        {item.phone}
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  {item.status === "lead" ? (
+
+                    <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                      Lead
+                    </span>
+
+                  ) : (
+
+                    <span className="px-3 py-1 rounded-full bg-orange-50 text-orange-700 text-xs font-semibold">
+                      Prospect
+                    </span>
+
+                  )}
+
+                </div>
+
+                <div className="grid grid-cols-2 gap-5 mt-6">
+
+                  <div>
+
+                    <p className="text-xs text-gray-400">
+                      Stage
+                    </p>
+
+                    <p className="text-sm text-gray-700 mt-1 capitalize">
+                      {item.chatbot_stage || "N/A"}
+                    </p>
+
+                  </div>
+
+                  <div>
+
+                    <p className="text-xs text-gray-400">
+                      Messages
+                    </p>
+
+                    <p className="text-sm text-gray-700 mt-1">
+                      {item.message_count || 0}
+                    </p>
+
+                  </div>
+
+                  <div>
+
+                    <p className="text-xs text-gray-400">
+                      Last Chat
+                    </p>
+
+                    <p className="text-sm text-gray-700 mt-1">
+
+                      {item.last_chat
+                        ? new Date(item.last_chat).toLocaleDateString(
+                            "en-IN",
+                            {
+                              day: "numeric",
+                              month: "short",
+                            }
+                          )
+                        : "N/A"}
+
+                    </p>
+
+                  </div>
+
+                </div>
+
+                {/* <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/leads/${item.conversation_id}`);
+                  }}
+                  className="
+                    w-full mt-6 py-3 rounded-2xl
+                    bg-green-600 hover:bg-green-700
+                    text-white text-sm font-semibold
+                    transition-all
+                  "
+                >
+                  View Details
+                </button> */}
+                {!isTp && item.conversation_id && (
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/leads/${item.conversation_id}`);
+    }}
+    className="w-full mt-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition-all"
+  >
+    View Details
+  </button>
+)}
+
+              </div>
+
+            ))
+
+          )}
+
+        </div>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* PAGINATION */}
+        {/* ------------------------------------------------------------------ */}
+
         {count > 20 && (
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Showing {(page - 1) * 20 + 1} - {Math.min(page * 20, count)} of {count}
+
+          <div className="px-5 py-5 border-t border-gray-100 bg-gray-50 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+
+            <p className="text-sm text-gray-500">
+
+              Showing{" "}
+              <span className="font-semibold text-gray-700">
+                {(page - 1) * 20 + 1}
+              </span>
+
+              -
+
+              <span className="font-semibold text-gray-700">
+                {Math.min(page * 20, count)}
+              </span>
+
+              {" "}of{" "}
+
+              <span className="font-semibold text-gray-700">
+                {count}
+              </span>
+
             </p>
-            <div className="flex gap-2">
+
+            <div className="flex items-center gap-3">
+
               <button
                 onClick={() => setPage(page - 1)}
                 disabled={page === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="
+                  inline-flex items-center gap-2
+                  px-4 py-2.5 rounded-2xl
+                  border border-gray-200
+                  bg-white
+                  text-sm text-gray-700
+                  hover:bg-gray-50
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
+                  transition-all
+                "
               >
+                <ChevronLeft size={16} />
                 Previous
               </button>
+
+              <div className="px-4 py-2.5 rounded-2xl bg-white border border-gray-200 text-sm font-semibold text-gray-700">
+                {page} / {totalPages}
+              </div>
+
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page * 20 >= count}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="
+                  inline-flex items-center gap-2
+                  px-4 py-2.5 rounded-2xl
+                  border border-gray-200
+                  bg-white
+                  text-sm text-gray-700
+                  hover:bg-gray-50
+                  disabled:opacity-50
+                  disabled:cursor-not-allowed
+                  transition-all
+                "
               >
                 Next
+                <ChevronRight size={16} />
               </button>
+
             </div>
+
           </div>
+
         )}
+
       </Card>
+
     </div>
   );
 };

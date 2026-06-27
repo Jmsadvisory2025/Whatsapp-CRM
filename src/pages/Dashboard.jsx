@@ -1,369 +1,598 @@
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchDashboard } from "../store/dashboardSlice";
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  MessageSquare, Send, CheckCircle, Eye, XCircle,
-  LayoutTemplate, Smartphone, Loader2, AlertCircle,
-  Wifi, ArrowRight, TrendingUp, RefreshCw,
-} from "lucide-react";
-import Card from "../components/ui/Card";
-import { FaWhatsapp } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
+import {
+  MessageSquare, CheckCheck, Eye, AlertCircle, Layout,
+  Users, TrendingUp, TrendingDown, RefreshCw, Wifi, WifiOff,
+  Calendar, Activity, Zap, BarChart2, PieChart as PieIcon,
+} from "lucide-react";
+import { isTechProvider } from "../store/authUtils";
 
-/* -------------------------------------------------------------------------- */
-/*                                 STAT CARD                                  */
-/* -------------------------------------------------------------------------- */
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+// const BOT_API  = import.meta.env.VITE_BOT_API_URL;
 
-const COLORS = {
-  green:   { bg: "bg-green-100",   text: "text-green-600",   border: "border-green-200"   },
-  blue:    { bg: "bg-blue-100",    text: "text-blue-600",    border: "border-blue-200"    },
-  purple:  { bg: "bg-purple-100",  text: "text-purple-600",  border: "border-purple-200"  },
-  red:     { bg: "bg-red-100",     text: "text-red-600",     border: "border-red-200"     },
-  orange:  { bg: "bg-orange-100",  text: "text-orange-600",  border: "border-orange-200"  },
-  emerald: { bg: "bg-emerald-100", text: "text-emerald-600", border: "border-emerald-200" },
+/* ─── Helpers ───────────────────────────────────────────────── */
+const token = () => localStorage.getItem("accessToken");
+
+const fmt = (n) =>
+  n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n ?? 0);
+
+const pct = (num, den) =>
+  den > 0 ? ((num / den) * 100).toFixed(1) + "%" : "—";
+
+/* ─── Color palette ─────────────────────────────────────────── */
+const C = {
+  blue:   "#3b82f6",
+  green:  "#22c55e",
+  amber:  "#f59e0b",
+  red:    "#ef4444",
+  purple: "#8b5cf6",
+  teal:   "#14b8a6",
+  slate:  "#64748b",
+  indigo: "#6366f1",
 };
 
-const StatCard = ({ icon: Icon, label, value, color = "green", sub }) => {
-  const c = COLORS[color];
-  return (
-    <Card className={`p-5 border ${c.border} hover:shadow-lg transition-all duration-300`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-500 font-medium">{label}</p>
-          <h2 className="text-3xl font-bold mt-1 text-gray-800">{value?.toLocaleString()}</h2>
-          {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
-        </div>
-        <div className={`${c.bg} p-3 rounded-2xl`}>
-          <Icon className={c.text} size={24} />
-        </div>
+/* ─── Reusable stat card ────────────────────────────────────── */
+const StatCard = ({ icon: Icon, label, value, sub, color, trend }) => (
+  <div
+    className="bg-white rounded-xl p-5 border border-gray-100 flex flex-col gap-3"
+    style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+  >
+    <div className="flex items-center justify-between">
+      <div
+        className="w-10 h-10 rounded-lg flex items-center justify-center"
+        style={{ background: `${color}18` }}
+      >
+        <Icon size={20} style={{ color }} />
       </div>
-    </Card>
-  );
-};
+      {trend !== undefined && (
+        <span
+          className="text-xs font-medium flex items-center gap-1 px-2 py-0.5 rounded-full"
+          style={
+            trend >= 0
+              ? { background: "#dcfce7", color: "#15803d" }
+              : { background: "#fee2e2", color: "#dc2626" }
+          }
+        >
+          {trend >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+          {Math.abs(trend)}%
+        </span>
+      )}
+    </div>
+    <div>
+      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-sm text-gray-500 mt-0.5">{label}</p>
+      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    </div>
+  </div>
+);
 
-/* -------------------------------------------------------------------------- */
-/*                          CUSTOM TOOLTIP FOR CHART                         */
-/* -------------------------------------------------------------------------- */
+/* ─── Section header ────────────────────────────────────────── */
+const SectionHeader = ({ icon: Icon, title, sub, color }) => (
+  <div className="flex items-center gap-2 mb-4">
+    <div
+      className="w-7 h-7 rounded-md flex items-center justify-center"
+      style={{ background: `${color}18` }}
+    >
+      <Icon size={14} style={{ color }} />
+    </div>
+    <div>
+      <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+      {sub && <p className="text-xs text-gray-400">{sub}</p>}
+    </div>
+  </div>
+);
 
+/* ─── Custom tooltip ────────────────────────────────────────── */
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3">
-      <p className="text-sm font-semibold text-gray-700">{label}</p>
-      <p className="text-green-600 font-bold text-lg">{payload[0].value} messages</p>
+    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
+      <p className="font-semibold text-gray-700 mb-1">{label}</p>
+      {payload.map((p) => (
+        <p key={p.name} style={{ color: p.color }}>
+          {p.name}: <span className="font-bold">{p.value}</span>
+        </p>
+      ))}
     </div>
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/*                                DASHBOARD                                   */
-/* -------------------------------------------------------------------------- */
+/* ─── Empty state ────────────────────────────────────────────── */
+function EmptyChart({ label }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-40 text-gray-400 gap-2">
+      <BarChart2 size={28} className="opacity-30" />
+      <p className="text-xs">{label}</p>
+    </div>
+  );
+}
 
-const Dashboard = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { data, loading, error } = useSelector((s) => s.dashboard);
+/* ─── Main Dashboard ────────────────────────────────────────── */
+export default function Dashboard() {
+  const userEmail = localStorage.getItem("ownerEmail") || "";
+  const isTp      = isTechProvider(userEmail);
 
-  useEffect(() => {
-    dispatch(fetchDashboard());
-  }, [dispatch]);
+  const [data, setData]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  /* ── Loading ── */
-  if (loading) {
+  const fetchAnalytics = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      if (isTp) {
+        const tk  = localStorage.getItem("accessToken");
+        const res = await fetch(`${API_BASE}api/industry/dashboard/`, {
+          headers: { Authorization: `Bearer ${tk}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+
+        setData({
+          status: "connected",
+          totals: {
+            messages:      json.total_messages,
+            delivered:     0,
+            read:          0,
+            failed:        0,
+            templates:     0,
+            conversations: json.total_conversations,
+          },
+          daily_stats: json.messages_last_7_days.map((d) => ({
+            day:   d.date,
+            count: d.count,
+          })),
+          template_stats: [],
+          tp_summary: {
+            total_customers:         json.total_customers,
+            active_today:            json.active_today,
+            new_today:               json.new_today,
+            conversations_by_status: json.conversations_by_status,
+          },
+        });
+      } else {
+        const res = await fetch(`${API_BASE}api/analytics/`, {
+          headers: { Authorization: `Bearer ${token()}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        setData(json);
+      }
+      setLastUpdated(new Date());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [isTp]);
+
+  useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
+
+  /* ── Loading skeleton ─────────────────────────────────────── */
+  if (loading && !data) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-            <Loader2 className="animate-spin text-green-600" size={35} />
-          </div>
-          <h2 className="mt-5 text-xl font-bold text-gray-800">Loading Dashboard...</h2>
-          <p className="text-gray-500 mt-1">Fetching WhatsApp analytics</p>
+      <div className="p-6 space-y-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {Array(6).fill(0).map((_, i) => (
+            <div key={i} className="bg-gray-100 rounded-xl h-28 animate-pulse" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-gray-100 rounded-xl h-64 animate-pulse" />
+          <div className="bg-gray-100 rounded-xl h-64 animate-pulse" />
         </div>
       </div>
     );
   }
 
-  /* ── Error ── */
-  if (error) {
+  /* ── Not connected / no org ───────────────────────────────── */
+  if (data?.status === "not_connected" || data?.status === "no_org") {
     return (
-      <div className="p-10">
-        <Card className="p-8 border border-red-200 bg-red-50">
-          <div className="flex items-start gap-4">
-            <div className="bg-red-100 p-3 rounded-2xl">
-              <AlertCircle className="text-red-600" size={24} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-red-700">Dashboard Error</h2>
-              <p className="text-red-600 mt-2">{error}</p>
-              <button
-                onClick={() => dispatch(fetchDashboard())}
-                className="mt-5 px-5 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-all inline-flex items-center gap-2"
-              >
-                <RefreshCw size={15} /> Retry
-              </button>
-            </div>
-          </div>
-        </Card>
+      <div className="p-6 flex flex-col items-center justify-center min-h-64 gap-4">
+        <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center">
+          <WifiOff size={28} className="text-amber-500" />
+        </div>
+        <p className="text-base font-semibold text-gray-700">WhatsApp not connected</p>
+        <p className="text-sm text-gray-400 text-center max-w-xs">
+          {data?.status === "no_org"
+            ? "No organisation found. Complete setup first."
+            : "Connect your WABA account to start seeing analytics."}
+        </p>
       </div>
     );
   }
 
-  /* ── Empty ── */
-  if (!data) {
+  /* ── Error state ──────────────────────────────────────────── */
+  if (error && !data) {
     return (
-      <div className="p-10">
-        <Card className="p-10 text-center text-gray-500">No dashboard data found.</Card>
+      <div className="p-6 flex flex-col items-center justify-center min-h-64 gap-4">
+        <AlertCircle size={32} className="text-red-400" />
+        <p className="text-sm text-gray-600">Failed to load analytics: {error}</p>
+        <button
+          onClick={fetchAnalytics}
+          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Retry
+        </button>
       </div>
     );
   }
 
-  /* ── No Org ── */
-  if (data.status === "no_org") {
-    return (
-      <div className="p-10">
-        <Card className="p-10 border border-yellow-200 bg-yellow-50 text-center">
-          <div className="w-20 h-20 rounded-full bg-yellow-100 flex items-center justify-center mx-auto">
-            <Wifi className="text-yellow-700" size={35} />
-          </div>
-          <h2 className="text-2xl font-bold text-yellow-800 mt-5">No Organization Found</h2>
-          <p className="mt-3 text-yellow-700 max-w-md mx-auto">
-            Please create your organization before accessing the dashboard.
-          </p>
-          <button
-            onClick={() => navigate("/setup")}
-            className="mt-6 px-6 py-3 rounded-2xl bg-yellow-600 text-white hover:bg-yellow-700 transition-all inline-flex items-center gap-2"
-          >
-            Create Organization <ArrowRight size={16} />
-          </button>
-        </Card>
-      </div>
-    );
-  }
+  const { totals = {}, daily_stats = [], template_stats = [], waba = {} } = data || {};
 
-  /* ── Not Connected ── */
-  if (data.status === "not_connected") {
-    return (
-      <div className="p-10">
-        <Card className="p-10 border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-            <div>
-              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-                <FaWhatsapp className="text-green-600" size={38} />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-800 mt-5">Connect WhatsApp Business</h2>
-              <p className="mt-3 text-gray-600 max-w-xl leading-relaxed">
-                Connect your WhatsApp Business account to start sending template messages,
-                manage conversations, broadcast campaigns, analytics, and automation directly
-                from JMS Meta CRM.
-              </p>
-              <div className="mt-5 space-y-2 text-sm text-gray-600">
-                {["Real-time WhatsApp messaging", "Template & campaign management", "Delivery & read analytics"].map((f) => (
-                  <div key={f} className="flex items-center gap-2">
-                    <CheckCircle size={16} className="text-green-600" /> {f}
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => navigate("/setup")}
-                className="mt-7 px-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white font-semibold transition-all inline-flex items-center gap-2"
-              >
-                <FaWhatsapp size={18} /> Connect WhatsApp
-              </button>
-            </div>
-            <div className="hidden lg:block">
-              <div className="w-72 h-72 rounded-full bg-green-100 flex items-center justify-center">
-                <Smartphone className="text-green-600" size={120} />
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  /* ── Derived data ─────────────────────────────────────────── */
+  const deliveryRate = pct(totals.delivered, totals.messages);
+  const readRate     = pct(totals.read, totals.messages);
+  const failRate     = pct(totals.failed, totals.messages);
 
-  /* ── Connected ── */
-  const { totals = {}, waba = {}, template_stats = [], daily_stats = [] } = data;
+  const chartDailyRaw = [...daily_stats].reverse().map((d) => ({
+    date: d.day
+      ? new Date(d.day).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })
+      : "—",
+    Messages: d.count,
+  }));
 
-  // Compute delivery & read rates
-  const deliveryRate = totals.messages
-    ? ((totals.delivered / totals.messages) * 100).toFixed(1)
-    : 0;
-  const readRate = totals.delivered
-    ? ((totals.read / totals.delivered) * 100).toFixed(1)
-    : 0;
+  const pieData = [
+    { name: "Delivered", value: totals.delivered || 0, color: C.green },
+    { name: "Read",      value: totals.read      || 0, color: C.blue  },
+    { name: "Failed",    value: totals.failed    || 0, color: C.red   },
+    {
+      name: "Other",
+      value: Math.max(
+        0,
+        (totals.messages || 0) - (totals.delivered || 0) - (totals.read || 0) - (totals.failed || 0)
+      ),
+      color: C.slate,
+    },
+  ].filter((d) => d.value > 0);
 
-  // Format daily_stats for recharts: [{day, count}] → [{name, messages}]
-  const chartData = [...daily_stats]
-    .reverse()
-    .map((d) => ({
-      name: new Date(d.day).toLocaleDateString("en-IN", { month: "short", day: "numeric" }),
-      messages: d.count,
-    }));
+  const templateChart = template_stats.slice(0, 8).map((t) => ({
+    name:     t.template_name?.length > 18 ? t.template_name.slice(0, 18) + "…" : t.template_name,
+    fullName: t.template_name,
+    Sent:     t.sent,
+  }));
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-5 space-y-5 bg-gray-50 min-h-full">
 
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+      {/* ── Top bar ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-4xl font-bold text-gray-800">JMS Meta CRM</h1>
-          <p className="text-gray-500 mt-2 text-lg">WhatsApp Business Analytics Dashboard</p>
+          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {waba?.waba_name
+              ? <><span className="font-medium text-gray-700">{waba.waba_name}</span> · {waba.phone_number}</>
+              : "WhatsApp Business Analytics"}
+          </p>
         </div>
+
         <div className="flex items-center gap-3">
+          {waba?.status && (
+            <span
+              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+              style={
+                waba.status === "connected"
+                  ? { background: "#dcfce7", color: "#15803d" }
+                  : { background: "#fef3c7", color: "#92400e" }
+              }
+            >
+              {waba.status === "connected" ? <Wifi size={11} /> : <WifiOff size={11} />}
+              {waba.status}
+            </span>
+          )}
+          {lastUpdated && (
+            <span className="text-xs text-gray-400">
+              Updated {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
           <button
-            onClick={() => dispatch(fetchDashboard())}
-            className="p-2 rounded-xl border border-gray-200 hover:bg-gray-50 transition-all text-gray-500"
-            title="Refresh"
+            onClick={fetchAnalytics}
+            disabled={loading}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
-            <RefreshCw size={18} />
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+            Refresh
           </button>
-          <div className="bg-green-100 text-green-700 px-5 py-3 rounded-2xl font-semibold flex items-center gap-2">
-            <CheckCircle size={18} /> Connected
-          </div>
         </div>
       </div>
 
-      {/* WABA Card */}
-      <Card className="p-7 border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-2xl bg-green-600 flex items-center justify-center text-white">
-              <FaWhatsapp size={30} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">{waba.waba_name || "WhatsApp Business"}</h2>
-              <p className="text-green-700 mt-1">{waba.phone_number || "No Number"}</p>
-              <p className="text-xs text-gray-500 mt-2 break-all">WABA ID: {waba.waba_id}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-6 text-center">
-            <div>
-              <p className="text-2xl font-bold text-gray-800">{deliveryRate}%</p>
-              <p className="text-xs text-gray-500 mt-1">Delivery Rate</p>
-            </div>
-            <div className="w-px h-10 bg-gray-200" />
-            <div>
-              <p className="text-2xl font-bold text-gray-800">{readRate}%</p>
-              <p className="text-xs text-gray-500 mt-1">Read Rate</p>
-            </div>
-            <div className="w-px h-10 bg-gray-200" />
-            <div className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-xl">
-              <CheckCircle size={16} /> Active
-            </div>
-          </div>
+      {/* ── KPI Cards ────────────────────────────────────────── */}
+      {isTp ? (
+        /* TechProvider — 6 relevant cards */
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <StatCard
+            icon={MessageSquare} label="Total Messages"
+            value={fmt(totals.messages)} color={C.blue} sub="Outbound sent"
+          />
+          {/* <StatCard
+            icon={Users} label="Conversations"
+            value={fmt(totals.conversations)} color={C.teal} sub="Unique contacts"
+          /> */}
+          <StatCard
+            icon={Users} label="Total Customers"
+            value={fmt(data?.tp_summary?.total_customers)} color={C.indigo}
+          />
+          <StatCard
+            icon={Activity} label="Active Today"
+            value={fmt(data?.tp_summary?.active_today)} color={C.green}
+          />
+          {/* <StatCard
+            icon={Zap} label="New Today"
+            value={fmt(data?.tp_summary?.new_today)} color={C.amber}
+          /> */}
+          {/* <StatCard
+            icon={BarChart2} label="Prospects"
+            value={fmt(data?.tp_summary?.conversations_by_status?.prospect ?? 0)} color={C.purple}
+          /> */}
         </div>
-      </Card>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard icon={Send}          label="Messages"      value={totals.messages}      color="green"   />
-        <StatCard icon={CheckCircle}   label="Delivered"     value={totals.delivered}     color="emerald" sub={`${deliveryRate}% rate`} />
-        <StatCard icon={Eye}           label="Read"          value={totals.read}          color="blue"    sub={`${readRate}% of delivered`} />
-        <StatCard icon={XCircle}       label="Failed"        value={totals.failed}        color="red"     />
-        <StatCard icon={LayoutTemplate} label="Templates"   value={totals.templates}     color="purple"  />
-        <StatCard icon={MessageSquare} label="Conversations" value={totals.conversations} color="orange"  />
-      </div>
-
-      {/* Daily Messages Chart */}
-      {chartData.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Daily Messages</h2>
-              <p className="text-sm text-gray-500 mt-1">Last 7 days activity</p>
-            </div>
-            <div className="bg-gray-100 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 flex items-center gap-2">
-              <TrendingUp size={16} /> Last 7 Days
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={chartData} barSize={32}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 12, fill: "#9ca3af" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: "#9ca3af" }}
-                axisLine={false}
-                tickLine={false}
-                allowDecimals={false}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f0fdf4" }} />
-              <Bar dataKey="messages" fill="#16a34a" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
+      ) : (
+        /* Normal org — all 6 message-delivery cards */
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <StatCard
+            icon={MessageSquare} label="Total Messages"
+            value={fmt(totals.messages)} color={C.blue} sub="Outbound sent"
+          />
+          <StatCard
+            icon={CheckCheck} label="Delivered"
+            value={fmt(totals.delivered)} color={C.green} sub={deliveryRate + " rate"}
+          />
+          <StatCard
+            icon={Eye} label="Read"
+            value={fmt(totals.read)} color={C.indigo} sub={readRate + " read rate"}
+          />
+          <StatCard
+            icon={AlertCircle} label="Failed"
+            value={fmt(totals.failed)} color={C.red} sub={failRate + " fail rate"}
+          />
+          <StatCard
+            icon={Layout} label="Templates"
+            value={fmt(totals.templates)} color={C.purple} sub="Active templates"
+          />
+          <StatCard
+            icon={Users} label="Conversations"
+            value={fmt(totals.conversations)} color={C.teal} sub="Unique contacts"
+          />
+        </div>
       )}
 
-      {/* Template Stats */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Top Templates</h2>
-            <p className="text-sm text-gray-500 mt-1">Most used WhatsApp templates</p>
-          </div>
-          <div className="bg-gray-100 px-4 py-2 rounded-xl text-sm font-medium text-gray-600">
-            {template_stats.length} Templates
-          </div>
+      {/* ── Charts Row 1 ─────────────────────────────────────── */}
+      <div className={`grid grid-cols-1 gap-4 ${!isTp ? "lg:grid-cols-3" : ""}`}>
+
+        {/* Messages Over Time — full width for TP, 2/3 for normal */}
+        <div
+          className={`${!isTp ? "lg:col-span-2" : ""} bg-white rounded-xl p-5 border border-gray-100`}
+          style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+        >
+          <SectionHeader
+            icon={Activity} title="Messages Over Time"
+            sub="Last 7 days outbound volume" color={C.blue}
+          />
+          {chartDailyRaw.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={chartDailyRaw} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor={C.blue} stopOpacity={0.18} />
+                    <stop offset="95%" stopColor={C.blue} stopOpacity={0.01} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone" dataKey="Messages"
+                  stroke={C.blue} strokeWidth={2.5}
+                  fill="url(#blueGrad)"
+                  dot={{ r: 3, fill: C.blue, strokeWidth: 0 }}
+                  activeDot={{ r: 5 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyChart label="No message data yet" />
+          )}
         </div>
 
-        {template_stats.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto">
-              <LayoutTemplate className="text-gray-400" size={35} />
-            </div>
-            <h3 className="text-xl font-bold text-gray-700 mt-5">No Templates Yet</h3>
-            <p className="text-gray-500 mt-2">Templates will appear here after sending messages.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Max sent count for progress bars */}
-            {(() => {
-              const maxSent = Math.max(...template_stats.map((t) => t.sent), 1);
-              return template_stats.map((t, i) => (
-                <div
-                  key={i}
-                  className="border border-gray-200 rounded-2xl px-5 py-4 hover:border-green-300 hover:bg-green-50 transition-all"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-green-100 p-2.5 rounded-xl">
-                        <LayoutTemplate size={18} className="text-green-700" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-800">
-                          {t.template_name || "Unknown Template"}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">WhatsApp Template</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-800">{t.sent?.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500">Messages</p>
-                    </div>
-                  </div>
-                  {/* Progress bar */}
-                  <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-green-500 rounded-full transition-all duration-500"
-                      style={{ width: `${(t.sent / maxSent) * 100}%` }}
+        {/* Delivery Breakdown — normal org only */}
+        {!isTp && (
+          <div
+            className="bg-white rounded-xl p-5 border border-gray-100"
+            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+          >
+            <SectionHeader
+              icon={PieIcon} title="Delivery Breakdown"
+              sub="Message status distribution" color={C.green}
+            />
+            {pieData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie
+                      data={pieData} cx="50%" cy="50%"
+                      innerRadius={45} outerRadius={70}
+                      paddingAngle={3} dataKey="value"
+                      strokeWidth={0}
+                    >
+                      {pieData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(val, name) => [
+                        `${val} (${pct(val, totals.messages)})`,
+                        name,
+                      ]}
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
                     />
-                  </div>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-1.5 mt-1">
+                  {pieData.map((d) => (
+                    <div key={d.name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
+                        <span className="text-gray-600">{d.name}</span>
+                      </div>
+                      <span className="font-semibold text-gray-700">
+                        {fmt(d.value)}{" "}
+                        <span className="text-gray-400 font-normal">({pct(d.value, totals.messages)})</span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ));
-            })()}
+              </>
+            ) : (
+              <EmptyChart label="No delivery data" />
+            )}
           </div>
         )}
-      </Card>
+      </div>
+
+      {/* ── Charts Row 2 ─────────────────────────────────────── */}
+      <div className={`grid grid-cols-1 gap-4 ${!isTp ? "lg:grid-cols-2" : ""}`}>
+
+        {/* Template Performance — normal org only */}
+        {!isTp && (
+          <div
+            className="bg-white rounded-xl p-5 border border-gray-100"
+            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+          >
+            <SectionHeader
+              icon={BarChart2} title="Template Performance"
+              sub="Top templates by messages sent" color={C.purple}
+            />
+            {templateChart.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart
+                  data={templateChart}
+                  layout="vertical"
+                  margin={{ top: 0, right: 12, left: 0, bottom: 0 }}
+                  barSize={14}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                  <YAxis
+                    type="category" dataKey="name" width={110}
+                    tick={{ fontSize: 10, fill: "#64748b" }} tickLine={false} axisLine={false}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0]?.payload;
+                      return (
+                        <div className="bg-white border border-gray-200 rounded-lg shadow px-3 py-2 text-xs">
+                          <p className="font-semibold text-gray-700 mb-1">{d?.fullName}</p>
+                          <p style={{ color: C.purple }}>Sent: <b>{d?.Sent}</b></p>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Bar
+                    dataKey="Sent" fill={C.purple} radius={[0, 4, 4, 0]}
+                    background={{ fill: "#f8fafc", radius: [0, 4, 4, 0] }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <EmptyChart label="No template usage data" />
+            )}
+          </div>
+        )}
+
+        {/* Daily Summary — both TP and normal */}
+        {/* <div
+          className="bg-white rounded-xl p-5 border border-gray-100"
+          style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+        >
+          <SectionHeader
+            icon={Calendar} title="Daily Summary"
+            sub="Last 7 days breakdown" color={C.amber}
+          />
+          {daily_stats.length > 0 ? (
+            <div className="overflow-hidden rounded-lg border border-gray-100">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2">Date</th>
+                    <th className="text-right text-xs font-semibold text-gray-500 px-3 py-2">Messages</th>
+                    <th className="text-right text-xs font-semibold text-gray-500 px-3 py-2">Share</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {[...daily_stats].reverse().map((d, i) => {
+                    const total = daily_stats.reduce((a, r) => a + r.count, 0);
+                    const share = total > 0 ? ((d.count / total) * 100).toFixed(1) : "0";
+                    return (
+                      <tr key={i} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-3 py-2.5 text-gray-700 font-medium">
+                          {d.day
+                            ? new Date(d.day).toLocaleDateString("en-IN", {
+                                weekday: "short", day: "numeric", month: "short",
+                              })
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-gray-900 font-bold">{fmt(d.count)}</td>
+                        <td className="px-3 py-2.5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${share}%`, background: C.amber }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-400 w-8 text-right">{share}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyChart label="No daily data available" />
+          )}
+        </div> */}
+      </div>
+
+      {/* ── Delivery Health — normal org only ────────────────── */}
+      {!isTp && (
+        <div
+          className="bg-white rounded-xl p-5 border border-gray-100"
+          style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+        >
+          <SectionHeader
+            icon={Zap} title="Delivery Health" sub="Message delivery funnel" color={C.teal}
+          />
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: "Delivery Rate", value: deliveryRate, num: totals.delivered, color: C.green,  icon: CheckCheck  },
+              { label: "Read Rate",     value: readRate,     num: totals.read,      color: C.blue,   icon: Eye         },
+              { label: "Failure Rate",  value: failRate,     num: totals.failed,    color: C.red,    icon: AlertCircle },
+            ].map(({ label, value, num, color, icon: Icon }) => (
+              <div key={label} className="text-center p-4 rounded-lg bg-gray-50">
+                <div className="flex justify-center mb-2">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: `${color}20` }}
+                  >
+                    <Icon size={16} style={{ color }} />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold" style={{ color }}>{value}</p>
+                <p className="text-xs text-gray-500 mt-1">{label}</p>
+                <p className="text-xs text-gray-400">{fmt(num)} messages</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
-};
-
-export default Dashboard;
+}

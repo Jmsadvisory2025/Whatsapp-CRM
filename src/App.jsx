@@ -8,29 +8,24 @@ import {
 import { store } from './store/store';
 import LoaderDemo from "./components/ui/ProfessionalMedicalLoader ";
 
-// Lazy load components for better performance
-const LandingPage    = lazy(() => import("./pages/LandingPage"));
-const SignUp         = lazy(() => import("./pages/SignUp"));
-const SignIn         = lazy(() => import("./pages/SignIn"));
-const Verification   = lazy(() => import("./pages/Verification"));
-const CreateOrganization = lazy(() => import("./pages/CreateOrganization"));
-const AppLayout      = lazy(() => import("./components/layout/AppLayout"));
-const Dashboard      = lazy(() => import("./pages/Dashboard"));
-const Leads          = lazy(() => import("./pages/Leads"));
-const Prospects      = lazy(() => import("./pages/Prospects"));
-const Reminders      = lazy(() => import("./pages/Reminders"));
-const LeadInfo       = lazy(() => import("./pages/LeadInfo"));
-const Team           = lazy(() => import("./pages/Team"));
-const Whatsapp       = lazy(() => import("./pages/Whatsapp"));
-const AddMember      = lazy(() => import("./subpages/AddMember"));
-const ErrorPage      = lazy(() => import("./pages/ErrorPage"));
-const VoiceBot       = lazy(() => import("./pages/VoiceBot"));
-const Templates      = lazy(() => import("./pages/Templates"));
-const KnowledgeBase  = lazy(() => import("./pages/KnowledgeBase"));
-const Campaign       = lazy(() => import("./pages/Campaign"));
-const HomeResolver   = lazy(() => import("./components/guards/HomeResolver"));
-const LeadsProspects = lazy(() => import("./pages/LeadsProspects"));
-
+const TechProviderClients  = lazy(() => import("./pages/TechProviderClients"));
+const LandingPage          = lazy(() => import("./pages/LandingPage"));
+const SignUp               = lazy(() => import("./pages/SignUp"));
+const SignIn               = lazy(() => import("./pages/SignIn"));
+const Verification         = lazy(() => import("./pages/Verification"));
+const CreateOrganization   = lazy(() => import("./pages/CreateOrganization"));
+const AppLayout            = lazy(() => import("./components/layout/AppLayout"));
+const Dashboard            = lazy(() => import("./pages/Dashboard"));
+const LeadsProspects       = lazy(() => import("./pages/LeadsProspects"));
+const Team                 = lazy(() => import("./pages/Team"));
+const Whatsapp             = lazy(() => import("./pages/Whatsapp"));
+const AddMember            = lazy(() => import("./subpages/AddMember"));
+const ErrorPage            = lazy(() => import("./pages/ErrorPage"));
+const Templates            = lazy(() => import("./pages/Templates"));
+const KnowledgeBase        = lazy(() => import("./pages/KnowledgeBase"));
+const Campaign             = lazy(() => import("./pages/Campaign"));
+const HomeResolver         = lazy(() => import("./components/guards/HomeResolver"));
+const ConnectedBusinessDetails = lazy(() => import("./pages/ConnectedBusinessDetails"))
 const router = createBrowserRouter(
   [
     // Public routes
@@ -50,8 +45,6 @@ const router = createBrowserRouter(
         </Suspense>
       ),
     },
-
-    // Verification
     {
       path: "/verify",
       element: (
@@ -60,8 +53,6 @@ const router = createBrowserRouter(
         </Suspense>
       ),
     },
-
-    // Setup
     {
       path: "/setup",
       element: (
@@ -70,6 +61,15 @@ const router = createBrowserRouter(
         </Suspense>
       ),
     },
+    {
+    path:"/connected-business",
+    element:(
+      <Suspense fallback={<LoaderDemo />}>
+          <ConnectedBusinessDetails  />
+        </Suspense>
+      ),
+    },
+    
 
     // Protected app routes
     {
@@ -89,45 +89,17 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: "leads",
+          path: "leads-prospects",
           element: (
             <Suspense fallback={<LoaderDemo />}>
-              <Leads />
+              <LeadsProspects />
             </Suspense>
           ),
         },
-        {
-          path: "leads/:leadId",
-          element: (
-            <Suspense fallback={<LoaderDemo />}>
-              <LeadInfo />
-            </Suspense>
-          ),
-        },
-        {
-          path: "prospects",
-          element: (
-            <Suspense fallback={<LoaderDemo />}>
-              <Prospects />
-            </Suspense>
-          ),
-        },
-        {
-          path: "reminders",
-          element: (
-            <Suspense fallback={<LoaderDemo />}>
-              <Reminders />
-            </Suspense>
-          ),
-        },
-        {
-          path: "team",
-          element: (
-            <Suspense fallback={<LoaderDemo />}>
-              <Team />
-            </Suspense>
-          ),
-        },
+        // Old routes redirect to leads-prospects
+        { path: "leads",     element: <Navigate to="/leads-prospects" replace /> },
+        { path: "prospects", element: <Navigate to="/leads-prospects" replace /> },
+
         {
           path: "whatsapp",
           element: (
@@ -145,10 +117,10 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: "addMember",
+          path: "campaign",
           element: (
             <Suspense fallback={<LoaderDemo />}>
-              <AddMember />
+              <Campaign />
             </Suspense>
           ),
         },
@@ -161,21 +133,29 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: "campaign",
+          path: "team",
           element: (
             <Suspense fallback={<LoaderDemo />}>
-              <Campaign />
+              <Team />
             </Suspense>
           ),
         },
         {
-  path: "leads-prospects",
-  element: (
-    <Suspense fallback={<LoaderDemo />}>
-      <LeadsProspects />
-    </Suspense>
-  ),
-}
+          path: "addMember",
+          element: (
+            <Suspense fallback={<LoaderDemo />}>
+              <AddMember />
+            </Suspense>
+          ),
+        },
+        {
+          path: "clients",
+          element: (
+            <Suspense fallback={<LoaderDemo />}>
+              <TechProviderClients />
+            </Suspense>
+          ),
+        },
       ],
       errorElement: (
         <Suspense fallback={<LoaderDemo />}>
@@ -193,16 +173,11 @@ const router = createBrowserRouter(
         </Suspense>
       ),
     },
-    {
-      path: "/voicebot",
-      element: <VoiceBot />,
-    },
 
     // Catch all
     { path: "*", element: <Navigate to="/error/404" replace /> },
   ],
   {
-    // ✅ ADD THIS BLOCK - Future flags configuration
     future: {
       v7_startTransition: true,
       v7_relativeSplatPath: true,
