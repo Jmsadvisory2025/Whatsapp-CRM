@@ -9,7 +9,7 @@ import {
   Building2, Wifi, WifiOff, Search, RefreshCw,
   ChevronDown, ChevronUp, Users, Globe, Mail,
   Phone, Calendar, CheckCircle2, Clock, XCircle,
-  Shield, BadgeCheck, AlertTriangle, Star, Zap,
+  Shield, BadgeCheck, AlertTriangle, Star, Zap, FileText, X
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -141,11 +141,120 @@ function SummaryCard({ label, value, color }) {
   );
 }
 
+// ─── Meta Registration Modal ──────────────────────────────────────────────────
+
+function MetaRegistrationModal({ clientId, onClose }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    const fetchDocs = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const res = await axios.get(`${API_BASE_URL}api/techprovider/clients/${clientId}/meta-registration/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setData(res.data);
+      } catch (err) {
+        setError("Documents not found or failed to load.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDocs();
+  }, [clientId]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="p-5 border-b flex justify-between items-center">
+          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900">
+            <FileText className="h-5 w-5 text-indigo-600" /> Client Meta Registration Details
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="p-6 overflow-y-auto bg-gray-50 flex-1">
+          {loading ? (
+            <div className="flex justify-center p-8"><RefreshCw className="animate-spin text-indigo-600" /></div>
+          ) : error ? (
+            <div className="p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>
+          ) : !data ? (
+            <div className="text-gray-500 text-center p-8">No data found.</div>
+          ) : (
+            <div className="space-y-6">
+              
+              <div className="bg-white p-5 rounded-lg border shadow-sm">
+                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Business Details</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <InfoRow label="Legal Name" value={data.legal_business_name} />
+                  <InfoRow label="Display Name" value={data.business_display_name} />
+                  <InfoRow label="Type" value={data.business_type} />
+                  <InfoRow label="Category" value={data.business_category} />
+                  <InfoRow label="GST Number" value={data.gst_number} />
+                  <InfoRow label="Dedicated Phone" value={data.dedicated_phone_number} />
+                  <div className="col-span-2">
+                    <InfoRow label="Description" value={data.business_description} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-lg border shadow-sm">
+                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Online Presence</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <InfoRow label="Website" value={data.official_website ? <a href={data.official_website} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">{data.official_website}</a> : '-'} />
+                  <InfoRow label="Domain Email" value={data.domain_linked_email} />
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-lg border shadow-sm">
+                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Facebook / Meta Account</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <InfoRow label="Account Name" value={data.meta_facebook_account} />
+                  <InfoRow label="Email" value={data.facebook_email} />
+                  <InfoRow label="Password" value={data.facebook_password || '-'} />
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-lg border shadow-sm">
+                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Billing & Documents</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <InfoRow label="Intl Card Available" value={data.international_card_available ? 'Yes' : 'No'} />
+                  <InfoRow label="Card Number" value={data.international_card_number} />
+                  <InfoRow label="Card Image" value={data.international_card_image ? <a href={`${API_BASE_URL}${data.international_card_image}`} target="_blank" download rel="noreferrer" className="text-indigo-600 hover:underline font-medium">Download / View File</a> : 'Not uploaded'} />
+                  <InfoRow label="Business Logo" value={data.business_logo ? <a href={`${API_BASE_URL}${data.business_logo}`} target="_blank" download rel="noreferrer" className="text-indigo-600 hover:underline font-medium">Download / View File</a> : 'Not uploaded'} />
+                  <InfoRow label="Verification Doc" value={data.verification_document ? <a href={`${API_BASE_URL}${data.verification_document}`} target="_blank" download rel="noreferrer" className="text-indigo-600 hover:underline font-medium">Download / View File</a> : 'Not uploaded'} />
+                </div>
+              </div>
+
+              <div className="bg-white p-5 rounded-lg border shadow-sm">
+                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Bot Use Case</h3>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap mb-4">{data.bot_use_case_brief || 'Not provided'}</p>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <InfoRow label="Flow Diagram / Document" value={data.bot_use_case_document ? <a href={`${API_BASE_URL}${data.bot_use_case_document}`} target="_blank" download rel="noreferrer" className="text-indigo-600 hover:underline font-medium">Download / View File</a> : 'Not uploaded'} />
+                </div>
+              </div>
+
+            </div>
+          )}
+        </div>
+        <div className="p-4 border-t bg-gray-50 flex justify-end">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium">Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Client row (expandable) ──────────────────────────────────────────────────
 
 function ClientRow({ client, onStatusChange }) {
   const [expanded, setExpanded] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const handleStatus = async (s) => {
     if (s === client.status || updating) return;
@@ -269,24 +378,37 @@ function ClientRow({ client, onStatusChange }) {
             <InfoRow icon={<Calendar size={13}/>}    label="Onboarded"         value={fmt(client.created_at)} />
           </div>
 
-          {/* ── CRM Status changer ── */}
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20, flexWrap:"wrap" }}>
-            <span style={{ fontSize:13, color:"#6b7280", fontWeight:500 }}>CRM Status:</span>
-            {Object.entries(CRM_STATUS).map(([s, m]) => (
-              <button key={s} disabled={updating || client.status === s}
-                onClick={e => { e.stopPropagation(); handleStatus(s); }}
-                style={{
-                  padding:"4px 12px", borderRadius:8,
-                  border:`1.5px solid ${client.status === s ? m.color : "#e5e7eb"}`,
-                  background: client.status === s ? m.bg : "#fff",
-                  color: client.status === s ? m.color : "#6b7280",
-                  fontSize:12, fontWeight:600,
-                  cursor: updating || client.status === s ? "not-allowed" : "pointer",
-                  opacity: updating ? 0.6 : 1, transition:"all 0.15s",
-                }}
-              >{m.label}</button>
-            ))}
+          {/* ── CRM Status changer & Documents ── */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20, flexWrap:"wrap", justifyContent: "space-between" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+              <span style={{ fontSize:13, color:"#6b7280", fontWeight:500 }}>CRM Status:</span>
+              {Object.entries(CRM_STATUS).map(([s, m]) => (
+                <button key={s} disabled={updating || client.status === s}
+                  onClick={e => { e.stopPropagation(); handleStatus(s); }}
+                  style={{
+                    padding:"4px 12px", borderRadius:8,
+                    border:`1.5px solid ${client.status === s ? m.color : "#e5e7eb"}`,
+                    background: client.status === s ? m.bg : "#fff",
+                    color: client.status === s ? m.color : "#6b7280",
+                    fontSize:12, fontWeight:600,
+                    cursor: updating || client.status === s ? "not-allowed" : "pointer",
+                    opacity: updating ? 0.6 : 1, transition:"all 0.15s",
+                  }}
+                >{m.label}</button>
+              ))}
+            </div>
+
+            {/* Documents Button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-sm font-semibold transition-colors border border-indigo-200"
+            >
+              <FileText size={16} />
+              View Registration Docs
+            </button>
           </div>
+
+          {modalOpen && <MetaRegistrationModal clientId={client.id} onClose={() => setModalOpen(false)} />}
 
           {/* ── Members ── */}
           {client.members?.length > 0 && (

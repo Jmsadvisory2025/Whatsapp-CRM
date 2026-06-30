@@ -13,6 +13,7 @@ import {
   Building2,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
+import { FaMeta } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import jmsLogo from "../../assets/jms.png";
@@ -24,6 +25,7 @@ const baseNavItems = [
   { icon: FaWhatsapp,      label: "Whatsapp",           path: "/whatsapp" },
   { icon: FileText,        label: "Templates",          path: "/templates" },
   { icon: Megaphone,       label: "Campaign",           path: "/campaign" },
+  { icon: FaMeta,          label: "Meta Documents",     path: "/meta-registration" },
   { icon: Users2,          label: "Profile",            path: "/team" },
 ];
 
@@ -46,7 +48,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
   const userRole = useSelector((s) => s.auth?.role || localStorage.getItem('userRole') || '');
 
   const navItems = isTechProvider(userEmail)
-    ? [...baseNavItems, techProviderItem]
+    ? [...baseNavItems.filter(item => item.label !== 'Meta Documents'), techProviderItem]
     : userRole.startsWith('client_')
       ? baseNavItems.filter(item => !['Templates', 'Campaign'].includes(item.label))
       : baseNavItems;

@@ -50,13 +50,19 @@ export const sendCampaign = createAsyncThunk(
     if (!token) return rejectWithValue("No auth token");
 
     try {
+      const isFormData = payload instanceof FormData;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+      
+      if (!isFormData) {
+        headers["Content-Type"] = "application/json";
+      }
+
       const resp = await fetch(`${API_BASE_URL}/api/campaigns/`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
+        headers,
+        body: isFormData ? payload : JSON.stringify(payload),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || data.detail || "Failed to send campaign");

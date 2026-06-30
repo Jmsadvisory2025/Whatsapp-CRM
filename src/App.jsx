@@ -26,6 +26,7 @@ const KnowledgeBase        = lazy(() => import("./pages/KnowledgeBase"));
 const Campaign             = lazy(() => import("./pages/Campaign"));
 const HomeResolver         = lazy(() => import("./components/guards/HomeResolver"));
 const ConnectedBusinessDetails = lazy(() => import("./pages/ConnectedBusinessDetails"))
+const MetaRegistration     = lazy(() => import("./pages/MetaRegistration"));
 const router = createBrowserRouter(
   [
     // Public routes
@@ -129,6 +130,14 @@ const router = createBrowserRouter(
           element: (
             <Suspense fallback={<LoaderDemo />}>
               <KnowledgeBase />
+            </Suspense>
+          ),
+        },
+        {
+          path: "meta-registration",
+          element: (
+            <Suspense fallback={<LoaderDemo />}>
+              <MetaRegistration />
             </Suspense>
           ),
         },

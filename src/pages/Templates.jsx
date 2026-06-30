@@ -33,6 +33,8 @@ import {
   ChevronDown,
   PlusCircle,
   Minus,
+  Image,
+  Film,
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -168,6 +170,21 @@ const WhatsAppPreview = ({ template }) => {
           </div>
         )}
 
+        {["IMAGE", "VIDEO", "DOCUMENT"].includes(template.header_type) && (
+          <div className="bg-gray-200 rounded-2xl h-32 flex flex-col items-center justify-center shadow-sm max-w-[85%] text-gray-400 overflow-hidden relative">
+            {template.header_type === "IMAGE" && template.example_media instanceof File ? (
+              <img src={URL.createObjectURL(template.example_media)} className="w-full h-full object-cover" alt="Preview" />
+            ) : (
+              <>
+                {template.header_type === "IMAGE" && <Image size={32} />}
+                {template.header_type === "VIDEO" && <Film size={32} />}
+                {template.header_type === "DOCUMENT" && <FileText size={32} />}
+                <span className="text-xs font-semibold mt-2">{template.header_type}</span>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl px-4 py-3 shadow-sm max-w-[85%]">
           {template.body_text ? (
             <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
@@ -200,7 +217,7 @@ const WhatsAppPreview = ({ template }) => {
 /* TEMPLATE FORM (shared by Create & Edit modals)                              */
 /* -------------------------------------------------------------------------- */
 
-const TemplateForm = ({ form, onChange, onButtonAdd, onButtonRemove, onButtonChange, disabled }) => {
+const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemove, onButtonChange, disabled }) => {
   return (
     <div className="space-y-5">
       {/* Name */}
@@ -293,9 +310,25 @@ const TemplateForm = ({ form, onChange, onButtonAdd, onButtonRemove, onButtonCha
         )}
 
         {["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) && (
-          <p className="text-xs text-gray-400 bg-gray-50 rounded-xl px-4 py-2.5 border border-gray-200">
-            Media URL will be provided at send-time via the API.
-          </p>
+          <div className="mt-2">
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              Sample {form.header_type.toLowerCase()} <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="file"
+              onChange={(e) => onFileChange && onFileChange(e.target.files[0])}
+              disabled={disabled}
+              accept={
+                form.header_type === "IMAGE" ? "image/jpeg, image/png" :
+                form.header_type === "VIDEO" ? "video/mp4" :
+                "application/pdf"
+              }
+              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Meta requires a sample file for review. Max size: 16MB.
+            </p>
+          </div>
         )}
       </div>
 
@@ -391,6 +424,7 @@ const CreateTemplateModal = ({ onClose }) => {
   const { isCreating, createSuccess, createError } = useSelector((s) => s.templates);
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [exampleMedia, setExampleMedia] = useState(null);
   const [localError, setLocalError] = useState("");
 
   // Close automatically on success
@@ -432,14 +466,34 @@ const CreateTemplateModal = ({ onClose }) => {
   const handleSubmit = () => {
     if (!form.name.trim()) return setLocalError("Template name is required.");
     if (!form.body_text.trim()) return setLocalError("Body text is required.");
+    
+    if (["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) && !exampleMedia) {
+      return setLocalError("A sample file is required for media headers.");
+    }
 
     // Sanitise name: lowercase + underscores
-    const payload = {
-      ...form,
-      name: form.name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""),
-    };
-
-    dispatch(createTemplate(payload));
+    const finalName = form.name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+    
+    if (exampleMedia) {
+      const formData = new FormData();
+      formData.append("name", finalName);
+      formData.append("category", form.category);
+      formData.append("language", form.language);
+      formData.append("header_type", form.header_type);
+      formData.append("header_text", form.header_text);
+      formData.append("body_text", form.body_text);
+      formData.append("footer_text", form.footer_text);
+      formData.append("buttons", JSON.stringify(form.buttons));
+      formData.append("example_media", exampleMedia);
+      
+      dispatch(createTemplate(formData));
+    } else {
+      const payload = {
+        ...form,
+        name: finalName,
+      };
+      dispatch(createTemplate(payload));
+    }
   };
 
   const errorMsg = localError || createError;
@@ -451,6 +505,7 @@ const CreateTemplateModal = ({ onClose }) => {
     body_text: form.body_text,
     footer_text: form.footer_text,
     buttons: form.buttons,
+    example_media: exampleMedia,
   };
 
   return (
@@ -487,6 +542,7 @@ const CreateTemplateModal = ({ onClose }) => {
               <TemplateForm
                 form={form}
                 onChange={handleChange}
+                onFileChange={setExampleMedia}
                 onButtonAdd={handleButtonAdd}
                 onButtonRemove={handleButtonRemove}
                 onButtonChange={handleButtonChange}
@@ -563,9 +619,9 @@ const EditTemplateModal = ({ template, onClose }) => {
   const [form, setForm] = useState({
     header_type: template.header_type || "",
     header_text: template.header_text || "",
-    body_text:   template.body_text   || "",
+    body_text: template.body_text || "",
     footer_text: template.footer_text || "",
-    buttons:     template.buttons     || [],
+    buttons: template.buttons || [],
   });
   const [localError, setLocalError] = useState("");
 
@@ -621,9 +677,9 @@ const EditTemplateModal = ({ template, onClose }) => {
   const previewTemplate = {
     header_type: form.header_type,
     header_text: form.header_text,
-    body_text:   form.body_text,
+    body_text: form.body_text,
     footer_text: form.footer_text,
-    buttons:     form.buttons,
+    buttons: form.buttons,
   };
 
   return (
@@ -887,14 +943,6 @@ const TableRow = ({ template, idx, onPreview, onEdit, onSync, onDelete, isDeleti
             <Pencil size={15} />
           </button>
 
-          <button
-            onClick={() => onSync(template.id)}
-            disabled={isSyncing}
-            className="p-2 rounded-xl hover:bg-yellow-50 text-gray-500 hover:text-yellow-600 transition disabled:opacity-50"
-            title="Sync status"
-          >
-            {isSyncing ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />}
-          </button>
 
           <button
             onClick={() => onDelete(template.id)}
@@ -1008,11 +1056,10 @@ const Templates = () => {
           <button
             key={tab}
             onClick={() => setActiveFilter(tab)}
-            className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${
-              activeFilter === tab
-                ? "bg-green-600 text-white"
-                : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-            }`}
+            className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${activeFilter === tab
+              ? "bg-green-600 text-white"
+              : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+              }`}
           >
             {tab}
           </button>
@@ -1050,7 +1097,7 @@ const Templates = () => {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  {["#", "Name", "Category", "Language", "Status", "Body", "Vars", "Actions"].map((h) => (
+                  {["ID", "Name", "Category", "Language", "Status", "Body", "Vars", "Actions"].map((h) => (
                     <th
                       key={h}
                       className={`px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase ${h === "Vars" ? "text-center" : ""}`}

@@ -393,7 +393,6 @@ const LeadsProspects = () => {
         "Stage",
         "Messages",
         "Last Chat",
-        "Action",
       ]
 ).map((head,i) => (
                   <th
@@ -455,10 +454,9 @@ const LeadsProspects = () => {
                   //   "
                   // >
                   <tr
-  key={item.id}
-  onClick={() => !isTp && item.conversation_id && navigate(`/leads/${item.conversation_id}`)}
-  className={`transition-all duration-200 ${!isTp && item.conversation_id ? "hover:bg-green-50/40 cursor-pointer" : "cursor-default"}`}
->
+                    key={item.id}
+                    className="transition-all duration-200 hover:bg-gray-50/50 cursor-default"
+                  >
 
                     {/* Customer */}
 
@@ -580,44 +578,7 @@ const LeadsProspects = () => {
 
                     </td>
 
-                    {/* Action */}
-{!isTp && (
-                    <td className="px-6 py-5 text-center">
 
-                      {/* <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/leads/${item.conversation_id}`);
-                        }}
-                        className="
-                          inline-flex items-center gap-2
-                          px-4 py-2.5
-                          rounded-2xl
-                          bg-green-600 hover:bg-green-700
-                          text-white text-sm font-medium
-                          transition-all
-                          shadow-sm shadow-green-100
-                        "
-                      >
-                        View
-                        <ArrowRight size={14} />
-                      </button> */}
-{!isTp && item.conversation_id ? (
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      navigate(`/leads/${item.conversation_id}`);
-    }}
-    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-all shadow-sm shadow-green-100"
-  >
-    View
-    <ArrowRight size={14} />
-  </button>
-) : (
-  <span className="text-xs text-gray-400">—</span>
-)}
-                    </td>
-)}
                   </tr>
 
                 ))
@@ -674,10 +635,9 @@ const LeadsProspects = () => {
               //   "
               // >
               <div
-  key={item.id}
-  onClick={() => !isTp && item.conversation_id && navigate(`/leads/${item.conversation_id}`)}
-  className={`border border-gray-100 rounded-3xl p-5 transition-all ${!isTp && item.conversation_id ? "hover:border-green-200 hover:bg-green-50/30 cursor-pointer" : "cursor-default"}`}
->
+                key={item.id}
+                className="border border-gray-100 rounded-3xl p-5 transition-all cursor-default hover:border-gray-200"
+              >
 
                 <div className="flex items-start justify-between gap-4">
 
@@ -785,17 +745,7 @@ const LeadsProspects = () => {
                 >
                   View Details
                 </button> */}
-                {!isTp && item.conversation_id && (
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      navigate(`/leads/${item.conversation_id}`);
-    }}
-    className="w-full mt-6 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition-all"
-  >
-    View Details
-  </button>
-)}
+
 
               </div>
 

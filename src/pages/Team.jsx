@@ -172,35 +172,9 @@ const Team = () => {
 
     dispatch(fetchTeamMembers());
 
-    checkWebhookStatus();
-
     fetchMetaStatus();
 
   }, [dispatch]);
-
-  /* ─────────────────────────
-     WEBHOOK
-  ───────────────────────── */
-
-  const checkWebhookStatus = async () => {
-
-    try {
-
-      const res = await API.get(
-        "/api/webhook/health/"
-      );
-
-      setWebhookStatus(
-        res.data.connected
-      );
-
-    } catch {
-
-      setWebhookStatus(false);
-
-    }
-
-  };
 
   /* ─────────────────────────
      META STATUS
@@ -220,6 +194,10 @@ const Team = () => {
 
         setMetaStatus(
           res.data.whatsapp
+        );
+
+        setWebhookStatus(
+          res.data.whatsapp.webhook_status === "connected"
         );
 
       }
@@ -554,20 +532,6 @@ const Team = () => {
 
             </div>
 
-            <div
-              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${
-                webhookStatus
-                  ? "bg-green-50 text-green-600"
-                  : "bg-red-50 text-red-500"
-              }`}
-            >
-
-              {webhookStatus
-                ? "Webhook Active"
-                : "Webhook Offline"}
-
-            </div>
-
           </div>
 
           {/* LOADING */}
@@ -583,7 +547,7 @@ const Team = () => {
 
             </div>
 
-          ) : metaStatus ? (
+          ) : metaStatus?.is_connected ? (
 
             <div className="space-y-5">
 
@@ -742,25 +706,32 @@ const Team = () => {
 
             </div>
 
-          ) : (
+          ) : null}
 
-            <button
-              onClick={() =>
-                navigate("/setup")
-              }
-              className="w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white text-sm font-medium py-3 rounded-2xl transition-all"
-            >
-              Connect WhatsApp
-            </button>
-
+          {!metaLoading && (
+            !(metaStatus?.waba_id && metaStatus?.phone_number) ? (
+              <button
+                onClick={() =>
+                  navigate("/setup")
+                }
+                className="w-full mt-5 bg-[#25D366] hover:bg-[#1ebe5d] text-white text-sm font-medium py-3 rounded-2xl transition-all"
+              >
+                Connect WhatsApp
+              </button>
+            ) : (
+              <button
+                disabled
+                className="w-full mt-5 bg-gray-100 text-gray-500 font-semibold text-sm py-3 rounded-2xl cursor-not-allowed"
+              >
+                Connected
+              </button>
+            )
           )}
 
           {/* REFRESH */}
 
           <button
             onClick={() => {
-
-              checkWebhookStatus();
 
               fetchMetaStatus();
 

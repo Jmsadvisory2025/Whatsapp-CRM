@@ -26,6 +26,8 @@ import {
   Sparkles,
   Users,
   Clock3,
+  Image,
+  Film,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────────────────────
@@ -151,9 +153,9 @@ function TemplateCard({ template, selected, onSelect }) {
     (c) => c.type === "FOOTER"
   );
 
-  const bodyText = bodyComp?.text || template.body || "";
-  const headerText = headerComp?.text || template.header || "";
-  const footerText = footerComp?.text || template.footer || "";
+  const bodyText = bodyComp?.text || template.body_text || template.body || "";
+  const headerText = headerComp?.text || template.header_text || template.header || "";
+  const footerText = footerComp?.text || template.footer_text || template.footer || "";
 
   const vars = [
     ...new Set(
@@ -226,9 +228,18 @@ function TemplateCard({ template, selected, onSelect }) {
 
         {expanded && (
           <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 p-4">
-            {headerText && (
+            {template.header_type === "TEXT" && headerText && (
               <div className="font-semibold text-gray-700 mb-2">
                 {headerText}
+              </div>
+            )}
+            
+            {["IMAGE", "VIDEO", "DOCUMENT"].includes(template.header_type) && (
+              <div className="bg-gray-200 rounded-xl h-24 mb-3 flex flex-col items-center justify-center text-gray-400">
+                {template.header_type === "IMAGE" && <Image size={24} />}
+                {template.header_type === "VIDEO" && <Film size={24} />}
+                {template.header_type === "DOCUMENT" && <FileText size={24} />}
+                <span className="text-[10px] font-semibold mt-1">{template.header_type}</span>
               </div>
             )}
 
@@ -237,7 +248,7 @@ function TemplateCard({ template, selected, onSelect }) {
             </div>
 
             {footerText && (
-              <div className="mt-3 text-[11px] text-gray-400">
+              <div className="mt-3 text-[11px] text-gray-400 border-t border-gray-200 pt-2">
                 {footerText}
               </div>
             )}
@@ -281,6 +292,8 @@ const Campaign = () => {
   const [templateSearch, setTemplateSearch] = useState("");
 
   const fileInputRef = useRef();
+  const mediaInputRef = useRef();
+  const [mediaFile, setMediaFile] = useState(null);
 
   useEffect(() => {
     dispatch(fetchApprovedTemplates());
@@ -304,12 +317,12 @@ const Campaign = () => {
   const bodyText =
     selectedTemplate?.components?.find(
       (c) => c.type === "BODY"
-    )?.text || "";
+    )?.text || selectedTemplate?.body_text || selectedTemplate?.body || "";
 
   const headerText =
     selectedTemplate?.components?.find(
       (c) => c.type === "HEADER"
-    )?.text || "";
+    )?.text || selectedTemplate?.header_text || selectedTemplate?.header || "";
 
   const templateVarKeys = useMemo(() => {
     return [
@@ -322,11 +335,18 @@ const Campaign = () => {
   }, [bodyText, headerText]);
 
   const filteredTemplates = useMemo(() => {
-    if (!templateSearch.trim()) return approvedTemplates;
+    // Exclude templates with variables in text
+    const templatesWithoutVars = approvedTemplates.filter((t) => {
+      const bText = t.components?.find(c => c.type === "BODY")?.text || t.body_text || t.body || "";
+      const hText = t.components?.find(c => c.type === "HEADER")?.text || t.header_text || t.header || "";
+      const hasTextVars = (bText + hText).includes("{{");
+      return !hasTextVars;
+    });
+
+    if (!templateSearch.trim()) return templatesWithoutVars;
 
     const q = templateSearch.toLowerCase();
-
-    return approvedTemplates.filter(
+    return templatesWithoutVars.filter(
       (t) =>
         t.name?.toLowerCase().includes(q) ||
         t.category?.toLowerCase().includes(q)
@@ -390,17 +410,34 @@ const Campaign = () => {
       variables[k] = templateVars[k] || "";
     });
 
-    dispatch(
-      sendCampaign({
+    const isMediaHeader = ["IMAGE", "VIDEO", "DOCUMENT"].includes(
+      selectedTemplate?.header_type
+    );
+    if (isMediaHeader) {
+      variables.media_url = templateVars.media_url || "";
+    }
+
+    let payload;
+    if (isMediaHeader && mediaFile) {
+      payload = new FormData();
+      payload.append("name", campaignName.trim());
+      payload.append("template_id", selectedTemplateId);
+      payload.append("phone_numbers", JSON.stringify(phoneNumbers));
+      payload.append("variables", JSON.stringify(variables));
+      payload.append("media_file", mediaFile);
+    } else {
+      payload = {
         name: campaignName.trim(),
         template_id: selectedTemplateId,
         phone_numbers: phoneNumbers,
         variables:
-          templateVarKeys.length > 0
+          templateVarKeys.length > 0 || isMediaHeader
             ? variables
             : undefined,
-      })
-    );
+      };
+    }
+
+    dispatch(sendCampaign(payload));
   };
 
   const handleReset = () => {
@@ -794,10 +831,10 @@ const Campaign = () => {
               )}
             </div>
 
-            {/* VARIABLES */}
+            {/* VARIABLES & MEDIA */}
 
             {selectedTemplate &&
-              templateVarKeys.length > 0 && (
+              (templateVarKeys.length > 0 || ["IMAGE", "VIDEO", "DOCUMENT"].includes(selectedTemplate.header_type)) && (
                 <div className="bg-white border border-amber-200 rounded-3xl p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <Sparkles
@@ -806,11 +843,62 @@ const Campaign = () => {
                     />
 
                     <h2 className="text-sm font-bold tracking-wide text-amber-700 uppercase">
-                      Template Variables
+                      Template Variables & Media
                     </h2>
                   </div>
 
                   <div className="space-y-3">
+                    {/* Media Input */}
+                    {["IMAGE", "VIDEO", "DOCUMENT"].includes(selectedTemplate.header_type) && (
+                      <div className="flex gap-3 items-center">
+                        <div className="min-w-[70px] px-3 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-center text-sm font-mono text-amber-700">
+                          {selectedTemplate.header_type}
+                        </div>
+                        
+                        <input
+                          type="file"
+                          ref={mediaInputRef}
+                          className="hidden"
+                          accept={
+                            selectedTemplate.header_type === "IMAGE" ? "image/jpeg,image/png" :
+                            selectedTemplate.header_type === "VIDEO" ? "video/mp4" :
+                            "application/pdf"
+                          }
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              setMediaFile(e.target.files[0]);
+                            }
+                          }}
+                        />
+                        
+                        <div className="flex-1 flex items-center gap-3">
+                          <button
+                            onClick={() => mediaInputRef.current?.click()}
+                            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition"
+                          >
+                            Choose File
+                          </button>
+                          
+                          <span className="text-sm text-gray-500 truncate max-w-[200px]">
+                            {mediaFile ? mediaFile.name : "No file selected"}
+                          </span>
+                          
+                          {mediaFile && (
+                            <button
+                              onClick={() => {
+                                setMediaFile(null);
+                                if (mediaInputRef.current) mediaInputRef.current.value = "";
+                              }}
+                              className="text-gray-400 hover:text-red-500 transition"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Text Variables */}
                     {templateVarKeys.map((k) => (
                       <div
                         key={k}

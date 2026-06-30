@@ -24,13 +24,13 @@ const pct = (num, den) =>
 
 /* ─── Color palette ─────────────────────────────────────────── */
 const C = {
-  blue:   "#3b82f6",
-  green:  "#22c55e",
-  amber:  "#f59e0b",
-  red:    "#ef4444",
+  blue: "#3b82f6",
+  green: "#22c55e",
+  amber: "#f59e0b",
+  red: "#ef4444",
   purple: "#8b5cf6",
-  teal:   "#14b8a6",
-  slate:  "#64748b",
+  teal: "#14b8a6",
+  slate: "#64748b",
   indigo: "#6366f1",
 };
 
@@ -113,11 +113,11 @@ function EmptyChart({ label }) {
 /* ─── Main Dashboard ────────────────────────────────────────── */
 export default function Dashboard() {
   const userEmail = localStorage.getItem("ownerEmail") || "";
-  const isTp      = isTechProvider(userEmail);
+  const isTp = isTechProvider(userEmail);
 
-  const [data, setData]             = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState(null);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchAnalytics = useCallback(async () => {
@@ -125,7 +125,7 @@ export default function Dashboard() {
     setError(null);
     try {
       if (isTp) {
-        const tk  = localStorage.getItem("accessToken");
+        const tk = localStorage.getItem("accessToken");
         const res = await fetch(`${API_BASE}api/industry/dashboard/`, {
           headers: { Authorization: `Bearer ${tk}` },
         });
@@ -135,22 +135,22 @@ export default function Dashboard() {
         setData({
           status: "connected",
           totals: {
-            messages:      json.total_messages,
-            delivered:     0,
-            read:          0,
-            failed:        0,
-            templates:     0,
+            messages: json.total_messages,
+            delivered: 0,
+            read: 0,
+            failed: 0,
+            templates: 0,
             conversations: json.total_conversations,
           },
           daily_stats: json.messages_last_7_days.map((d) => ({
-            day:   d.date,
+            day: d.date,
             count: d.count,
           })),
           template_stats: [],
           tp_summary: {
-            total_customers:         json.total_customers,
-            active_today:            json.active_today,
-            new_today:               json.new_today,
+            total_customers: json.total_customers,
+            active_today: json.active_today,
+            new_today: json.new_today,
             conversations_by_status: json.conversations_by_status,
           },
         });
@@ -226,8 +226,8 @@ export default function Dashboard() {
 
   /* ── Derived data ─────────────────────────────────────────── */
   const deliveryRate = pct(totals.delivered, totals.messages);
-  const readRate     = pct(totals.read, totals.messages);
-  const failRate     = pct(totals.failed, totals.messages);
+  const readRate = pct(totals.read, totals.messages);
+  const failRate = pct(totals.failed, totals.messages);
 
   const chartDailyRaw = [...daily_stats].reverse().map((d) => ({
     date: d.day
@@ -238,8 +238,8 @@ export default function Dashboard() {
 
   const pieData = [
     { name: "Delivered", value: totals.delivered || 0, color: C.green },
-    { name: "Read",      value: totals.read      || 0, color: C.blue  },
-    { name: "Failed",    value: totals.failed    || 0, color: C.red   },
+    { name: "Read", value: totals.read || 0, color: C.blue },
+    { name: "Failed", value: totals.failed || 0, color: C.red },
     {
       name: "Other",
       value: Math.max(
@@ -251,9 +251,9 @@ export default function Dashboard() {
   ].filter((d) => d.value > 0);
 
   const templateChart = template_stats.slice(0, 8).map((t) => ({
-    name:     t.template_name?.length > 18 ? t.template_name.slice(0, 18) + "…" : t.template_name,
+    name: t.template_name?.length > 18 ? t.template_name.slice(0, 18) + "…" : t.template_name,
     fullName: t.template_name,
-    Sent:     t.sent,
+    Sent: t.sent,
   }));
 
   return (
@@ -301,70 +301,43 @@ export default function Dashboard() {
       </div>
 
       {/* ── KPI Cards ────────────────────────────────────────── */}
-      {isTp ? (
-        /* TechProvider — 6 relevant cards */
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <StatCard
-            icon={MessageSquare} label="Total Messages"
-            value={fmt(totals.messages)} color={C.blue} sub="Outbound sent"
-          />
-          {/* <StatCard
-            icon={Users} label="Conversations"
-            value={fmt(totals.conversations)} color={C.teal} sub="Unique contacts"
-          /> */}
-          <StatCard
-            icon={Users} label="Total Customers"
-            value={fmt(data?.tp_summary?.total_customers)} color={C.indigo}
-          />
-          <StatCard
-            icon={Activity} label="Active Today"
-            value={fmt(data?.tp_summary?.active_today)} color={C.green}
-          />
-          {/* <StatCard
-            icon={Zap} label="New Today"
-            value={fmt(data?.tp_summary?.new_today)} color={C.amber}
-          /> */}
-          {/* <StatCard
-            icon={BarChart2} label="Prospects"
-            value={fmt(data?.tp_summary?.conversations_by_status?.prospect ?? 0)} color={C.purple}
-          /> */}
-        </div>
-      ) : (
-        /* Normal org — all 6 message-delivery cards */
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <StatCard
-            icon={MessageSquare} label="Total Messages"
-            value={fmt(totals.messages)} color={C.blue} sub="Outbound sent"
-          />
-          <StatCard
-            icon={CheckCheck} label="Delivered"
-            value={fmt(totals.delivered)} color={C.green} sub={deliveryRate + " rate"}
-          />
-          <StatCard
-            icon={Eye} label="Read"
-            value={fmt(totals.read)} color={C.indigo} sub={readRate + " read rate"}
-          />
-          <StatCard
-            icon={AlertCircle} label="Failed"
-            value={fmt(totals.failed)} color={C.red} sub={failRate + " fail rate"}
-          />
-          <StatCard
-            icon={Layout} label="Templates"
-            value={fmt(totals.templates)} color={C.purple} sub="Active templates"
-          />
-          <StatCard
-            icon={Users} label="Conversations"
-            value={fmt(totals.conversations)} color={C.teal} sub="Unique contacts"
-          />
-        </div>
-      )}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <StatCard
+          icon={MessageSquare} label="Total Messages"
+          value={fmt(totals.messages)} color={C.blue} sub="Outbound sent"
+        />
+        <StatCard
+          icon={Users} label="Conversations"
+          value={fmt(totals.conversations)} color={C.teal} sub="Unique contacts"
+        />
+        <StatCard
+          icon={Users} label="Total Customers"
+          value={fmt(isTp ? data?.tp_summary?.total_customers : data?.client_summary?.total_customers)} color={C.indigo}
+        />
+        <StatCard
+          icon={Activity} label="Active Today"
+          value={fmt(isTp ? data?.tp_summary?.active_today : data?.client_summary?.active_today)} color={C.green}
+        />
+        {!isTp && (
+          <>
+            <StatCard
+              icon={Users} label="Leads"
+              value={fmt(data?.client_summary?.leads)} color={C.teal}
+            />
+            <StatCard
+              icon={Users} label="Prospects"
+              value={fmt(data?.client_summary?.prospects)} color={C.purple}
+            />
+          </>
+        )}
+      </div>
 
       {/* ── Charts Row 1 ─────────────────────────────────────── */}
-      <div className={`grid grid-cols-1 gap-4 ${!isTp ? "lg:grid-cols-3" : ""}`}>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
 
         {/* Messages Over Time — full width for TP, 2/3 for normal */}
         <div
-          className={`${!isTp ? "lg:col-span-2" : ""} bg-white rounded-xl p-5 border border-gray-100`}
+          className="lg:col-span-2 bg-white rounded-xl p-5 border border-gray-100"
           style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
         >
           <SectionHeader
@@ -376,7 +349,7 @@ export default function Dashboard() {
               <AreaChart data={chartDailyRaw} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={C.blue} stopOpacity={0.18} />
+                    <stop offset="5%" stopColor={C.blue} stopOpacity={0.18} />
                     <stop offset="95%" stopColor={C.blue} stopOpacity={0.01} />
                   </linearGradient>
                 </defs>
@@ -399,7 +372,7 @@ export default function Dashboard() {
         </div>
 
         {/* Delivery Breakdown — normal org only */}
-        {!isTp && (
+        {pieData.some(d => d.value > 0 && d.name !== "Other") && (
           <div
             className="bg-white rounded-xl p-5 border border-gray-100"
             style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
@@ -454,10 +427,10 @@ export default function Dashboard() {
       </div>
 
       {/* ── Charts Row 2 ─────────────────────────────────────── */}
-      <div className={`grid grid-cols-1 gap-4 ${!isTp ? "lg:grid-cols-2" : ""}`}>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
         {/* Template Performance — normal org only */}
-        {!isTp && (
+        {templateChart?.length > 0 && (
           <div
             className="bg-white rounded-xl p-5 border border-gray-100"
             style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
@@ -561,7 +534,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Delivery Health — normal org only ────────────────── */}
-      {!isTp && (
+      {(totals.delivered > 0 || totals.read > 0 || totals.failed > 0) && (
         <div
           className="bg-white rounded-xl p-5 border border-gray-100"
           style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
@@ -571,9 +544,9 @@ export default function Dashboard() {
           />
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Delivery Rate", value: deliveryRate, num: totals.delivered, color: C.green,  icon: CheckCheck  },
-              { label: "Read Rate",     value: readRate,     num: totals.read,      color: C.blue,   icon: Eye         },
-              { label: "Failure Rate",  value: failRate,     num: totals.failed,    color: C.red,    icon: AlertCircle },
+              { label: "Delivery Rate", value: deliveryRate, num: totals.delivered, color: C.green, icon: CheckCheck },
+              { label: "Read Rate", value: readRate, num: totals.read, color: C.blue, icon: Eye },
+              { label: "Failure Rate", value: failRate, num: totals.failed, color: C.red, icon: AlertCircle },
             ].map(({ label, value, num, color, icon: Icon }) => (
               <div key={label} className="text-center p-4 rounded-lg bg-gray-50">
                 <div className="flex justify-center mb-2">
