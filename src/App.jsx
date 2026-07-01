@@ -8,25 +8,25 @@ import {
 import { store } from './store/store';
 import LoaderDemo from "./components/ui/ProfessionalMedicalLoader ";
 
-const TechProviderClients  = lazy(() => import("./pages/TechProviderClients"));
-const LandingPage          = lazy(() => import("./pages/LandingPage"));
-const SignUp               = lazy(() => import("./pages/SignUp"));
-const SignIn               = lazy(() => import("./pages/SignIn"));
-const Verification         = lazy(() => import("./pages/Verification"));
-const CreateOrganization   = lazy(() => import("./pages/CreateOrganization"));
-const AppLayout            = lazy(() => import("./components/layout/AppLayout"));
-const Dashboard            = lazy(() => import("./pages/Dashboard"));
-const LeadsProspects       = lazy(() => import("./pages/LeadsProspects"));
-const Team                 = lazy(() => import("./pages/Team"));
-const Whatsapp             = lazy(() => import("./pages/Whatsapp"));
-const AddMember            = lazy(() => import("./subpages/AddMember"));
-const ErrorPage            = lazy(() => import("./pages/ErrorPage"));
-const Templates            = lazy(() => import("./pages/Templates"));
-const KnowledgeBase        = lazy(() => import("./pages/KnowledgeBase"));
-const Campaign             = lazy(() => import("./pages/Campaign"));
-const HomeResolver         = lazy(() => import("./components/guards/HomeResolver"));
+const TechProviderClients = lazy(() => import("./pages/TechProviderClients"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const SignUp = lazy(() => import("./pages/SignUp"));
+const SignIn = lazy(() => import("./pages/SignIn"));
+const Verification = lazy(() => import("./pages/Verification"));
+const CreateOrganization = lazy(() => import("./pages/CreateOrganization"));
+const AppLayout = lazy(() => import("./components/layout/AppLayout"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const LeadsProspects = lazy(() => import("./pages/LeadsProspects"));
+const Team = lazy(() => import("./pages/Team"));
+const Whatsapp = lazy(() => import("./pages/Whatsapp"));
+const AddMember = lazy(() => import("./subpages/AddMember"));
+const ErrorPage = lazy(() => import("./pages/ErrorPage"));
+const Templates = lazy(() => import("./pages/Templates"));
+const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
+const Campaign = lazy(() => import("./pages/Campaign"));
+const HomeResolver = lazy(() => import("./components/guards/HomeResolver"));
 const ConnectedBusinessDetails = lazy(() => import("./pages/ConnectedBusinessDetails"))
-const MetaRegistration     = lazy(() => import("./pages/MetaRegistration"));
+const MetaRegistration = lazy(() => import("./pages/MetaRegistration"));
 const router = createBrowserRouter(
   [
     // Public routes
@@ -63,14 +63,14 @@ const router = createBrowserRouter(
       ),
     },
     {
-    path:"/connected-business",
-    element:(
-      <Suspense fallback={<LoaderDemo />}>
-          <ConnectedBusinessDetails  />
+      path: "/connected-business",
+      element: (
+        <Suspense fallback={<LoaderDemo />}>
+          <ConnectedBusinessDetails />
         </Suspense>
       ),
     },
-    
+
 
     // Protected app routes
     {
@@ -98,7 +98,7 @@ const router = createBrowserRouter(
           ),
         },
         // Old routes redirect to leads-prospects
-        { path: "leads",     element: <Navigate to="/leads-prospects" replace /> },
+        { path: "leads", element: <Navigate to="/leads-prospects" replace /> },
         { path: "prospects", element: <Navigate to="/leads-prospects" replace /> },
 
         {
@@ -198,7 +198,7 @@ function App() {
   if (
     window.location.hostname !== "localhost" &&
     window.location.hostname !== "127.0.0.1" &&
-    window.location.hostname !== "naavya.ai"
+    window.location.hostname !== "whatsapp.naavya.ai"
   ) {
     window.location.replace("https://whatsapp.naavya.ai" + window.location.pathname + window.location.search);
     return null;
