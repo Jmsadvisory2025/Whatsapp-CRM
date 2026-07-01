@@ -391,7 +391,6 @@ const LeadsProspects = () => {
         "Phone",
         "Status",
         "Stage",
-        "Messages",
         "Last Chat",
       ]
 ).map((head,i) => (
@@ -543,20 +542,7 @@ const LeadsProspects = () => {
 
                     </td>
 )}
-                    {/* Messages */}
-{!isTp && (
-                    <td className="px-6 py-5">
 
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-
-                        <MessageSquare size={14} />
-
-                        {item.message_count || 0}
-
-                      </div>
-
-                    </td>
-)}
                     {/* Last Chat */}
 
                     <td className="px-6 py-5">
@@ -695,17 +681,6 @@ const LeadsProspects = () => {
 
                   </div>
 
-                  <div>
-
-                    <p className="text-xs text-gray-400">
-                      Messages
-                    </p>
-
-                    <p className="text-sm text-gray-700 mt-1">
-                      {item.message_count || 0}
-                    </p>
-
-                  </div>
 
                   <div>
 

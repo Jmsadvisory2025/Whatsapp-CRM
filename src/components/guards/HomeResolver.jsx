@@ -62,7 +62,8 @@ const HomeResolver = () => {
       }
 
       // CLIENT
-      if (!data.has_organization) {
+      const skipSetup = localStorage.getItem("skip_setup") === "true";
+      if (!data.has_organization && !skipSetup) {
         setStatus("no_org");
       } else {
         setStatus("ready");

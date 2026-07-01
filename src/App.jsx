@@ -198,7 +198,8 @@ function App() {
   if (
     window.location.hostname !== "localhost" &&
     window.location.hostname !== "127.0.0.1" &&
-    window.location.hostname !== "whatsapp.naavya.ai"
+    window.location.hostname !== "whatsapp.naavya.ai" &&
+    window.location.hostname !== "www.whatsapp.naavya.ai"
   ) {
     window.location.replace("https://whatsapp.naavya.ai" + window.location.pathname + window.location.search);
     return null;

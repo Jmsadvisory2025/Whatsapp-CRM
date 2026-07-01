@@ -237,7 +237,10 @@ export default function ConnectWhatsApp() {
           <p className="text-center text-xs text-gray-400 mt-5">
             You can also skip this step and{" "}
             <button
-              onClick={() => navigate("/")}
+              onClick={() => {
+                localStorage.setItem("skip_setup", "true");
+                navigate("/");
+              }}
               className="text-blue-500 hover:underline font-semibold"
             >
               connect later from Dashboard

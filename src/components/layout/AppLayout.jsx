@@ -24,7 +24,8 @@ const AppLayout = () => {
         .unwrap()
         .then((profile) => {
           // After rehydration: if org not set up yet, send to /setup
-          if (!profile.has_organization) {
+          const skipSetup = localStorage.getItem("skip_setup") === "true";
+          if (!profile.has_organization && !skipSetup) {
             navigate("/setup", { replace: true });
           }
         })
