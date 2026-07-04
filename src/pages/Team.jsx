@@ -51,6 +51,8 @@ import {
   updateTeamMember,
 } from "../store/teamSlice";
 
+import { fetchWABAStatus } from "../store/metaConnectSlice";
+
 import { toCamelCase } from "../hooks/utils";
 
 /* ─────────────────────────────────────────────
@@ -58,7 +60,7 @@ import { toCamelCase } from "../hooks/utils";
 ───────────────────────────────────────────── */
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
 
@@ -76,15 +78,15 @@ const InfoItem = ({
   if (!value) return null;
 
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-4">
 
-      <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+      <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center shrink-0">
         <Icon className="w-4 h-4 text-gray-500" />
       </div>
 
-      <div className="min-w-0">
+      <div className="min-w-0 pt-0.5">
 
-        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">
+        <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1.5">
           {label}
         </p>
 
@@ -147,18 +149,6 @@ const Team = () => {
   const [searchQuery, setSearchQuery] =
     useState("");
 
-  const [webhookStatus, setWebhookStatus] =
-    useState(false);
-
-  const [metaStatus, setMetaStatus] =
-    useState(null);
-
-  const [metaLoading, setMetaLoading] =
-    useState(false);
-
-  const [editMember, setEditMember] =
-    useState(null);
-
   const [editForm, setEditForm] =
     useState({
       full_name: "",
@@ -166,55 +156,25 @@ const Team = () => {
       role: "",
     });
 
+  const {
+    wabaStatus,
+    wabaId,
+    wabaName,
+    phoneNumber,
+    phoneNumberId,
+    isLoadingStatus: metaLoading
+  } = useSelector((s) => s.metaConnect);
+
   /* ───────────────────────── */
 
   useEffect(() => {
 
     dispatch(fetchTeamMembers());
-
-    fetchMetaStatus();
+    dispatch(fetchWABAStatus());
 
   }, [dispatch]);
 
-  /* ─────────────────────────
-     META STATUS
-  ───────────────────────── */
-
-  const fetchMetaStatus = async () => {
-
-    try {
-
-      setMetaLoading(true);
-
-      const res = await API.get(
-        "/api/meta/account-status/"
-      );
-
-      if (res.data.success) {
-
-        setMetaStatus(
-          res.data.whatsapp
-        );
-
-        setWebhookStatus(
-          res.data.whatsapp.webhook_status === "connected"
-        );
-
-      }
-
-    } catch (err) {
-
-      console.log(err);
-
-      setMetaStatus(null);
-
-    } finally {
-
-      setMetaLoading(false);
-
-    }
-
-  };
+  const isWhatsAppConnected = wabaStatus === "connected" || (wabaId && phoneNumberId);
 
   /* ───────────────────────── */
 
@@ -383,368 +343,86 @@ const Team = () => {
 
       </div>
 
-      {/* TOP GRID */}
+      {/* TOP SECTION: WHATSAPP */}
 
-      <div className="grid lg:grid-cols-3 gap-5">
-
-        {/* ORGANISATION */}
-
-        <div className="lg:col-span-2 bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-
-          <div className="flex items-center gap-3 mb-5">
-
-            <div className="w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-gray-700" />
+      <div className="bg-white border border-gray-200/60 rounded-[2rem] p-8 shadow-sm">
+        
+        {/* HEADER */}
+        <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-50">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 shadow-sm flex items-center justify-center shrink-0">
+              <FaWhatsapp className="text-[#25D366] text-2xl" />
             </div>
-
             <div>
-
-              <h2 className="text-sm font-semibold text-gray-900">
-                Organisation
+              <h2 className="text-lg font-bold text-gray-900">
+                Account Information
               </h2>
-
-              <p className="text-xs text-gray-400">
-                Account information
+              <p className="text-sm text-gray-500 mt-1">
+                Meta Information
               </p>
-
             </div>
-
           </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-
-            <div className="space-y-5">
-
-              <InfoItem
-                icon={Building2}
-                label="Organisation"
-                value={organization}
-              />
-
-              <InfoItem
-                icon={Mail}
-                label="Email"
-                value={org_email}
-                isEmail
-              />
-
-              <InfoItem
-                icon={Globe}
-                label="Website"
-                value={org_website}
-                isLink
-              />
-
-            </div>
-
-            <div className="space-y-5">
-
-              <InfoItem
-                icon={User}
-                label="Owner"
-                value={owner_name}
-              />
-
-              <InfoItem
-                icon={Mail}
-                label="Owner Email"
-                value={owner_email}
-                isEmail
-              />
-
-              <div className="flex items-start gap-3">
-
-                <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-gray-500" />
-                </div>
-
-                <div>
-
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-1">
-                    Role
-                  </p>
-
-                  <RoleBadge role={role} />
-
-                </div>
-
-              </div>
-
-            </div>
-
+          
+          <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100">
+            {isWhatsAppConnected ? (
+              <>
+                <Wifi size={15} className="text-green-500" />
+                <span className="text-sm font-bold text-green-600">Connected</span>
+              </>
+            ) : (
+              <>
+                <WifiOff size={15} className="text-gray-400" />
+                <span className="text-sm font-bold text-gray-500">Not Connected</span>
+              </>
+            )}
           </div>
-
         </div>
 
-        {/* WHATSAPP */}
-
-        <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-
-          <div className="flex items-center gap-3 mb-5">
-
-            <div className="w-10 h-10 rounded-2xl bg-[#25D366]/10 flex items-center justify-center">
-              <FaWhatsapp className="text-[#25D366] text-lg" />
-            </div>
-
-            <div>
-
-              <h2 className="text-sm font-semibold text-gray-900">
-                WhatsApp
-              </h2>
-
-              <p className="text-xs text-gray-400">
-                Meta business connection
-              </p>
-
-            </div>
-
+        {/* LOADING STATE */}
+        {metaLoading ? (
+          <div className="py-16 flex justify-center">
+            <RefreshCw size={24} className="animate-spin text-gray-400" />
           </div>
-
-          {/* STATUS */}
-
-          <div className="flex items-center justify-between mb-5">
-
-            <div className="flex items-center gap-2">
-
-              {metaStatus?.is_connected ? (
-                <>
-                  <Wifi
-                    size={15}
-                    className="text-green-500"
-                  />
-
-                  <span className="text-sm font-medium text-green-600">
-                    Connected
-                  </span>
-                </>
-              ) : (
-                <>
-                  <WifiOff
-                    size={15}
-                    className="text-gray-400"
-                  />
-
-                  <span className="text-sm font-medium text-gray-500">
-                    Not Connected
-                  </span>
-                </>
-              )}
-
-            </div>
-
+        ) : isWhatsAppConnected ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-6">
+            <InfoItem icon={Building2} label="WABA Name" value={wabaName} />
+            <InfoItem icon={Shield} label="WABA ID" value={wabaId} />
+            <InfoItem icon={Phone} label="Phone Number" value={phoneNumber} />
+            <InfoItem icon={Phone} label="Phone Number ID" value={phoneNumberId} />
           </div>
+        ) : (
+           <div className="py-10 flex justify-center">
+              <p className="text-gray-500 text-sm">No WhatsApp Business Account connected.</p>
+           </div>
+        )}
 
-          {/* LOADING */}
-
-          {metaLoading ? (
-
-            <div className="py-10 flex justify-center">
-
-              <RefreshCw
-                size={18}
-                className="animate-spin text-gray-400"
-              />
-
-            </div>
-
-          ) : metaStatus?.is_connected ? (
-
-            <div className="space-y-5">
-
-              <InfoItem
-                icon={Building2}
-                label="WABA Name"
-                value={metaStatus.waba_name}
-              />
-
-              <InfoItem
-                icon={Shield}
-                label="WABA ID"
-                value={metaStatus.waba_id}
-              />
-
-              <InfoItem
-                icon={Phone}
-                label="Phone Number"
-                value={metaStatus.phone_number}
-              />
-
-              <InfoItem
-                icon={Phone}
-                label="Phone Number ID"
-                value={
-                  metaStatus.phone_number_id
-                }
-              />
-
-              <InfoItem
-                icon={BadgeCheck}
-                label="Verified Name"
-                value={
-                  metaStatus.verified_name
-                }
-              />
-
-              {/* GRID */}
-
-              <div className="grid grid-cols-2 gap-3">
-
-                <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                    Quality
-                  </p>
-
-                  <p className="text-sm font-semibold text-gray-900 mt-1">
-                    {
-                      metaStatus.quality_rating
-                    }
-                  </p>
-
-                </div>
-
-                <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                    Messaging Tier
-                  </p>
-
-                  <p className="text-sm font-semibold text-gray-900 mt-1">
-                    {metaStatus.throughput}
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* REVIEW */}
-
-              <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                  Review Status
-                </p>
-
-                <p className="text-sm font-medium text-gray-900 mt-1">
-                  {
-                    metaStatus.review_status
-                  }
-                </p>
-
-              </div>
-
-              {/* VERIFICATION */}
-
-              <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                  Verification
-                </p>
-
-                <p className="text-sm font-medium text-gray-900 mt-1">
-                  {
-                    metaStatus.verification_status
-                  }
-                </p>
-
-              </div>
-
-              {/* NAME STATUS */}
-
-              <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                  Name Status
-                </p>
-
-                <p className="text-sm font-medium text-gray-900 mt-1">
-                  {
-                    metaStatus.name_status
-                  }
-                </p>
-
-              </div>
-
-              {/* PLATFORM */}
-
-              <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                    Platform
-                  </p>
-
-                  <p className="text-sm font-medium text-gray-900 mt-1">
-                    {
-                      metaStatus.platform_type
-                    }
-                  </p>
-
-                </div>
-
-                <Layers3
-                  size={16}
-                  className="text-gray-500"
-                />
-
-              </div>
-
-              {/* CURRENCY */}
-
-              <div className="p-3 rounded-2xl bg-gray-50 border border-gray-100">
-
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                  Currency
-                </p>
-
-                <p className="text-sm font-medium text-gray-900 mt-1">
-                  {metaStatus.currency}
-                </p>
-
-              </div>
-
-            </div>
-
-          ) : null}
-
+        {/* ACTIONS */}
+        <div className="mt-10 pt-6 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-end gap-4">
+          <button
+            onClick={() => dispatch(fetchWABAStatus())}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-6 py-3 rounded-2xl transition-all shadow-sm"
+          >
+            <RefreshCw size={14} />
+            Refresh Status
+          </button>
+          
           {!metaLoading && (
-            !(metaStatus?.waba_id && metaStatus?.phone_number) ? (
+            !isWhatsAppConnected ? (
               <button
-                onClick={() =>
-                  navigate("/setup")
-                }
-                className="w-full mt-5 bg-[#25D366] hover:bg-[#1ebe5d] text-white text-sm font-medium py-3 rounded-2xl transition-all"
+                onClick={() => navigate("/setup")}
+                className="w-full sm:w-auto bg-[#25D366] hover:bg-[#1ebe5d] text-white text-sm font-semibold px-8 py-3 rounded-2xl transition-all shadow-sm"
               >
                 Connect WhatsApp
               </button>
             ) : (
               <button
                 disabled
-                className="w-full mt-5 bg-gray-100 text-gray-500 font-semibold text-sm py-3 rounded-2xl cursor-not-allowed"
+                className="w-full sm:w-auto bg-gray-100 text-gray-400 font-semibold text-sm px-8 py-3 rounded-2xl cursor-not-allowed"
               >
                 Connected
               </button>
             )
           )}
-
-          {/* REFRESH */}
-
-          <button
-            onClick={() => {
-
-              fetchMetaStatus();
-
-            }}
-            className="w-full mt-5 flex items-center justify-center gap-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium py-3 rounded-2xl transition-all"
-          >
-
-            <RefreshCw size={14} />
-
-            Refresh Status
-
-          </button>
-
         </div>
 
       </div>
@@ -793,84 +471,84 @@ const Team = () => {
         </div>
 
       </div>
-{/* MEMBERS LIST */}
+      {/* MEMBERS LIST */}
 
-<div className="divide-y divide-gray-100">
+      <div className="divide-y divide-gray-100">
 
-  {filteredMembers.length > 0 ? (
+        {filteredMembers.length > 0 ? (
 
-    filteredMembers.map((member) => (
+          filteredMembers.map((member) => (
 
-      <div
-        key={member.id}
-        className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 transition-all"
-      >
+            <div
+              key={member.id}
+              className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 transition-all"
+            >
 
-        {/* LEFT */}
+              {/* LEFT */}
 
-        <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4">
 
-          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
 
-            <User className="w-5 h-5 text-gray-600" />
+                  <User className="w-5 h-5 text-gray-600" />
+
+                </div>
+
+                <div>
+
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    {member.full_name}
+                  </h3>
+
+                  <p className="text-sm text-gray-500">
+                    {member.email}
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* RIGHT */}
+
+              <div className="flex items-center gap-3">
+
+                <RoleBadge role={member.role} />
+
+                <button
+                  onClick={() =>
+                    handleDelete(member.id)
+                  }
+                  className="w-9 h-9 rounded-xl border border-red-100 hover:bg-red-50 flex items-center justify-center transition-all"
+                >
+
+                  <BiSolidTrashAlt className="text-red-500" />
+
+                </button>
+
+              </div>
+
+            </div>
+
+          ))
+
+        ) : (
+
+          <div className="p-10">
+
+            <EmptyState
+              title="No team members found"
+              subtitle="Add members or try another search."
+            />
 
           </div>
 
-          <div>
-
-            <h3 className="text-sm font-semibold text-gray-900">
-              {member.full_name}
-            </h3>
-
-            <p className="text-sm text-gray-500">
-              {member.email}
-            </p>
-
-          </div>
-
-        </div>
-
-        {/* RIGHT */}
-
-        <div className="flex items-center gap-3">
-
-          <RoleBadge role={member.role} />
-
-          <button
-            onClick={() =>
-              handleDelete(member.id)
-            }
-            className="w-9 h-9 rounded-xl border border-red-100 hover:bg-red-50 flex items-center justify-center transition-all"
-          >
-
-            <BiSolidTrashAlt className="text-red-500" />
-
-          </button>
-
-        </div>
+        )}
 
       </div>
-
-    ))
-
-  ) : (
-
-    <div className="p-10">
-
-      <EmptyState
-        title="No team members found"
-        subtitle="Add members or try another search."
-      />
-
     </div>
 
-  )}
-
-</div>
-    </div>
-    
   );
-  
+
 };
 
 export default Team;

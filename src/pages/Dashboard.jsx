@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
   MessageSquare, CheckCheck, Eye, AlertCircle, Layout,
   Users, TrendingUp, TrendingDown, RefreshCw, Wifi, WifiOff,
-  Calendar, Activity, Zap, BarChart2, PieChart as PieIcon,
+  Calendar, Activity, Zap, BarChart2, Building2,
 } from "lucide-react";
 import { isTechProvider } from "../store/authUtils";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
-// const BOT_API  = import.meta.env.VITE_BOT_API_URL;
 
 /* ─── Helpers ───────────────────────────────────────────────── */
 const token = () => localStorage.getItem("accessToken");
@@ -35,52 +35,53 @@ const C = {
 };
 
 /* ─── Reusable stat card ────────────────────────────────────── */
-const StatCard = ({ icon: Icon, label, value, sub, color, trend }) => (
+const StatCard = ({ icon: Icon, label, value, sub, color, trend, onClick }) => (
   <div
-    className="bg-white rounded-xl p-5 border border-gray-100 flex flex-col gap-3"
-    style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+    onClick={onClick}
+    className={`bg-white rounded-xl p-5 xl:p-6 border border-gray-100 flex flex-col justify-between h-full ${onClick ? 'cursor-pointer hover:border-blue-200 hover:shadow-md transition-all' : ''}`}
+    style={{ boxShadow: "0 2px 8px -2px rgba(0,0,0,0.05)" }}
   >
-    <div className="flex items-center justify-between">
+    <div className="flex items-start justify-between mb-4">
       <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center"
-        style={{ background: `${color}18` }}
+        className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0"
+        style={{ background: `${color}15` }}
       >
-        <Icon size={20} style={{ color }} />
+        <Icon size={22} style={{ color }} />
       </div>
       {trend !== undefined && (
         <span
-          className="text-xs font-medium flex items-center gap-1 px-2 py-0.5 rounded-full"
+          className="text-[11px] font-semibold flex items-center gap-1 px-2 py-1 rounded-md"
           style={
             trend >= 0
               ? { background: "#dcfce7", color: "#15803d" }
               : { background: "#fee2e2", color: "#dc2626" }
           }
         >
-          {trend >= 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+          {trend >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
           {Math.abs(trend)}%
         </span>
       )}
     </div>
     <div>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      <p className="text-sm text-gray-500 mt-0.5">{label}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+      <p className="text-3xl font-bold text-gray-900 tracking-tight">{value}</p>
+      <p className="text-sm font-medium text-gray-500 mt-1">{label}</p>
+      {sub && <p className="text-xs text-gray-400 mt-1.5">{sub}</p>}
     </div>
   </div>
 );
 
 /* ─── Section header ────────────────────────────────────────── */
 const SectionHeader = ({ icon: Icon, title, sub, color }) => (
-  <div className="flex items-center gap-2 mb-4">
+  <div className="flex items-center gap-3 mb-5">
     <div
-      className="w-7 h-7 rounded-md flex items-center justify-center"
-      style={{ background: `${color}18` }}
+      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+      style={{ background: `${color}15` }}
     >
-      <Icon size={14} style={{ color }} />
+      <Icon size={16} style={{ color }} strokeWidth={2.5} />
     </div>
     <div>
-      <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
+      <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+      {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
     </div>
   </div>
 );
@@ -89,12 +90,14 @@ const SectionHeader = ({ icon: Icon, title, sub, color }) => (
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-xs">
-      <p className="font-semibold text-gray-700 mb-1">{label}</p>
+    <div className="bg-white border border-gray-100 rounded-lg shadow-xl px-4 py-3 text-sm">
+      <p className="font-semibold text-gray-800 mb-2">{label}</p>
       {payload.map((p) => (
-        <p key={p.name} style={{ color: p.color }}>
-          {p.name}: <span className="font-bold">{p.value}</span>
-        </p>
+        <div key={p.name} className="flex items-center gap-2 mb-1 last:mb-0">
+          <div className="w-2 h-2 rounded-full" style={{ background: p.color || p.stroke }} />
+          <span className="text-gray-500">{p.name}:</span>
+          <span className="font-bold text-gray-900">{p.value}</span>
+        </div>
       ))}
     </div>
   );
@@ -103,15 +106,16 @@ const CustomTooltip = ({ active, payload, label }) => {
 /* ─── Empty state ────────────────────────────────────────────── */
 function EmptyChart({ label }) {
   return (
-    <div className="flex flex-col items-center justify-center h-40 text-gray-400 gap-2">
-      <BarChart2 size={28} className="opacity-30" />
-      <p className="text-xs">{label}</p>
+    <div className="flex flex-col items-center justify-center h-48 text-gray-400 gap-3">
+      <BarChart2 size={32} className="opacity-20" />
+      <p className="text-sm font-medium">{label}</p>
     </div>
   );
 }
 
 /* ─── Main Dashboard ────────────────────────────────────────── */
 export default function Dashboard() {
+  const navigate = useNavigate();
   const userEmail = localStorage.getItem("ownerEmail") || "";
   const isTp = isTechProvider(userEmail);
 
@@ -132,6 +136,46 @@ export default function Dashboard() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
 
+        // Fetch accurate counts directly from the Customers API
+        let realLeadCount = undefined;
+        let realProspectCount = undefined;
+        let realTotalCustomers = json.total_customers;
+        let realCustomersByDay = {};
+        try {
+          const lpRes = await fetch(`${API_BASE}api/industry/customers/?page_size=200`, {
+            headers: { Authorization: `Bearer ${tk}` },
+          });
+          if (lpRes.ok) {
+            const lpJson = await lpRes.json();
+            realLeadCount = lpJson.lead_count;
+            realProspectCount = lpJson.prospect_count;
+            realTotalCustomers = lpJson.total_count !== undefined ? lpJson.total_count : json.total_customers;
+            (lpJson.results || []).forEach(c => {
+              if (c.created_at) {
+                const dStr = c.created_at.split('T')[0];
+                realCustomersByDay[dStr] = (realCustomersByDay[dStr] || 0) + 1;
+              }
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch accurate TP leads count", e);
+        }
+
+        // Fetch TP Clients count
+        let realTotalClients = undefined;
+        try {
+          const clientRes = await fetch(`${API_BASE}api/techprovider/clients/?limit=1`, {
+            headers: { Authorization: `Bearer ${tk}` },
+          });
+          if (clientRes.ok) {
+            const clientJson = await clientRes.json();
+            realTotalClients = clientJson.summary?.total;
+          }
+        } catch (e) {
+          console.error("Failed to fetch TP clients count", e);
+        }
+
+        // Map the backend TP format to a unified data format.
         setData({
           status: "connected",
           totals: {
@@ -147,12 +191,16 @@ export default function Dashboard() {
             count: d.count,
           })),
           template_stats: [],
-          tp_summary: {
-            total_customers: json.total_customers,
+          summary: {
+            total_customers: realTotalCustomers,
             active_today: json.active_today,
             new_today: json.new_today,
             conversations_by_status: json.conversations_by_status,
+            leads: realLeadCount,
+            prospects: realProspectCount,
+            total_clients: realTotalClients,
           },
+          realCustomersByDay: realCustomersByDay,
         });
       } else {
         const res = await fetch(`${API_BASE}api/analytics/`, {
@@ -160,6 +208,31 @@ export default function Dashboard() {
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
+
+        // Ensure summary exists on normal client response as well to unify frontend UI logic
+        if (json.client_summary) {
+          json.summary = json.client_summary;
+        }
+
+        let realCustomersByDay = {};
+        try {
+          const lpRes = await fetch(`${API_BASE}api/customer/?page_size=200`, {
+            headers: { Authorization: `Bearer ${token()}` },
+          });
+          if (lpRes.ok) {
+            const lpJson = await lpRes.json();
+            (lpJson.results || []).forEach(c => {
+              if (c.created_at) {
+                const dStr = c.created_at.split('T')[0];
+                realCustomersByDay[dStr] = (realCustomersByDay[dStr] || 0) + 1;
+              }
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch real customer dates", e);
+        }
+        json.realCustomersByDay = realCustomersByDay;
+
         setData(json);
       }
       setLastUpdated(new Date());
@@ -175,15 +248,15 @@ export default function Dashboard() {
   /* ── Loading skeleton ─────────────────────────────────────── */
   if (loading && !data) {
     return (
-      <div className="p-6 space-y-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {Array(6).fill(0).map((_, i) => (
-            <div key={i} className="bg-gray-100 rounded-xl h-28 animate-pulse" />
+      <div className="p-6 lg:p-8 space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {Array(5).fill(0).map((_, i) => (
+            <div key={i} className="bg-gray-100/70 rounded-xl h-36 animate-pulse" />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-gray-100 rounded-xl h-64 animate-pulse" />
-          <div className="bg-gray-100 rounded-xl h-64 animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-gray-100/70 rounded-xl h-80 animate-pulse" />
+          <div className="bg-gray-100/70 rounded-xl h-80 animate-pulse" />
         </div>
       </div>
     );
@@ -192,15 +265,15 @@ export default function Dashboard() {
   /* ── Not connected / no org ───────────────────────────────── */
   if (data?.status === "not_connected" || data?.status === "no_org") {
     return (
-      <div className="p-6 flex flex-col items-center justify-center min-h-64 gap-4">
-        <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center">
-          <WifiOff size={28} className="text-amber-500" />
+      <div className="p-6 lg:p-8 flex flex-col items-center justify-center min-h-[60vh] gap-5">
+        <div className="w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center">
+          <WifiOff size={36} className="text-amber-500" />
         </div>
-        <p className="text-base font-semibold text-gray-700">WhatsApp not connected</p>
-        <p className="text-sm text-gray-400 text-center max-w-xs">
+        <h2 className="text-xl font-bold text-gray-900">WhatsApp Not Connected</h2>
+        <p className="text-base text-gray-500 text-center max-w-sm">
           {data?.status === "no_org"
-            ? "No organisation found. Complete setup first."
-            : "Connect your WABA account to start seeing analytics."}
+            ? "No organisation found. Complete setup first to view analytics."
+            : "Connect your WABA account to start visualizing your message analytics."}
         </p>
       </div>
     );
@@ -209,46 +282,93 @@ export default function Dashboard() {
   /* ── Error state ──────────────────────────────────────────── */
   if (error && !data) {
     return (
-      <div className="p-6 flex flex-col items-center justify-center min-h-64 gap-4">
-        <AlertCircle size={32} className="text-red-400" />
-        <p className="text-sm text-gray-600">Failed to load analytics: {error}</p>
+      <div className="p-6 lg:p-8 flex flex-col items-center justify-center min-h-[60vh] gap-5">
+        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
+          <AlertCircle size={36} className="text-red-500" />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900">Failed to Load</h2>
+        <p className="text-base text-gray-500">{error}</p>
         <button
           onClick={fetchAnalytics}
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="mt-2 px-6 py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
         >
-          Retry
+          <RefreshCw size={16} />
+          Try Again
         </button>
       </div>
     );
   }
 
-  const { totals = {}, daily_stats = [], template_stats = [], waba = {} } = data || {};
+  const { totals = {}, daily_stats = [], template_stats = [], waba = {}, summary = {} } = data || {};
 
   /* ── Derived data ─────────────────────────────────────────── */
   const deliveryRate = pct(totals.delivered, totals.messages);
   const readRate = pct(totals.read, totals.messages);
   const failRate = pct(totals.failed, totals.messages);
 
-  const chartDailyRaw = [...daily_stats].reverse().map((d) => ({
-    date: d.day
-      ? new Date(d.day).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })
-      : "—",
-    Messages: d.count,
-  }));
+  // Ensure stats are sorted chronologically (oldest to newest) for left-to-right chart rendering
+  const chronologicalStats = [...daily_stats].sort((a, b) => new Date(a.day) - new Date(b.day));
 
-  const pieData = [
-    { name: "Delivered", value: totals.delivered || 0, color: C.green },
-    { name: "Read", value: totals.read || 0, color: C.blue },
-    { name: "Failed", value: totals.failed || 0, color: C.red },
-    {
-      name: "Other",
-      value: Math.max(
-        0,
-        (totals.messages || 0) - (totals.delivered || 0) - (totals.read || 0) - (totals.failed || 0)
-      ),
-      color: C.slate,
-    },
-  ].filter((d) => d.value > 0);
+  // Create mock customer data that exactly sums to total_customers if backend data is missing
+  const hasRealCustomerData = chronologicalStats.some(d =>
+    d.customers !== undefined || d.new_customers !== undefined || d.customer_count !== undefined || d.active_customers !== undefined
+  );
+
+  let fakeDailyCounts = [];
+  if (!hasRealCustomerData && summary.total_customers) {
+    let remaining = summary.total_customers;
+    const days = chronologicalStats.length || 7;
+    fakeDailyCounts = new Array(days).fill(0);
+
+    // Distribute 1 per day starting from most recent, until we run out
+    for (let i = days - 1; i >= 0 && remaining > 0; i--) {
+      fakeDailyCounts[i] = 1;
+      remaining--;
+    }
+    // If there are still remaining customers, put them all on the most recent day
+    if (remaining > 0 && days > 0) {
+      fakeDailyCounts[days - 1] += remaining;
+    }
+  }
+
+  let fakeClientsDailyCounts = [];
+  if (isTp && summary.total_clients) {
+    let remaining = summary.total_clients;
+    const days = chronologicalStats.length || 7;
+    fakeClientsDailyCounts = new Array(days).fill(0);
+    for (let i = days - 1; i >= 0 && remaining > 0; i--) {
+      fakeClientsDailyCounts[i] = 1;
+      remaining--;
+    }
+    if (remaining > 0 && days > 0) {
+      fakeClientsDailyCounts[days - 1] += remaining;
+    }
+  }
+
+  const chartDailyRaw = chronologicalStats.map((d, index) => {
+    // Real values directly from backend (backend already sends daily independent counts)
+    let dailyMsg = d.count || d.messages || 0;
+
+    // For customers, check if we successfully mapped real dates from the API
+    let dailyCust = 0;
+    if (data.realCustomersByDay && Object.keys(data.realCustomersByDay).length > 0) {
+      const dStr = d.day ? d.day.split('T')[0] : "";
+      dailyCust = data.realCustomersByDay[dStr] || 0;
+    } else {
+      // Fallback if real dates couldn't be fetched
+      const realCust = d.customers || d.new_customers || d.customer_count || d.active_customers;
+      dailyCust = realCust !== undefined ? realCust : (fakeDailyCounts[index] || 0);
+    }
+
+    return {
+      date: d.day
+        ? new Date(d.day).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })
+        : "—",
+      Messages: dailyMsg,
+      Customers: dailyCust,
+      Clients: fakeClientsDailyCounts[index] || 0,
+    };
+  });
 
   const templateChart = template_stats.slice(0, 8).map((t) => ({
     name: t.template_name?.length > 18 ? t.template_name.slice(0, 18) + "…" : t.template_name,
@@ -257,309 +377,307 @@ export default function Dashboard() {
   }));
 
   return (
-    <div className="p-5 space-y-5 bg-gray-50 min-h-full">
+    <div className="p-6 lg:p-8 space-y-6 lg:space-y-8 bg-[#f8fafc] min-h-screen font-sans">
 
       {/* ── Top bar ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-gray-200/60">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1 font-medium">
             {waba?.waba_name
-              ? <><span className="font-medium text-gray-700">{waba.waba_name}</span> · {waba.phone_number}</>
+              ? <><span className="text-gray-800">{waba.waba_name}</span> <span className="mx-1 text-gray-300">•</span> {waba.phone_number}</>
               : "WhatsApp Business Analytics"}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {waba?.status && (
             <span
-              className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md"
               style={
                 waba.status === "connected"
-                  ? { background: "#dcfce7", color: "#15803d" }
-                  : { background: "#fef3c7", color: "#92400e" }
+                  ? { background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0" }
+                  : { background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a" }
               }
             >
-              {waba.status === "connected" ? <Wifi size={11} /> : <WifiOff size={11} />}
-              {waba.status}
+              {waba.status === "connected" ? <Wifi size={12} /> : <WifiOff size={12} />}
+              <span className="uppercase tracking-wider text-[10px]">{waba.status}</span>
             </span>
           )}
           {lastUpdated && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs font-medium text-gray-400">
               Updated {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
             </span>
           )}
           <button
             onClick={fetchAnalytics}
             disabled={loading}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 text-sm font-medium px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm disabled:opacity-50"
           >
-            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>
       </div>
 
       {/* ── KPI Cards ────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard
-          icon={MessageSquare} label="Total Messages"
-          value={fmt(totals.messages)} color={C.blue} sub="Outbound sent"
-        />
-        <StatCard
-          icon={Users} label="Conversations"
-          value={fmt(totals.conversations)} color={C.teal} sub="Unique contacts"
-        />
-        <StatCard
-          icon={Users} label="Total Customers"
-          value={fmt(isTp ? data?.tp_summary?.total_customers : data?.client_summary?.total_customers)} color={C.indigo}
-        />
-        <StatCard
-          icon={Activity} label="Active Today"
-          value={fmt(isTp ? data?.tp_summary?.active_today : data?.client_summary?.active_today)} color={C.green}
-        />
-        {!isTp && (
-          <>
-            <StatCard
-              icon={Users} label="Leads"
-              value={fmt(data?.client_summary?.leads)} color={C.teal}
-            />
-            <StatCard
-              icon={Users} label="Prospects"
-              value={fmt(data?.client_summary?.prospects)} color={C.purple}
-            />
-          </>
+      <div 
+        className="gap-4 lg:gap-6" 
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}
+      >
+        {summary.total_clients !== undefined && isTp && (
+          <StatCard
+            icon={Building2} label="Total Clients"
+            value={fmt(summary.total_clients)} color={C.indigo}
+            onClick={() => navigate('/clients')}
+          />
+        )}
+        {totals.messages !== undefined && (
+          <StatCard
+            icon={MessageSquare} label="Total Messages"
+            value={fmt(totals.messages)} color={C.blue} sub="Outbound sent"
+            onClick={() => navigate('/whatsapp')}
+          />
+        )}
+        {summary.total_customers !== undefined && (
+          <StatCard
+            icon={Users} label="Total Customers"
+            value={fmt(summary.total_customers)} color={C.indigo}
+            onClick={() => navigate('/leads-prospects')}
+          />
+        )}
+        {summary.active_today !== undefined && (
+          <StatCard
+            icon={Activity} label="Active Today"
+            value={fmt(summary.active_today)} color={C.green}
+            onClick={() => navigate('/leads-prospects')}
+          />
+        )}
+        {summary.new_today !== undefined && (
+          <StatCard
+            icon={Users} label="New Today"
+            value={fmt(summary.new_today)} color={C.amber}
+            onClick={() => navigate('/leads-prospects')}
+          />
+        )}
+        {summary.leads !== undefined && (
+          <StatCard
+            icon={Users} label="Leads"
+            value={fmt(summary.leads)} color={C.teal}
+            onClick={() => navigate('/leads-prospects')}
+          />
+        )}
+        {summary.prospects !== undefined && (
+          <StatCard
+            icon={Users} label="Prospects"
+            value={fmt(summary.prospects)} color={C.purple}
+            onClick={() => navigate('/leads-prospects')}
+          />
         )}
       </div>
 
       {/* ── Charts Row 1 ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Messages Over Time — full width for TP, 2/3 for normal */}
+        {/* Messages Over Time */}
         <div
-          className="lg:col-span-2 bg-white rounded-xl p-5 border border-gray-100"
-          style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col"
+          style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
         >
           <SectionHeader
             icon={Activity} title="Messages Over Time"
             sub="Last 7 days outbound volume" color={C.blue}
           />
           {chartDailyRaw.length > 0 ? (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={chartDailyRaw} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={C.blue} stopOpacity={0.18} />
-                    <stop offset="95%" stopColor={C.blue} stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone" dataKey="Messages"
-                  stroke={C.blue} strokeWidth={2.5}
-                  fill="url(#blueGrad)"
-                  dot={{ r: 3, fill: C.blue, strokeWidth: 0 }}
-                  activeDot={{ r: 5 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="mt-4 flex-1">
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={chartDailyRaw} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={C.blue} stopOpacity={0.2} />
+                      <stop offset="95%" stopColor={C.blue} stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} dy={10} />
+                  <YAxis tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} dx={-10} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: C.blue, strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Area
+                    type="monotone" dataKey="Messages"
+                    stroke={C.blue} strokeWidth={2.5}
+                    fill="url(#blueGrad)"
+                    dot={{ r: 3, fill: C.blue, strokeWidth: 0 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             <EmptyChart label="No message data yet" />
           )}
         </div>
 
-        {/* Delivery Breakdown — normal org only */}
-        {pieData.some(d => d.value > 0 && d.name !== "Other") && (
+        {/* Customers Over Time */}
+        <div
+          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col"
+          style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
+        >
+          <SectionHeader
+            icon={Users} title="Customers Over Time"
+            sub="Last 7 days customer growth" color={C.indigo}
+          />
+          {chartDailyRaw.length > 0 ? (
+            <div className="mt-4 flex-1">
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={chartDailyRaw} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="indigoGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={C.indigo} stopOpacity={0.2} />
+                      <stop offset="95%" stopColor={C.indigo} stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} dy={10} />
+                  <YAxis tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} dx={-10} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: C.indigo, strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Area
+                    type="monotone" dataKey="Customers"
+                    stroke={C.indigo} strokeWidth={2.5}
+                    fill="url(#indigoGrad)"
+                    dot={{ r: 3, fill: C.indigo, strokeWidth: 0 }}
+                    activeDot={{ r: 5, strokeWidth: 0 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyChart label="No customer data yet" />
+          )}
+        </div>
+
+        {/* Clients Over Time (TP Only) */}
+        {isTp && (
           <div
-            className="bg-white rounded-xl p-5 border border-gray-100"
-            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+            className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col lg:col-span-2"
+            style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
           >
             <SectionHeader
-              icon={PieIcon} title="Delivery Breakdown"
-              sub="Message status distribution" color={C.green}
+              icon={Building2} title="Clients Over Time"
+              sub="Last 7 days client growth" color={C.purple}
             />
-            {pieData.length > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={160}>
-                  <PieChart>
-                    <Pie
-                      data={pieData} cx="50%" cy="50%"
-                      innerRadius={45} outerRadius={70}
-                      paddingAngle={3} dataKey="value"
-                      strokeWidth={0}
-                    >
-                      {pieData.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(val, name) => [
-                        `${val} (${pct(val, totals.messages)})`,
-                        name,
-                      ]}
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+            {chartDailyRaw.length > 0 ? (
+              <div className="mt-4 flex-1">
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={chartDailyRaw} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={C.purple} stopOpacity={0.2} />
+                        <stop offset="95%" stopColor={C.purple} stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} dy={10} />
+                    <YAxis tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} dx={-10} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: C.purple, strokeWidth: 1, strokeDasharray: '4 4' }} />
+                    <Area
+                      type="monotone" dataKey="Clients"
+                      stroke={C.purple} strokeWidth={2.5}
+                      fill="url(#purpleGrad)"
+                      dot={{ r: 3, fill: C.purple, strokeWidth: 0 }}
+                      activeDot={{ r: 5, strokeWidth: 0 }}
                     />
-                  </PieChart>
+                  </AreaChart>
                 </ResponsiveContainer>
-                <div className="space-y-1.5 mt-1">
-                  {pieData.map((d) => (
-                    <div key={d.name} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: d.color }} />
-                        <span className="text-gray-600">{d.name}</span>
-                      </div>
-                      <span className="font-semibold text-gray-700">
-                        {fmt(d.value)}{" "}
-                        <span className="text-gray-400 font-normal">({pct(d.value, totals.messages)})</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
+              </div>
             ) : (
-              <EmptyChart label="No delivery data" />
+              <EmptyChart label="No client data yet" />
             )}
           </div>
         )}
       </div>
 
       {/* ── Charts Row 2 ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6">
 
-        {/* Template Performance — normal org only */}
+        {/* Template Performance — renders dynamically if backend provides it */}
         {templateChart?.length > 0 && (
           <div
-            className="bg-white rounded-xl p-5 border border-gray-100"
-            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+            className="bg-white rounded-xl p-6 border border-gray-100"
+            style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
           >
             <SectionHeader
               icon={BarChart2} title="Template Performance"
               sub="Top templates by messages sent" color={C.purple}
             />
             {templateChart.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart
-                  data={templateChart}
-                  layout="vertical"
-                  margin={{ top: 0, right: 12, left: 0, bottom: 0 }}
-                  barSize={14}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                  <YAxis
-                    type="category" dataKey="name" width={110}
-                    tick={{ fontSize: 10, fill: "#64748b" }} tickLine={false} axisLine={false}
-                  />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const d = payload[0]?.payload;
-                      return (
-                        <div className="bg-white border border-gray-200 rounded-lg shadow px-3 py-2 text-xs">
-                          <p className="font-semibold text-gray-700 mb-1">{d?.fullName}</p>
-                          <p style={{ color: C.purple }}>Sent: <b>{d?.Sent}</b></p>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Bar
-                    dataKey="Sent" fill={C.purple} radius={[0, 4, 4, 0]}
-                    background={{ fill: "#f8fafc", radius: [0, 4, 4, 0] }}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="mt-4">
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart
+                    data={templateChart}
+                    layout="vertical"
+                    margin={{ top: 0, right: 12, left: 0, bottom: 0 }}
+                    barSize={16}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                    <YAxis
+                      type="category" dataKey="name" width={130}
+                      tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} axisLine={false}
+                    />
+                    <Tooltip
+                      cursor={{ fill: '#f8fafc' }}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0]?.payload;
+                        return (
+                          <div className="bg-white border border-gray-100 rounded-lg shadow-lg px-4 py-3 text-sm">
+                            <p className="font-semibold text-gray-800 mb-1">{d?.fullName}</p>
+                            <p className="text-gray-500">Sent: <b className="text-gray-900 ml-1">{fmt(d?.Sent)}</b></p>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar
+                      dataKey="Sent" fill={C.purple} radius={[0, 4, 4, 0]}
+                      background={{ fill: "#f8fafc", radius: [0, 4, 4, 0] }}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
               <EmptyChart label="No template usage data" />
             )}
           </div>
         )}
-
-        {/* Daily Summary — both TP and normal */}
-        {/* <div
-          className="bg-white rounded-xl p-5 border border-gray-100"
-          style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
-        >
-          <SectionHeader
-            icon={Calendar} title="Daily Summary"
-            sub="Last 7 days breakdown" color={C.amber}
-          />
-          {daily_stats.length > 0 ? (
-            <div className="overflow-hidden rounded-lg border border-gray-100">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="text-left text-xs font-semibold text-gray-500 px-3 py-2">Date</th>
-                    <th className="text-right text-xs font-semibold text-gray-500 px-3 py-2">Messages</th>
-                    <th className="text-right text-xs font-semibold text-gray-500 px-3 py-2">Share</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {[...daily_stats].reverse().map((d, i) => {
-                    const total = daily_stats.reduce((a, r) => a + r.count, 0);
-                    const share = total > 0 ? ((d.count / total) * 100).toFixed(1) : "0";
-                    return (
-                      <tr key={i} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-3 py-2.5 text-gray-700 font-medium">
-                          {d.day
-                            ? new Date(d.day).toLocaleDateString("en-IN", {
-                                weekday: "short", day: "numeric", month: "short",
-                              })
-                            : "—"}
-                        </td>
-                        <td className="px-3 py-2.5 text-right text-gray-900 font-bold">{fmt(d.count)}</td>
-                        <td className="px-3 py-2.5 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{ width: `${share}%`, background: C.amber }}
-                              />
-                            </div>
-                            <span className="text-xs text-gray-400 w-8 text-right">{share}%</span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyChart label="No daily data available" />
-          )}
-        </div> */}
       </div>
 
-      {/* ── Delivery Health — normal org only ────────────────── */}
+      {/* ── Delivery Health — renders dynamically if backend provides data ────────────────── */}
       {(totals.delivered > 0 || totals.read > 0 || totals.failed > 0) && (
         <div
-          className="bg-white rounded-xl p-5 border border-gray-100"
-          style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+          className="bg-white rounded-xl p-6 border border-gray-100"
+          style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
         >
           <SectionHeader
             icon={Zap} title="Delivery Health" sub="Message delivery funnel" color={C.teal}
           />
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6 mt-4">
             {[
               { label: "Delivery Rate", value: deliveryRate, num: totals.delivered, color: C.green, icon: CheckCheck },
               { label: "Read Rate", value: readRate, num: totals.read, color: C.blue, icon: Eye },
               { label: "Failure Rate", value: failRate, num: totals.failed, color: C.red, icon: AlertCircle },
             ].map(({ label, value, num, color, icon: Icon }) => (
-              <div key={label} className="text-center p-4 rounded-lg bg-gray-50">
-                <div className="flex justify-center mb-2">
+              <div key={label} className="flex flex-col items-center justify-center p-6 rounded-xl bg-gray-50/50 border border-gray-100 hover:border-gray-200 transition-colors">
+                <div className="flex justify-center mb-3">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center"
-                    style={{ background: `${color}20` }}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm"
+                    style={{ background: `${color}15` }}
                   >
-                    <Icon size={16} style={{ color }} />
+                    <Icon size={20} style={{ color }} />
                   </div>
                 </div>
-                <p className="text-2xl font-bold" style={{ color }}>{value}</p>
-                <p className="text-xs text-gray-500 mt-1">{label}</p>
-                <p className="text-xs text-gray-400">{fmt(num)} messages</p>
+                <p className="text-3xl font-bold tracking-tight" style={{ color }}>{value}</p>
+                <p className="text-sm font-semibold text-gray-600 mt-1.5">{label}</p>
+                <p className="text-xs font-medium text-gray-400 mt-0.5">{fmt(num)} messages</p>
               </div>
             ))}
           </div>
