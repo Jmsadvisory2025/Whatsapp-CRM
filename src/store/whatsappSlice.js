@@ -58,9 +58,11 @@ const fetchCustomers = createAsyncThunk(
         previous: data.previous || null,
         currentPageUrl: url,
         currentPage: data.page || reqPage,
-        pageSize: data.page_size || 100,
+        pageSize: data.page_size || 20, // using 20 as fallback to match backend
         wabaPhone: data.waba_phone || null,
       };
+
+
     } catch (error) {
       return rejectWithValue(error.message);
     }
