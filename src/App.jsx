@@ -12,7 +12,7 @@ const TechProviderClients = lazy(() => import("./pages/TechProviderClients"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const SignUp = lazy(() => import("./pages/SignUp"));
 const SignIn = lazy(() => import("./pages/SignIn"));
-const Verification = lazy(() => import("./pages/Verification"));
+
 const CreateOrganization = lazy(() => import("./pages/CreateOrganization"));
 const AppLayout = lazy(() => import("./components/layout/AppLayout"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -46,14 +46,7 @@ const router = createBrowserRouter(
         </Suspense>
       ),
     },
-    {
-      path: "/verify",
-      element: (
-        <Suspense fallback={<LoaderDemo />}>
-          <Verification />
-        </Suspense>
-      ),
-    },
+
     {
       path: "/setup",
       element: (

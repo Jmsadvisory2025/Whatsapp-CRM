@@ -45,50 +45,22 @@ const clearAuthFromStorage = () => {
 
 // ─── Async thunks ────────────────────────────────────────────────────────────
 
-export const sendOtp = createAsyncThunk(
-  'auth/sendOtp',
-  async (email, { rejectWithValue }) => {
+export const loginUser = createAsyncThunk(
+  'auth/loginUser',
+  async ({ email, password }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/send-code/`, {
+      const response = await fetch(`${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}api/auth/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to send OTP');
-      }
-
-      return {
-        email,
-        message: data.message,
-      };
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-export const verifyOtp = createAsyncThunk(
-  'auth/verifyOtp',
-  async ({ email, code }, { rejectWithValue }) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/verify-code/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, code }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Invalid OTP');
+        throw new Error(data.error || data.detail || 'Invalid email or password');
       }
 
       const payload = {
@@ -127,7 +99,7 @@ export const fetchMe = createAsyncThunk(
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/me/`, {
+      const response = await fetch(`${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}api/user/me/`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -172,12 +144,10 @@ export const fetchMe = createAsyncThunk(
 // ─── Initial state ───────────────────────────────────────────────────────────
 const initialState = {
   email: '',
-  otp: '',
   isLoading: false,
   isMeLoading: false,
   error: null,
-  isVerified: false,
-  otpSent: false,
+  isAuthenticated: false,
 
   accessToken: localStorage.getItem('accessToken') || null,
   refreshToken: localStorage.getItem('refreshToken') || null,
@@ -191,7 +161,6 @@ const initialState = {
   waba_connected:
     localStorage.getItem('wabaConnected') === 'true',
 
-  otpExpiryTime: null,
   org_email: localStorage.getItem('orgEmail') || null,
   org_website: localStorage.getItem('orgWebsite') || null,
   owner_name: localStorage.getItem('ownerName') || null,
@@ -207,26 +176,14 @@ const authSlice = createSlice({
   initialState,
 
   reducers: {
-    setOtp: (state, action) => {
-      state.otp = action.payload;
-      state.error = null;
-    },
-
-    setOtpExpiryTime: (state, action) => {
-      state.otpExpiryTime = action.payload;
-    },
-
     clearError: (state) => {
       state.error = null;
     },
 
     resetAuthState: (state) => {
       state.email = '';
-      state.otp = '';
       state.error = null;
-      state.isVerified = false;
-      state.otpSent = false;
-      state.otpExpiryTime = null;
+      state.isAuthenticated = false;
     },
 
     logout: () => {
@@ -253,35 +210,15 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
 
-      // ─── sendOtp ────────────────────────────────────────────────────────
-      .addCase(sendOtp.pending, (state) => {
+      // ─── loginUser ──────────────────────────────────────────────────────
+      .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
 
-      .addCase(sendOtp.fulfilled, (state, action) => {
+      .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.email = action.payload.email;
-        state.otpSent = true;
-        state.error = null;
-        state.otpExpiryTime = Date.now() + 5 * 60 * 1000;
-      })
-
-      .addCase(sendOtp.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload;
-        state.otpSent = false;
-      })
-
-      // ─── verifyOtp ──────────────────────────────────────────────────────
-      .addCase(verifyOtp.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-
-      .addCase(verifyOtp.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.isVerified = true;
+        state.isAuthenticated = true;
         state.error = null;
 
         state.accessToken = action.payload.access;
@@ -302,10 +239,10 @@ const authSlice = createSlice({
         state.phone_number_id = action.payload.phone_number_id;
       })
 
-      .addCase(verifyOtp.rejected, (state, action) => {
+      .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
-        state.isVerified = false;
+        state.isAuthenticated = false;
       })
 
       // ─── fetchMe ────────────────────────────────────────────────────────
@@ -346,8 +283,6 @@ const authSlice = createSlice({
 });
 
 export const {
-  setOtp,
-  setOtpExpiryTime,
   clearError,
   resetAuthState,
   logout,

@@ -76,7 +76,7 @@ const LeadsProspects = () => {
   // };
 
   const userEmail = localStorage.getItem("ownerEmail") || "";
-  const isTp      = isTechProvider(userEmail);
+  const isTp = isTechProvider(userEmail);
 
   // const fetchData = async () => {
   //   setLoading(true);
@@ -125,61 +125,68 @@ const LeadsProspects = () => {
   // };
 
   const fetchData = async () => {
-  setLoading(true);
-  setError(null);
-  try {
-    const token = localStorage.getItem("accessToken");
-    let res;
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("accessToken");
+      let res;
 
-    if (isTp) {
-      res = await axios.get(`${API}api/industry/customers/`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: {
-          search,
-          page,
-          page_size: 20,
-          ...(activeTab !== "all" && { status: activeTab }),
-        },
-      });
+      if (isTp) {
+        res = await axios.get(`${API}api/industry/customers/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            search,
+            page,
+            page_size: 20,
+            ...(activeTab !== "all" && { status: activeTab }),
+          },
+        });
 
-      // Backend હવે આ fields return કરે છે
-      setGlobalCounts({
-        all:      res.data.total_count    || 0,
-        lead:     res.data.lead_count     || 0,
-        prospect: res.data.prospect_count || 0,
-      });
+        // Backend હવે આ fields return કરે છે
+        setGlobalCounts({
+          all: res.data.total_count || 0,
+          lead: res.data.lead_count || 0,
+          prospect: res.data.prospect_count || 0,
+        });
 
-      const mapped = (res.data.results || []).map((c) => ({
-        id:              c.id,
-        name:            c.name,
-        phone:           c.phone,
-        status:          c.status || "prospect",
-        chatbot_stage:   null,
-        message_count:   c.total_messages,
-        last_chat:       c.last_seen,
-        conversation_id: null,
-        bot_source:      c.bot_source || "unknown", 
+        const mapped = (res.data.results || []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          phone: c.phone,
+          status: c.status || "prospect",
+          chatbot_stage: null,
+          message_count: c.total_messages,
+          last_chat: c.last_seen,
+          conversation_id: null,
+          bot_source: c.bot_source || "unknown",
 
-      }));
-      setData(mapped);
-      setCount(res.data.count || 0);  // filtered count for pagination
+        }));
+        setData(mapped);
+        setCount(res.data.count || 0);  // filtered count for pagination
 
-    } else {
-      // ── Normal user: existing leads-prospects API ──────────────────
-      res = await axios.get(`${API}/api/leads-prospects/`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { tab: activeTab, search, page, page_size: 20 },
-      });
-      setData(res.data.results || []);
-      setCount(res.data.count || 0);
+      } else {
+        // ── Normal user: existing leads-prospects API ──────────────────
+        res = await axios.get(`${API}/api/leads-prospects/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { tab: activeTab, search, page, page_size: 20 },
+        });
+
+        setGlobalCounts({
+          all: res.data.total_count || 0,
+          lead: res.data.lead_count || 0,
+          prospect: res.data.prospect_count || 0,
+        });
+
+        setData(res.data.results || []);
+        setCount(res.data.count || 0);
+      }
+
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to load data");
+    } finally {
+      setLoading(false);
     }
-
-   } catch (err) {
-    setError(err.response?.data?.error || "Failed to load data");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   const totalPages = Math.ceil(count / 20);
 
   // const displayData = activeTab === "all"
@@ -187,17 +194,17 @@ const LeadsProspects = () => {
   // : data.filter((item) => item.status === activeTab);
 
   const displayData = isTp
-  ? data
-  : activeTab === "all"
     ? data
-    : data.filter((item) => item.status === activeTab);
+    : activeTab === "all"
+      ? data
+      : data.filter((item) => item.status === activeTab);
   /* -------------------------------------------------------------------------- */
   /*                                   LOADING                                  */
   /* -------------------------------------------------------------------------- */
 
   if (loading && page === 1) {
-  return <LoaderDemo />;
-}
+    return <LoaderDemo />;
+  }
 
   /* -------------------------------------------------------------------------- */
   /*                                    ERROR                                   */
@@ -294,31 +301,28 @@ const LeadsProspects = () => {
           <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
 
             {/* Tabs */}
-        
+
             <div className="flex items-center gap-2 overflow-auto scrollbar-hide">
 
-             <button onClick={() => { setActiveTab("all"); setPage(1); }}
-  className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-all ${
-    activeTab === "all" ? "bg-green-600 text-white shadow-lg shadow-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-  }`}>
-  All ({isTp ? globalCounts.all : count})
-  </button>
+              <button onClick={() => { setActiveTab("all"); setPage(1); }}
+                className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === "all" ? "bg-green-600 text-white shadow-lg shadow-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}>
+                All ({isTp ? globalCounts.all : count})
+              </button>
 
-<button onClick={() => { setActiveTab("lead"); setPage(1); }}
-  className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all ${
-    activeTab === "lead" ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-  }`}>
-  <CheckCircle2 size={15} />
-  Leads ({isTp ? globalCounts.lead : data.filter(d => d.status === "lead").length})
-</button>
+              <button onClick={() => { setActiveTab("lead"); setPage(1); }}
+                className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === "lead" ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}>
+                <CheckCircle2 size={15} />
+                Leads ({isTp ? globalCounts.lead : data.filter(d => d.status === "lead").length})
+              </button>
 
-<button onClick={() => { setActiveTab("prospect"); setPage(1); }}
-  className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all ${
-    activeTab === "prospect" ? "bg-orange-500 text-white shadow-lg shadow-orange-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-  }`}>
-  <Clock3 size={15} />
-  Prospects ({isTp ? globalCounts.prospect : data.filter(d => d.status === "prospect").length})
-</button>
+              <button onClick={() => { setActiveTab("prospect"); setPage(1); }}
+                className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === "prospect" ? "bg-orange-500 text-white shadow-lg shadow-orange-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}>
+                <Clock3 size={15} />
+                Prospects ({isTp ? globalCounts.prospect : data.filter(d => d.status === "prospect").length})
+              </button>
             </div>
 
             {/* Search */}
@@ -377,23 +381,23 @@ const LeadsProspects = () => {
 
               <tr>
 
-               {(
-  isTp
-    ? [
-        "Customer",
-        "Phone",
-        "Bot",
-        "Status",
-        "Last Chat",
-      ]
-    : [
-        "Customer",
-        "Phone",
-        "Status",
-        "Stage",
-        "Last Chat",
-      ]
-).map((head,i) => (
+                {(
+                  isTp
+                    ? [
+                      "Customer",
+                      "Phone",
+                      "Bot",
+                      "Status",
+                      "Last Chat",
+                    ]
+                    : [
+                      "Customer",
+                      "Phone",
+                      "Status",
+                      "Stage",
+                      "Last Chat",
+                    ]
+                ).map((head, i) => (
                   <th
                     key={i}
                     className={`
@@ -500,15 +504,15 @@ const LeadsProspects = () => {
 
                     </td>
                     {/* Bot Source */}
-                      {isTp && (
-                        <td className="px-6 py-5">
-                          {{
-                            industry: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">Industry Bot</span>,
-                            jms:      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">JMS Bot</span>,
-                            whatsapp: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">Meta Bot</span>,
-                          }[item.bot_source] || <span className="text-xs text-gray-400">—</span>}
-                        </td>
-                      )}
+                    {isTp && (
+                      <td className="px-6 py-5">
+                        {{
+                          industry: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">Industry Bot</span>,
+                          jms: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">JMS Bot</span>,
+                          whatsapp: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">Meta Bot</span>,
+                        }[item.bot_source] || <span className="text-xs text-gray-400">—</span>}
+                      </td>
+                    )}
 
                     {/* Status */}
 
@@ -533,15 +537,15 @@ const LeadsProspects = () => {
                     </td>
 
                     {/* Stage */}
-{!isTp && (
-                    <td className="px-6 py-5">
+                    {!isTp && (
+                      <td className="px-6 py-5">
 
-                      <span className="text-sm text-gray-600 capitalize">
-                        {item.chatbot_stage || "N/A"}
-                      </span>
+                        <span className="text-sm text-gray-600 capitalize">
+                          {item.chatbot_stage || "N/A"}
+                        </span>
 
-                    </td>
-)}
+                      </td>
+                    )}
 
                     {/* Last Chat */}
 
@@ -551,13 +555,13 @@ const LeadsProspects = () => {
 
                         {item.last_chat
                           ? new Date(item.last_chat).toLocaleDateString(
-                              "en-IN",
-                              {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )
+                            "en-IN",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            }
+                          )
                           : "N/A"}
 
                       </span>
@@ -583,7 +587,7 @@ const LeadsProspects = () => {
 
         <div className="xl:hidden p-4 space-y-4">
 
-         {displayData.length === 0 ? (
+          {displayData.length === 0 ? (
 
             <div className="py-20 text-center">
 
@@ -603,7 +607,7 @@ const LeadsProspects = () => {
 
           ) : (
 
-             displayData.map((item) => (
+            displayData.map((item) => (
 
               // <div
               //   key={item.id}
@@ -692,12 +696,12 @@ const LeadsProspects = () => {
 
                       {item.last_chat
                         ? new Date(item.last_chat).toLocaleDateString(
-                            "en-IN",
-                            {
-                              day: "numeric",
-                              month: "short",
-                            }
-                          )
+                          "en-IN",
+                          {
+                            day: "numeric",
+                            month: "short",
+                          }
+                        )
                         : "N/A"}
 
                     </p>

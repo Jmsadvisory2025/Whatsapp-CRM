@@ -10,6 +10,7 @@ import {
   Calendar, Activity, Zap, BarChart2, Building2,
 } from "lucide-react";
 import { isTechProvider } from "../store/authUtils";
+import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -247,19 +248,7 @@ export default function Dashboard() {
 
   /* ── Loading skeleton ─────────────────────────────────────── */
   if (loading && !data) {
-    return (
-      <div className="p-6 lg:p-8 space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {Array(5).fill(0).map((_, i) => (
-            <div key={i} className="bg-gray-100/70 rounded-xl h-36 animate-pulse" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-gray-100/70 rounded-xl h-80 animate-pulse" />
-          <div className="bg-gray-100/70 rounded-xl h-80 animate-pulse" />
-        </div>
-      </div>
-    );
+    return <LoaderDemo />;
   }
 
   /* ── Not connected / no org ───────────────────────────────── */

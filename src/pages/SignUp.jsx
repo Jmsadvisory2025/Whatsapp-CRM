@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import { Mail, ShieldCheck, UserPlus, Building2, Globe, User } from "lucide-react";
+import { Mail, ShieldCheck, UserPlus, Building2, Globe, User, Key } from "lucide-react";
 import { motion } from "framer-motion";
 import axios from "axios";
 
@@ -14,6 +14,7 @@ const SignUp = () => {
   const [fullName, setFullName] = useState("");
   const [name,    setName]    = useState("");
   const [email,   setEmail]   = useState("");
+  const [password, setPassword] = useState("");
   const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
@@ -24,6 +25,7 @@ const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateEmail(email)) { setError("Please enter a valid email"); return; }
+    if (!password.trim()) { setError("PIN/Password is required"); return; }
     if (!fullName.trim()) { setError("Your name is required"); return; }
     if (!name.trim()) { setError("Organisation name is required"); return; }
 
@@ -33,6 +35,7 @@ const SignUp = () => {
       const res = await axios.post(`${API_BASE_URL}api/signup/`, {
         full_name: fullName.trim(),
         email:     email.trim(),
+        password:  password.trim(),
         name:      name.trim(),
         website:   website.trim() || undefined,
       });
@@ -45,7 +48,7 @@ const SignUp = () => {
     }
   };
 
-  const isValid = validateEmail(email) && name.trim().length > 0 && fullName.trim().length > 0;
+  const isValid = validateEmail(email) && name.trim().length > 0 && fullName.trim().length > 0 && password.trim().length > 0;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -116,6 +119,25 @@ const SignUp = () => {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(""); }}
                   placeholder="admin@example.com"
+                  required
+                  disabled={loading}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* PIN / Password */}
+            <div>
+              <label className="text-sm font-medium text-text-secondary mb-1 block">
+                PIN / Password
+              </label>
+              <div className="relative">
+                <Key size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                  placeholder="Enter a secure PIN"
                   required
                   disabled={loading}
                   className="pl-10"
