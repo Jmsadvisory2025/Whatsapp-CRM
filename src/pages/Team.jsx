@@ -328,7 +328,7 @@ const Team = () => {
 
         </div>
 
-        <button
+        {/* <button
           onClick={() =>
             navigate("/addMember")
           }
@@ -339,7 +339,7 @@ const Team = () => {
 
           Add Member
 
-        </button>
+        </button> */}
 
       </div>
 

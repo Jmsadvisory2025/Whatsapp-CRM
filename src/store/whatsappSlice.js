@@ -68,32 +68,32 @@ const fetchCustomers = createAsyncThunk(
 );
 
 // ── Send direct message ──────────────────────────────────────────────────────
-const sendDirectMessage = createAsyncThunk(
-  "whatsapp/sendDirectMessage",
-  async ({ conversation_id, message }, { getState, rejectWithValue }) => {
-    const { auth } = getState();
-    const token = auth.accessToken || localStorage.getItem("accessToken");
-    if (!token) throw new Error("No authentication token available");
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/send-direct-message/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ conversation_id, message }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Failed to send message");
-
-      return { ...data, conversation_id, sent_message: message };
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
+// const sendDirectMessage = createAsyncThunk(
+//   "whatsapp/sendDirectMessage",
+//   async ({ conversation_id, message }, { getState, rejectWithValue }) => {
+//     const { auth } = getState();
+//     const token = auth.accessToken || localStorage.getItem("accessToken");
+//     if (!token) throw new Error("No authentication token available");
+// 
+//     try {
+//       const response = await fetch(`${API_BASE_URL}/api/send-direct-message/`, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//         },
+//         body: JSON.stringify({ conversation_id, message }),
+//       });
+// 
+//       const data = await response.json();
+//       if (!response.ok) throw new Error(data.message || "Failed to send message");
+// 
+//       return { ...data, conversation_id, sent_message: message };
+//     } catch (error) {
+//       return rejectWithValue(error.message);
+//     }
+//   }
+// );
 
 // ── Send bulk message ────────────────────────────────────────────────────────
 const sendBulkMessage = createAsyncThunk(
@@ -236,20 +236,20 @@ const whatsappSlice = createSlice({
       })
 
       // sendDirectMessage — optimistically append to chat
-      .addCase(sendDirectMessage.fulfilled, (state, action) => {
-        if (
-          state.selectedCustomer &&
-          state.selectedCustomer.conversation_id === action.payload.conversation_id
-        ) {
-          state.messages.push({
-            id: `temp-${Date.now()}`,
-            user_msg: null,
-            user_timestamp: null,
-            bot_msg: action.payload.sent_message,
-            bot_timestamp: new Date().toISOString(),
-          });
-        }
-      });
+      // .addCase(sendDirectMessage.fulfilled, (state, action) => {
+      //   if (
+      //     state.selectedCustomer &&
+      //     state.selectedCustomer.conversation_id === action.payload.conversation_id
+      //   ) {
+      //     state.messages.push({
+      //       id: `temp-${Date.now()}`,
+      //       user_msg: null,
+      //       user_timestamp: null,
+      //       bot_msg: action.payload.sent_message,
+      //       bot_timestamp: new Date().toISOString(),
+      //     });
+      //   }
+      // });
   },
 });
 
@@ -263,7 +263,7 @@ export const {
 export {
   fetchCustomers,
   fetchConversationMessages,
-  sendDirectMessage,
+  // sendDirectMessage,
   sendBulkMessage,
 };
 

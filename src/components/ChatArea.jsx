@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { sendDirectMessage, fetchConversationMessages, setSelectedCustomer } from "../store/whatsappSlice";
+import { fetchConversationMessages, setSelectedCustomer } from "../store/whatsappSlice";
+// import { sendDirectMessage, fetchConversationMessages, setSelectedCustomer } from "../store/whatsappSlice";
 import {
   Send,
   ArrowLeft,
@@ -281,48 +282,48 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
   const { selectedCustomer, messages, isLoadingMessages, messagesError } = useSelector(
     (s) => s.whatsapp
   );
-  const [input, setInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
+  // const [input, setInput] = useState("");
+  // const [isSending, setIsSending] = useState(false);
   const bottomRef = useRef(null);
-  const textareaRef = useRef(null);
+  // const textareaRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isSending) return;
-    const textToSend = input.trim();
-    setIsSending(true);
-    try {
-      await dispatch(
-        sendDirectMessage({
-          conversation_id: selectedCustomer.conversation_id,
-          message: textToSend,
-        })
-      ).unwrap();
-      setInput("");
-      if (textareaRef.current) textareaRef.current.style.height = "24px";
-    } catch (err) {
-      console.error("Failed to send message:", err);
-    } finally {
-      setIsSending(false);
-      textareaRef.current?.focus();
-    }
-  };
+  // const handleSend = async () => {
+  //   if (!input.trim() || isSending) return;
+  //   const textToSend = input.trim();
+  //   setIsSending(true);
+  //   try {
+  //     await dispatch(
+  //       sendDirectMessage({
+  //         conversation_id: selectedCustomer.conversation_id,
+  //         message: textToSend,
+  //       })
+  //     ).unwrap();
+  //     setInput("");
+  //     if (textareaRef.current) textareaRef.current.style.height = "24px";
+  //   } catch (err) {
+  //     console.error("Failed to send message:", err);
+  //   } finally {
+  //     setIsSending(false);
+  //     textareaRef.current?.focus();
+  //   }
+  // };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  // const handleKeyDown = (e) => {
+  //   if (e.key === "Enter" && !e.shiftKey) {
+  //     e.preventDefault();
+  //     handleSend();
+  //   }
+  // };
 
-  const handleTextareaChange = (e) => {
-    setInput(e.target.value);
-    e.target.style.height = "40px";
-    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-  };
+  // const handleTextareaChange = (e) => {
+  //   setInput(e.target.value);
+  //   e.target.style.height = "40px";
+  //   e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+  // };
 
   /* ── No selection ── */
   if (!selectedCustomer) {
@@ -533,11 +534,10 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
       </div>
 
       {/* ── Input Bar ── */}
-      <div
+      {/* <div
         className="flex-shrink-0 px-4 py-3 flex items-end gap-3"
         style={{ background: "#f0f2f5" }}
       >
-        {/* Textarea */}
         <div className="flex-1 rounded-lg bg-white shadow-sm border border-gray-200 flex items-end px-4 py-1.5 transition-colors focus-within:border-gray-300">
           <textarea
             ref={textareaRef}
@@ -555,7 +555,6 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
           />
         </div>
 
-        {/* Send button */}
         <div className="mb-1.5 flex-shrink-0">
           <button
             onClick={handleSend}
@@ -569,7 +568,7 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
             )}
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
