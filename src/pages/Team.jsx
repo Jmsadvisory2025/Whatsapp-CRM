@@ -319,11 +319,11 @@ const Team = () => {
         <div>
 
           <h1 className="text-2xl font-bold text-gray-900">
-            Team
+            Profile
           </h1>
 
           <p className="text-sm text-gray-500 mt-1">
-            Manage organisation & team access
+            Account Information
           </p>
 
         </div>
@@ -358,7 +358,6 @@ const Team = () => {
                 Account Information
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Meta Information
               </p>
             </div>
           </div>
@@ -429,9 +428,7 @@ const Team = () => {
 
       {/* TEAM */}
 
-      <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
-
-        {/* TOP */}
+      {/* <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
 
         <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
 
@@ -470,10 +467,10 @@ const Team = () => {
 
         </div>
 
-      </div>
+      </div> */}
       {/* MEMBERS LIST */}
 
-      <div className="divide-y divide-gray-100">
+      {/* <div className="divide-y divide-gray-100">
 
         {filteredMembers.length > 0 ? (
 
@@ -483,8 +480,6 @@ const Team = () => {
               key={member.id}
               className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 transition-all"
             >
-
-              {/* LEFT */}
 
               <div className="flex items-center gap-4">
 
@@ -507,8 +502,6 @@ const Team = () => {
                 </div>
 
               </div>
-
-              {/* RIGHT */}
 
               <div className="flex items-center gap-3">
 
@@ -544,7 +537,7 @@ const Team = () => {
 
         )}
 
-      </div>
+      </div> */}
     </div>
 
   );
