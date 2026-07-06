@@ -307,21 +307,21 @@ const LeadsProspects = () => {
               <button onClick={() => { setActiveTab("all"); setPage(1); }}
                 className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === "all" ? "bg-green-600 text-white shadow-lg shadow-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}>
-                All ({isTp ? globalCounts.all : count})
+                All ({globalCounts.all})
               </button>
 
               <button onClick={() => { setActiveTab("lead"); setPage(1); }}
                 className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === "lead" ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}>
                 <CheckCircle2 size={15} />
-                Leads ({isTp ? globalCounts.lead : data.filter(d => d.status === "lead").length})
+                Leads ({globalCounts.lead})
               </button>
 
               <button onClick={() => { setActiveTab("prospect"); setPage(1); }}
                 className={`px-5 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all ${activeTab === "prospect" ? "bg-orange-500 text-white shadow-lg shadow-orange-100" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}>
                 <Clock3 size={15} />
-                Prospects ({isTp ? globalCounts.prospect : data.filter(d => d.status === "prospect").length})
+                Prospects ({globalCounts.prospect})
               </button>
             </div>
 
