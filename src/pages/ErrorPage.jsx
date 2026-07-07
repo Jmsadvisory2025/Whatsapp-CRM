@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useRouteError, useParams } from "react-router-dom";
 
 const errorConfigs = {
   404: {
@@ -164,25 +165,52 @@ const EnhancedIllustration = () => (
   </svg>
 );
 
-const ErrorPage = ({ status = "404" }) => {
+const ErrorPage = ({ status }) => {
   const [mounted, setMounted] = useState(false);
+  const routeError = useRouteError();
+  const params = useParams();
+
+  const isChunkLoadError = 
+    routeError?.message?.includes('Failed to fetch dynamically imported module') ||
+    routeError?.message?.includes('Importing a module script failed');
+
+  const resolvedStatus = isChunkLoadError ? "500" : (status || params.status || "404");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const config = errorConfigs[String(status)] || {
-    code: String(status),
+  let config = errorConfigs[String(resolvedStatus)] || {
+    code: String(resolvedStatus),
     title: "Something went wrong",
-    message: `An unexpected error occurred (${status}). Please try again.`,
+    message: `An unexpected error occurred (${resolvedStatus}). Please try again.`,
   };
+
+  if (isChunkLoadError) {
+    config = {
+      code: "Oops!",
+      title: "App Updated",
+      message: "A new version of the application is available. Please refresh the page to continue.",
+      cta: "Refresh Page",
+      ctaAction: () => window.location.reload(),
+    };
+  } else if (routeError && !status && !params.status) {
+    config = {
+      ...config,
+      message: routeError.message || config.message,
+    };
+  }
 
   const ctaHref = config.ctaHref || "/";
   const ctaLabel = config.cta || "Go to dashboard";
 
   const handleCta = (e) => {
     e.preventDefault();
-    window.location.href = ctaHref;
+    if (config.ctaAction) {
+      config.ctaAction();
+    } else {
+      window.location.href = ctaHref;
+    }
   };
 
   return (

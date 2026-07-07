@@ -32,6 +32,11 @@ const router = createBrowserRouter(
     // Public routes
     {
       path: "/signup",
+      errorElement: (
+        <Suspense fallback={<LoaderDemo />}>
+          <ErrorPage />
+        </Suspense>
+      ),
       element: (
         <Suspense fallback={<LoaderDemo />}>
           <SignUp />
@@ -40,6 +45,11 @@ const router = createBrowserRouter(
     },
     {
       path: "/signin",
+      errorElement: (
+        <Suspense fallback={<LoaderDemo />}>
+          <ErrorPage />
+        </Suspense>
+      ),
       element: (
         <Suspense fallback={<LoaderDemo />}>
           <SignIn />
@@ -49,6 +59,11 @@ const router = createBrowserRouter(
 
     {
       path: "/setup",
+      errorElement: (
+        <Suspense fallback={<LoaderDemo />}>
+          <ErrorPage />
+        </Suspense>
+      ),
       element: (
         <Suspense fallback={<LoaderDemo />}>
           <CreateOrganization />
@@ -57,6 +72,11 @@ const router = createBrowserRouter(
     },
     {
       path: "/connected-business",
+      errorElement: (
+        <Suspense fallback={<LoaderDemo />}>
+          <ErrorPage />
+        </Suspense>
+      ),
       element: (
         <Suspense fallback={<LoaderDemo />}>
           <ConnectedBusinessDetails />
