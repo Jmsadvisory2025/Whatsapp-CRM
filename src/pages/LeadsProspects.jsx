@@ -38,6 +38,7 @@ const LeadsProspects = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     fetchData();
@@ -185,6 +186,7 @@ const LeadsProspects = () => {
       setError(err.response?.data?.error || "Failed to load data");
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   };
   const totalPages = Math.ceil(count / 20);
@@ -202,7 +204,7 @@ const LeadsProspects = () => {
   /*                                   LOADING                                  */
   /* -------------------------------------------------------------------------- */
 
-  if (loading && page === 1) {
+  if (isInitialLoad) {
     return <LoaderDemo />;
   }
 
