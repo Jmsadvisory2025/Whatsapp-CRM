@@ -7,7 +7,7 @@ import {
 import {
   MessageSquare, CheckCheck, Eye, AlertCircle, Layout,
   Users, TrendingUp, TrendingDown, RefreshCw, Wifi, WifiOff,
-  Calendar, Activity, Zap, BarChart2, Building2,
+  Calendar, Activity, Zap, BarChart2, Building2, Info
 } from "lucide-react";
 import { isTechProvider } from "../store/authUtils";
 import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
@@ -35,38 +35,52 @@ const C = {
   indigo: "#6366f1",
 };
 
+/* ─── Tooltip Helper ────────────────────────────────────────── */
+const InfoTooltip = ({ text }) => (
+  <div className="relative group inline-flex items-center ml-1.5 align-middle">
+    <Info size={14} className="text-gray-400 group-hover:text-gray-600 cursor-help transition-colors" />
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-gray-900 text-white text-[11px] rounded-lg shadow-xl z-20 font-medium leading-relaxed text-center pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+      {text}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+    </div>
+  </div>
+);
+
 /* ─── Reusable stat card ────────────────────────────────────── */
-const StatCard = ({ icon: Icon, label, value, sub, color, trend, onClick }) => (
+const StatCard = ({ icon: Icon, label, value, sub, color, trend, onClick, tooltip }) => (
   <div
     onClick={onClick}
-    className={`bg-white rounded-xl p-5 xl:p-6 border border-gray-100 flex flex-col justify-between h-full ${onClick ? 'cursor-pointer hover:border-blue-200 hover:shadow-md transition-all' : ''}`}
+    className={`bg-white rounded-xl p-2.5 sm:p-4 lg:p-5 border border-gray-100 flex flex-col justify-between h-full flex-1 min-w-0 shrink ${onClick ? 'cursor-pointer hover:border-blue-200 hover:shadow-md transition-all hover:-translate-y-0.5' : ''}`}
     style={{ boxShadow: "0 2px 8px -2px rgba(0,0,0,0.05)" }}
   >
-    <div className="flex items-start justify-between mb-4">
+    <div className="flex items-start justify-between mb-2 sm:mb-3">
       <div
-        className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0"
+        className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
         style={{ background: `${color}15` }}
       >
-        <Icon size={22} style={{ color }} />
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color }} />
       </div>
       {trend !== undefined && (
         <span
-          className="text-[11px] font-semibold flex items-center gap-1 px-2 py-1 rounded-md"
+          className="text-[9px] lg:text-[11px] font-semibold flex items-center gap-1 px-1.5 py-0.5 lg:px-2 lg:py-1 rounded-md"
           style={
             trend >= 0
               ? { background: "#dcfce7", color: "#15803d" }
               : { background: "#fee2e2", color: "#dc2626" }
           }
         >
-          {trend >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+          {trend >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
           {Math.abs(trend)}%
         </span>
       )}
     </div>
     <div>
-      <p className="text-3xl font-bold text-gray-900 tracking-tight">{value}</p>
-      <p className="text-sm font-medium text-gray-500 mt-1">{label}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1.5">{sub}</p>}
+      <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight truncate">{value}</p>
+      <div className="flex items-center mt-0.5 sm:mt-1">
+        <p className="text-[10px] sm:text-xs lg:text-sm font-medium text-gray-500 truncate">{label}</p>
+        {tooltip && <InfoTooltip text={tooltip} />}
+      </div>
+      {sub && <p className="text-[9px] sm:text-[10px] lg:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate">{sub}</p>}
     </div>
   </div>
 );
@@ -291,9 +305,9 @@ export default function Dashboard() {
   const { totals = {}, daily_stats = [], template_stats = [], waba = {}, summary = {} } = data || {};
 
   /* ── Derived data ─────────────────────────────────────────── */
-  const deliveryRate = pct(totals.delivered, totals.messages);
+  const totalDelivered = (totals.delivered || 0) + (totals.read || 0);
+  const deliveryRate = pct(totalDelivered, totals.messages);
   const readRate = pct(totals.read, totals.messages);
-  const failRate = pct(totals.failed, totals.messages);
 
   // Ensure stats are sorted chronologically (oldest to newest) for left-to-right chart rendering
   const chronologicalStats = [...daily_stats].sort((a, b) => new Date(a.day) - new Date(b.day));
@@ -410,22 +424,21 @@ export default function Dashboard() {
       </div>
 
       {/* ── KPI Cards ────────────────────────────────────────── */}
-      <div 
-        className="gap-4 lg:gap-6" 
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))" }}
-      >
+      <div className="flex flex-row flex-nowrap w-full gap-2 sm:gap-3 lg:gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {summary.total_clients !== undefined && isTp && (
           <StatCard
             icon={Building2} label="Total Clients"
             value={fmt(summary.total_clients)} color={C.indigo}
             onClick={() => navigate('/clients')}
+            tooltip="Total number of clients associated with your Tech Provider account."
           />
         )}
         {totals.messages !== undefined && (
           <StatCard
             icon={MessageSquare} label="Total Messages"
-            value={fmt(totals.messages)} color={C.blue} sub="Outbound sent"
+            value={fmt(totals.messages)} color={C.blue}
             onClick={() => navigate('/whatsapp')}
+            tooltip="Total number of outbound messages sent from your system."
           />
         )}
         {summary.total_customers !== undefined && (
@@ -433,13 +446,15 @@ export default function Dashboard() {
             icon={Users} label="Total Customers"
             value={fmt(summary.total_customers)} color={C.indigo}
             onClick={() => navigate('/leads-prospects')}
+            tooltip="Total number of unique customers registered in your system."
           />
         )}
         {summary.active_today !== undefined && (
           <StatCard
             icon={Activity} label="Active Today"
             value={fmt(summary.active_today)} color={C.green}
-            onClick={() => navigate('/leads-prospects')}
+            onClick={() => navigate('/whatsapp')}
+            tooltip="Customers who interacted or were updated today."
           />
         )}
         {summary.new_today !== undefined && (
@@ -447,6 +462,7 @@ export default function Dashboard() {
             icon={Users} label="New Today"
             value={fmt(summary.new_today)} color={C.amber}
             onClick={() => navigate('/leads-prospects')}
+            tooltip="New customers added to the system today."
           />
         )}
         {summary.leads !== undefined && (
@@ -454,6 +470,7 @@ export default function Dashboard() {
             icon={Users} label="Leads"
             value={fmt(summary.leads)} color={C.teal}
             onClick={() => navigate('/leads-prospects')}
+            tooltip="Total potential customers (Leads) currently in the system."
           />
         )}
         {summary.prospects !== undefined && (
@@ -461,6 +478,7 @@ export default function Dashboard() {
             icon={Users} label="Prospects"
             value={fmt(summary.prospects)} color={C.purple}
             onClick={() => navigate('/leads-prospects')}
+            tooltip="Total Prospects currently in the system."
           />
         )}
       </div>
@@ -585,63 +603,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ── Charts Row 2 ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-6">
-
-        {/* Template Performance — renders dynamically if backend provides it */}
-        {templateChart?.length > 0 && (
-          <div
-            className="bg-white rounded-xl p-6 border border-gray-100"
-            style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
-          >
-            <SectionHeader
-              icon={BarChart2} title="Template Performance"
-              sub="Top templates by messages sent" color={C.purple}
-            />
-            {templateChart.length > 0 ? (
-              <div className="mt-4">
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart
-                    data={templateChart}
-                    layout="vertical"
-                    margin={{ top: 0, right: 12, left: 0, bottom: 0 }}
-                    barSize={16}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                    <YAxis
-                      type="category" dataKey="name" width={130}
-                      tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} axisLine={false}
-                    />
-                    <Tooltip
-                      cursor={{ fill: '#f8fafc' }}
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0]?.payload;
-                        return (
-                          <div className="bg-white border border-gray-100 rounded-lg shadow-lg px-4 py-3 text-sm">
-                            <p className="font-semibold text-gray-800 mb-1">{d?.fullName}</p>
-                            <p className="text-gray-500">Sent: <b className="text-gray-900 ml-1">{fmt(d?.Sent)}</b></p>
-                          </div>
-                        );
-                      }}
-                    />
-                    <Bar
-                      dataKey="Sent" fill={C.purple} radius={[0, 4, 4, 0]}
-                      background={{ fill: "#f8fafc", radius: [0, 4, 4, 0] }}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyChart label="No template usage data" />
-            )}
-          </div>
-        )}
-      </div>
-
       {/* ── Delivery Health — renders dynamically if backend provides data ────────────────── */}
-      {(totals.delivered > 0 || totals.read > 0 || totals.failed > 0) && (
+      {(totals.delivered > 0 || totals.read > 0) && (
         <div
           className="bg-white rounded-xl p-6 border border-gray-100"
           style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
@@ -649,12 +612,11 @@ export default function Dashboard() {
           <SectionHeader
             icon={Zap} title="Delivery Health" sub="Message delivery funnel" color={C.teal}
           />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 mt-4">
             {[
-              { label: "Delivery Rate", value: deliveryRate, num: totals.delivered, color: C.green, icon: CheckCheck },
-              { label: "Read Rate", value: readRate, num: totals.read, color: C.blue, icon: Eye },
-              { label: "Failure Rate", value: failRate, num: totals.failed, color: C.red, icon: AlertCircle },
-            ].map(({ label, value, num, color, icon: Icon }) => (
+              { label: "Delivery Rate", value: deliveryRate, num: totalDelivered, color: C.green, icon: CheckCheck, tooltip: "Percentage of sent messages that successfully reached the customer's phone (Double Tick)." },
+              { label: "Read Rate", value: readRate, num: totals.read, color: C.blue, icon: Eye, tooltip: "Percentage of sent messages that were actually opened and read by the customer (Blue Tick)." },
+            ].map(({ label, value, num, color, icon: Icon, tooltip }) => (
               <div key={label} className="flex flex-col items-center justify-center p-6 rounded-xl bg-gray-50/50 border border-gray-100 hover:border-gray-200 transition-colors">
                 <div className="flex justify-center mb-3">
                   <div
@@ -665,7 +627,10 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <p className="text-3xl font-bold tracking-tight" style={{ color }}>{value}</p>
-                <p className="text-sm font-semibold text-gray-600 mt-1.5">{label}</p>
+                <div className="flex items-center justify-center mt-1.5">
+                  <p className="text-sm font-semibold text-gray-600">{label}</p>
+                  {tooltip && <InfoTooltip text={tooltip} />}
+                </div>
                 <p className="text-xs font-medium text-gray-400 mt-0.5">{fmt(num)} messages</p>
               </div>
             ))}

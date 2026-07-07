@@ -20,28 +20,28 @@ import jmsLogo from "../../assets/jms.png";
 import { isTechProvider } from "../../store/authUtils";
 
 const baseNavItems = [
-  { icon: LayoutDashboard, label: "Dashboard",         path: "/" },
-  { icon: TrendingUp,      label: "Leads & Prospects",  path: "/leads-prospects" },
-  { icon: FaWhatsapp,      label: "Whatsapp",           path: "/whatsapp" },
-  { icon: FileText,        label: "Templates",          path: "/templates" },
-  { icon: Megaphone,       label: "Campaign",           path: "/campaign" },
-  { icon: FaMeta,          label: "Meta Documents",     path: "/meta-registration" },
-  { icon: Users2,          label: "Profile",            path: "/team" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: TrendingUp, label: "Leads & Prospects", path: "/leads-prospects" },
+  { icon: FaWhatsapp, label: "Whatsapp", path: "/whatsapp" },
+  { icon: FileText, label: "Templates", path: "/templates" },
+  { icon: Megaphone, label: "Campaign", path: "/campaign" },
+  { icon: FaMeta, label: "Meta Documents", path: "/meta-registration" },
+  { icon: Users2, label: "Profile", path: "/team" },
 ];
 
 const techProviderItem = { icon: Building2, label: "Clients", path: "/clients" };
 
-const Sidebar = ({ onToggle = () => {} }) => {
+const Sidebar = ({ onToggle = () => { } }) => {
   const navigate = useNavigate();
 
-  const reduxOrg  = useSelector((s) => s.auth?.organization || s.auth?.org_name || "");
-  const orgName   = reduxOrg
+  const reduxOrg = useSelector((s) => s.auth?.organization || s.auth?.org_name || "");
+  const orgName = reduxOrg
     || localStorage.getItem("organization")
     || localStorage.getItem("orgName")
     || "";
 
   const userEmail = localStorage.getItem("ownerEmail") || "";
-  const initials  = orgName
+  const initials = orgName
     ? orgName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
     : userEmail.slice(0, 2).toUpperCase();
 
@@ -67,8 +67,8 @@ const Sidebar = ({ onToggle = () => {} }) => {
     onToggle?.(isCollapsed);
   }, [isCollapsed]);
 
-  const handleToggle  = () => setIsCollapsed((p) => !p);
-  const handleLogout  = () => {
+  const handleToggle = () => setIsCollapsed((p) => !p);
+  const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     sessionStorage.clear();
@@ -77,9 +77,9 @@ const Sidebar = ({ onToggle = () => {} }) => {
 
   /* shared style helper for bottom action rows */
   const rowStyle = (extra = {}) => ({
-    padding:         isCollapsed ? "10px 0" : "10px 12px",
-    justifyContent:  isCollapsed ? "center" : "flex-start",
-    gap:             isCollapsed ? 0 : "10px",
+    padding: isCollapsed ? "10px 0" : "10px 12px",
+    justifyContent: isCollapsed ? "center" : "flex-start",
+    gap: isCollapsed ? 0 : "10px",
     ...extra,
   });
 
@@ -92,6 +92,9 @@ const Sidebar = ({ onToggle = () => {} }) => {
       {/* ── Logo ── */}
       <div className="relative z-10 flex items-center h-16 px-4 flex-shrink-0 border-b border-gray-200">
         <div className="flex items-center gap-3 overflow-hidden min-w-0 w-full">
+          <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0">
+            <img src={jmsLogo} alt="JMS TechNova" className="w-7 h-7 object-contain" />
+          </div>
           <AnimatePresence>
             {!isCollapsed && (
               <motion.div
@@ -99,19 +102,14 @@ const Sidebar = ({ onToggle = () => {} }) => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.2, delay: 0.05 }}
-                className="flex items-center gap-3 min-w-0"
+                className="flex flex-col min-w-0"
               >
-                <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0">
-                  <img src={jmsLogo} alt="JMS TechNova" className="w-7 h-7 object-contain" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-base font-bold leading-tight whitespace-nowrap tracking-wide text-text-primary">
-                    JMS TechNova
-                  </span>
-                  <span className="text-[10px] font-medium tracking-widest uppercase text-text-secondary opacity-50">
-                    CRM Suite
-                  </span>
-                </div>
+                <span className="text-base font-bold leading-tight whitespace-nowrap tracking-wide text-text-primary">
+                  JMS TechNova
+                </span>
+                <span className="text-[10px] font-medium tracking-widest uppercase text-text-secondary opacity-50">
+                  CRM Suite
+                </span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -146,14 +144,14 @@ const Sidebar = ({ onToggle = () => {} }) => {
                   onMouseLeave={() => setHoveredItem(null)}
                   className="relative flex items-center rounded-xl transition-all duration-200 cursor-pointer"
                   style={({ isActive }) => ({
-                    padding:        isCollapsed ? "10px 0" : "10px 12px",
+                    padding: isCollapsed ? "10px 0" : "10px 12px",
                     justifyContent: isCollapsed ? "center" : "flex-start",
-                    gap:            isCollapsed ? 0 : "10px",
+                    gap: isCollapsed ? 0 : "10px",
                     background: isActive
                       ? "rgba(var(--color-primary-rgb, 99 102 241) / 0.12)"
                       : hoveredItem === item.label
-                      ? "rgba(0,0,0,0.04)"
-                      : "transparent",
+                        ? "rgba(0,0,0,0.04)"
+                        : "transparent",
                   })}
                   title={isCollapsed ? item.label : undefined}
                 >
@@ -168,11 +166,10 @@ const Sidebar = ({ onToggle = () => {} }) => {
                       )}
 
                       <div
-                        className={`flex-shrink-0 flex items-center justify-center w-5 h-5 transition-colors duration-200 ${
-                          isActive ? "text-primary"
-                          : hoveredItem === item.label ? "text-text-primary"
-                          : "text-text-secondary"
-                        }`}
+                        className={`flex-shrink-0 flex items-center justify-center w-5 h-5 transition-colors duration-200 ${isActive ? "text-primary"
+                            : hoveredItem === item.label ? "text-text-primary"
+                              : "text-text-secondary"
+                          }`}
                         style={isCollapsed ? { width: "100%", justifyContent: "center" } : {}}
                       >
                         <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
@@ -185,11 +182,10 @@ const Sidebar = ({ onToggle = () => {} }) => {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -6 }}
                             transition={{ duration: 0.18, delay: index * 0.02 }}
-                            className={`text-sm whitespace-nowrap transition-colors duration-200 ${
-                              isActive ? "font-semibold text-primary"
-                              : hoveredItem === item.label ? "font-medium text-text-primary"
-                              : "font-medium text-text-secondary"
-                            }`}
+                            className={`text-sm whitespace-nowrap transition-colors duration-200 ${isActive ? "font-semibold text-primary"
+                                : hoveredItem === item.label ? "font-medium text-text-primary"
+                                  : "font-medium text-text-secondary"
+                              }`}
                           >
                             {item.label}
                           </motion.span>
@@ -298,7 +294,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
           >
             <div className="flex-shrink-0 opacity-60">
               {isCollapsed
-                ? <PanelLeftOpen  size={17} strokeWidth={1.8} />
+                ? <PanelLeftOpen size={17} strokeWidth={1.8} />
                 : <PanelLeftClose size={17} strokeWidth={1.8} />
               }
             </div>

@@ -13,6 +13,7 @@ import {
   MessageSquare,
   FileText
 } from 'lucide-react';
+import LoaderDemo from '../components/ui/ProfessionalMedicalLoader ';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -170,11 +171,7 @@ export default function MetaRegistration() {
   };
 
   if (fetching) {
-    return (
-      <div className="p-8 flex justify-center items-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    );
+    return <LoaderDemo />;
   }
 
   return (

@@ -112,6 +112,7 @@ const WhatsAppCRMLoader = ({
           alignItems: "center",
           justifyContent: "center",
           minHeight: "100vh",
+          width: "100%",
           padding: "2rem",
           background:
             "linear-gradient(135deg, #EFF3FB 0%, #F7FAFF 50%, #EEF4FF 100%)",
