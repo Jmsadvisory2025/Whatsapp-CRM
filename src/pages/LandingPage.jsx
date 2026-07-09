@@ -440,12 +440,12 @@ useEffect(() => {
 
       {/* DESKTOP BUTTONS */}
       <div className="hidden md:flex items-center gap-3">
-        {/* <button
-          onClick={() => navigate("/signup")}
+        <button
+          onClick={() => navigate("/signin")}
           className="btn-secondary text-sm py-2.5 px-5"
         >
-          Sign Up 
-        </button> */}
+          Sign In 
+        </button>
 
         <button
           onClick={scrollToDemo}
@@ -478,15 +478,15 @@ useEffect(() => {
       }`}
     >
       <div className="flex flex-col gap-3 pt-2">
-        {/* <button
+        <button
           onClick={() => {
-            navigate("/signup");
+            navigate("/signin");
             setMobileMenuOpen(false);
           }}
           className="btn-secondary w-full justify-center text-sm py-3"
         >
-          Sign Up 
-        </button> */}
+          Sign In 
+        </button>
 
         <button
           onClick={() => {
