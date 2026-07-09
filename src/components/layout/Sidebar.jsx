@@ -47,11 +47,18 @@ const Sidebar = ({ onToggle = () => { } }) => {
 
   const userRole = useSelector((s) => s.auth?.role || localStorage.getItem('userRole') || '');
 
+  const wabaConnected = useSelector((s) => s.auth?.waba_connected) ?? (localStorage.getItem('wabaConnected') === 'true');
+
+  let baseFiltered = baseNavItems;
+  if (wabaConnected) {
+    baseFiltered = baseFiltered.filter(item => item.label !== 'Meta Documents');
+  }
+
   const navItems = isTechProvider(userEmail)
-    ? [...baseNavItems.filter(item => item.label !== 'Meta Documents'), techProviderItem]
+    ? [...baseFiltered.filter(item => item.label !== 'Meta Documents'), techProviderItem]
     : userRole.startsWith('client_')
-      ? baseNavItems.filter(item => !['Templates', 'Campaign'].includes(item.label))
-      : baseNavItems;
+      ? baseFiltered.filter(item => !['Templates', 'Campaign'].includes(item.label))
+      : baseFiltered;
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
