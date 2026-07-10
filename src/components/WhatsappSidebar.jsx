@@ -22,7 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const statusConfig = {
   prospect:  { label: "Prospect",  text: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200"   },
-  lead:      { label: "Lead",      text: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200"  },
+  confirmed: { label: "Lead",      text: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200"  },
 };
 
 const getStatus = (key) =>
