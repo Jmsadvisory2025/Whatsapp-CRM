@@ -81,7 +81,8 @@ const isImageUrl = (url) => {
   if (!url) return false;
   return /\.(jpg|jpeg|png|gif|webp|jfif|bmp|svg)(\?.*)?$/i.test(url) ||
     url.includes("blob.core.windows.net/assets") ||
-    url.includes("blob.core.windows.net/media");
+    url.includes("blob.core.windows.net/media") ||
+    url.includes("blob");
 };
 
 // Detect if URL is a maps link

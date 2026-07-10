@@ -103,12 +103,15 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
     dispatch(fetchCustomers());
   }, [dispatch]);
 
+  const hasAutoSelected = React.useRef(false);
+
   // ── Auto-select first conversation when list loads ─────────────────────────
   useEffect(() => {
-    if (!selectedCustomer && customers.length > 0) {
+    if (!selectedCustomer && customers.length > 0 && !hasAutoSelected.current) {
       const first = customers[0];
       dispatch(setSelectedCustomer(first));
       dispatch(fetchConversationMessages(first.conversation_id));
+      hasAutoSelected.current = true;
     }
   }, [customers, selectedCustomer, dispatch]);
 

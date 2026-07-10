@@ -279,15 +279,17 @@ const LeadsProspects = () => {
 
         <button
           onClick={fetchData}
+          disabled={loading}
           className="
             w-12 h-12 rounded-2xl
             bg-white border border-gray-200
             hover:bg-gray-50
             flex items-center justify-center
             transition-all shadow-sm
+            disabled:opacity-50 disabled:cursor-not-allowed
           "
         >
-          <RefreshCw size={18} className="text-gray-600" />
+          <RefreshCw size={18} className={`text-gray-600 ${loading && !isInitialLoad ? "animate-spin text-green-600" : ""}`} />
         </button>
 
       </div>
