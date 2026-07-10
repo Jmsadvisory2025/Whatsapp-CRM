@@ -76,13 +76,24 @@ const isUrl = (str) => {
   return /^https?:\/\//i.test(str.trim());
 };
 
-// Detect if URL is an image
 const isImageUrl = (url) => {
   if (!url) return false;
+  if (/\.(mp4|mov|webm|ogg|avi|wmv|mkv)(\?.*)?$/i.test(url)) return false;
+  if (/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv)(\?.*)?$/i.test(url)) return false;
   return /\.(jpg|jpeg|png|gif|webp|jfif|bmp|svg)(\?.*)?$/i.test(url) ||
     url.includes("blob.core.windows.net/assets") ||
     url.includes("blob.core.windows.net/media") ||
-    url.includes("blob");
+    url.startsWith("blob:");
+};
+
+const isVideoUrl = (url) => {
+  if (!url) return false;
+  return /\.(mp4|mov|webm|ogg|avi|wmv|mkv)(\?.*)?$/i.test(url);
+};
+
+const isDocumentUrl = (url) => {
+  if (!url) return false;
+  return /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv)(\?.*)?$/i.test(url);
 };
 
 // Detect if URL is a maps link
@@ -194,6 +205,46 @@ const MessageContent = ({ text, isBot }) => {
         >
           <ImageIcon size={14} />
           <span>Image</span>
+        </div>
+      </a>
+    );
+  }
+
+  // Video URL
+  if (isUrl(trimmed) && isVideoUrl(trimmed)) {
+    return (
+      <div className="rounded-lg overflow-hidden border border-gray-200">
+        <video 
+          src={trimmed} 
+          controls 
+          className="max-w-full rounded-lg bg-black"
+          style={{ maxHeight: "250px", minWidth: "200px" }}
+        />
+      </div>
+    );
+  }
+
+  // Document URL
+  if (isUrl(trimmed) && isDocumentUrl(trimmed)) {
+    const filename = trimmed.split('/').pop().split('?')[0] || "Document";
+    return (
+      <a
+        href={trimmed}
+        target="_blank"
+        rel="noopener noreferrer"
+        download
+        className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+          isBot 
+            ? "bg-green-50 border-green-200 hover:bg-green-100" 
+            : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+        }`}
+      >
+        <div className={`p-2 rounded-full ${isBot ? "bg-green-200 text-green-700" : "bg-gray-200 text-gray-700"}`}>
+          <Paperclip size={20} />
+        </div>
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <span className="text-sm font-medium truncate" style={{ color: "#111b21" }}>{filename}</span>
+          <span className="text-xs text-gray-500">Document</span>
         </div>
       </a>
     );
