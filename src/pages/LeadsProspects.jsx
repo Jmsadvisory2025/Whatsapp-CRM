@@ -484,9 +484,7 @@ const LeadsProspects = () => {
                             {item.name || "Unknown"}
                           </p>
 
-                          <p className="text-xs text-gray-400 mt-1">
-                            Customer ID : {item.id}
-                          </p>
+
 
                         </div>
 
