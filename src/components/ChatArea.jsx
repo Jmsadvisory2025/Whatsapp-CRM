@@ -91,6 +91,11 @@ const isVideoUrl = (url) => {
   return /\.(mp4|mov|webm|ogg|avi|wmv|mkv)(\?.*)?$/i.test(url);
 };
 
+const isAudioUrl = (url) => {
+  if (!url) return false;
+  return /\.(mp3|ogg|wav|m4a|aac|amr)(\?.*)?$/i.test(url);
+};
+
 const isDocumentUrl = (url) => {
   if (!url) return false;
   return /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv)(\?.*)?$/i.test(url);
@@ -172,7 +177,13 @@ const groupByDate = (items) => {
 // Render message content: image, link, or plain text
 const MessageContent = ({ text, isBot }) => {
   if (!text) return null;
-  const trimmed = text.trim();
+  let trimmed = text.trim();
+
+  // Strip prefixes like [IMAGE] or [DOCUMENT] to extract the clean URL
+  const prefixMatch = trimmed.match(/^\[(IMAGE|DOCUMENT|VIDEO|AUDIO|STICKER)\]\s+(https?:\/\/\S+)/i);
+  if (prefixMatch) {
+    trimmed = prefixMatch[2];
+  }
 
   // Image URL
   if (isUrl(trimmed) && isImageUrl(trimmed)) {
@@ -213,12 +224,26 @@ const MessageContent = ({ text, isBot }) => {
   // Video URL
   if (isUrl(trimmed) && isVideoUrl(trimmed)) {
     return (
-      <div className="rounded-lg overflow-hidden border border-gray-200">
+      <div className="rounded-lg overflow-hidden border border-gray-200 bg-black">
         <video 
           src={trimmed} 
           controls 
-          className="max-w-full rounded-lg bg-black"
+          className="max-w-full rounded-lg"
           style={{ maxHeight: "250px", minWidth: "200px" }}
+        />
+      </div>
+    );
+  }
+
+  // Audio URL
+  if (isUrl(trimmed) && isAudioUrl(trimmed)) {
+    return (
+      <div className="rounded-lg overflow-hidden border border-gray-200 bg-white p-2">
+        <audio 
+          src={trimmed} 
+          controls 
+          className="max-w-[220px] md:max-w-[280px]"
+          style={{ height: "40px" }}
         />
       </div>
     );
