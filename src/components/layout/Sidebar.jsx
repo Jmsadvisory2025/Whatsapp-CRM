@@ -15,7 +15,8 @@ import {
 import { FaWhatsapp } from "react-icons/fa";
 import { FaMeta } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "../../store/authSlice";
 import jmsLogo from "../../assets/jms.png";
 import { isTechProvider } from "../../store/authUtils";
 
@@ -33,6 +34,7 @@ const techProviderItem = { icon: Building2, label: "Clients", path: "/clients" }
 
 const Sidebar = ({ onToggle = () => { } }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const reduxOrg = useSelector((s) => s.auth?.organization || s.auth?.org_name || "");
   const orgName = reduxOrg
@@ -76,8 +78,7 @@ const Sidebar = ({ onToggle = () => { } }) => {
 
   const handleToggle = () => setIsCollapsed((p) => !p);
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    dispatch(logout());
     sessionStorage.clear();
     navigate("/signin", { replace: true });
   };
