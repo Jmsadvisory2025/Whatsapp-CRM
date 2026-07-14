@@ -818,9 +818,9 @@ const PreviewModal = ({ template, onClose, onEdit }) => {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden"
+        className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center">
               <MessageSquare size={18} className="text-green-600" />
@@ -842,24 +842,26 @@ const PreviewModal = ({ template, onClose, onEdit }) => {
           </button>
         </div>
 
-        <div className="p-6">
-          <WhatsAppPreview template={template} />
-        </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            <WhatsAppPreview template={template} />
+          </div>
 
-        <div className="px-6 pb-6 grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-            <p className="text-xs text-gray-400">Status</p>
-            <div className="mt-2">
-              <StatusBadge status={template.status} />
+          <div className="px-6 pb-6 grid grid-cols-2 gap-3">
+            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+              <p className="text-xs text-gray-400">Status</p>
+              <div className="mt-2">
+                <StatusBadge status={template.status} />
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+              <p className="text-xs text-gray-400">Variables</p>
+              <p className="text-lg font-bold text-gray-700 mt-1">{template.variables_count || 0}</p>
             </div>
           </div>
-          <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-            <p className="text-xs text-gray-400">Variables</p>
-            <p className="text-lg font-bold text-gray-700 mt-1">{template.variables_count || 0}</p>
-          </div>
         </div>
 
-        <div className="flex gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50">
+        <div className="flex gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50 shrink-0">
           <button
             onClick={onClose}
             className="flex-1 py-3 rounded-2xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-100 transition"
