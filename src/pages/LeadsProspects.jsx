@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { setSelectedCustomer, fetchConversationMessages } from "../store/whatsappSlice";
+import ChatArea from "../components/ChatArea";
+import { createPortal } from "react-dom";
 
 import {
   User,
@@ -15,6 +19,8 @@ import {
   RefreshCw,
   ChevronLeft,
   ChevronRight,
+  X,
+  Download,
 } from "lucide-react";
 
 import Card from "../components/ui/Card";
@@ -27,7 +33,9 @@ const API = import.meta.env.VITE_API_BASE_URL;
 
 const LeadsProspects = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [globalCounts, setGlobalCounts] = useState({ all: 0, lead: 0, prospect: 0 });
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,6 +47,90 @@ const LeadsProspects = () => {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const token = localStorage.getItem("accessToken");
+      let res;
+      if (isTp) {
+        res = await axios.get(`${API}api/industry/customers/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { search, page: 1, page_size: 99999, ...(activeTab !== "all" && { status: activeTab }) },
+        });
+      } else {
+        res = await axios.get(`${API}/api/leads-prospects/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { tab: activeTab, search, page: 1, page_size: 99999 },
+        });
+      }
+
+      const exportData = res.data.results || [];
+      const headers = ["Phone", "Status", "Stage", "Last Chat"];
+        
+      const csvRows = [headers.join(",")];
+      
+      exportData.forEach(item => {
+        // Use ="..." syntax to force Excel to treat the phone number as text, preventing scientific notation
+        const phone = `"=""${item.phone || ""}"""`;
+        const status = `"${(item.status || "prospect").replace(/"/g, '""')}"`;
+        
+        let stage = '""';
+        if (isTp) {
+          stage = `"${(item.bot_source || "unknown").replace(/"/g, '""')}"`; // fallback to bot for TP
+        } else {
+          stage = `"${(item.chatbot_stage || "").replace(/"/g, '""')}"`;
+        }
+        
+        const dateStr = item.last_seen || item.last_chat || item.created_at || "";
+        let formattedDate = "";
+        if (dateStr) {
+          const d = new Date(dateStr);
+          if (!isNaN(d.getTime())) {
+            formattedDate = d.toLocaleString('en-IN', {
+              day: '2-digit', month: 'short', year: 'numeric',
+              hour: '2-digit', minute: '2-digit', hour12: true
+            });
+          } else {
+            formattedDate = dateStr;
+          }
+        }
+        const lastChat = `"${formattedDate.replace(/"/g, '""')}"`;
+        
+        csvRows.push([phone, status, stage, lastChat].join(","));
+      });
+      
+      const csvString = csvRows.join("\n");
+      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `JMS_${activeTab}_export.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (error) {
+      console.error("Export failed", error);
+      alert("Failed to export data.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handlePhoneClick = (item) => {
+    if (item.conversation_id || item.phone) {
+      if (item.conversation_id) {
+        dispatch(setSelectedCustomer({
+          ...item,
+          customer_id: item.id,
+        }));
+        dispatch(fetchConversationMessages(item.conversation_id));
+      }
+      setIsChatModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -329,36 +421,47 @@ const LeadsProspects = () => {
               </button>
             </div>
 
-            {/* Search */}
+            {/* Search and Export */}
 
-            <div className="relative w-full xl:w-96">
+            <div className="flex items-center gap-3 w-full xl:w-auto">
+              <div className="relative w-full xl:w-96">
 
-              <Search
-                size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
+                <Search
+                  size={18}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                />
 
-              <input
-                type="text"
-                placeholder="Search customer or phone..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                className="
-                  w-full pl-11 pr-4 py-3
-                  bg-gray-50 border border-gray-200
-                  rounded-2xl
-                  text-sm text-gray-700
-                  placeholder:text-gray-400
-                  focus:outline-none
-                  focus:ring-2 focus:ring-green-500
-                  focus:border-transparent
-                  transition-all
-                "
-              />
-
+                <input
+                  type="text"
+                  placeholder="Search customer or phone..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                  className="
+                    w-full pl-11 pr-4 py-3
+                    bg-gray-50 border border-gray-200
+                    rounded-2xl
+                    text-sm text-gray-700
+                    placeholder:text-gray-400
+                    focus:outline-none
+                    focus:ring-2 focus:ring-green-500
+                    focus:border-transparent
+                    transition-all
+                  "
+                />
+              </div>
+              
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-gray-200 rounded-2xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm whitespace-nowrap"
+                title="Export to CSV"
+              >
+                {isExporting ? <Loader2 size={16} className="animate-spin text-gray-400" /> : <Download size={16} className="text-gray-500" />}
+                Export
+              </button>
             </div>
 
           </div>
@@ -495,15 +598,14 @@ const LeadsProspects = () => {
                     {/* Phone */}
 
                     <td className="px-6 py-5">
-
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-
+                      <div
+                        className={`flex items-center gap-2 text-sm ${(item.conversation_id || isTp) ? "cursor-pointer hover:text-[#008069] text-gray-800 font-medium" : "text-gray-600"}`}
+                        onClick={() => handlePhoneClick(item)}
+                        title="Click to open chat"
+                      >
                         <Phone size={14} />
-
                         {item.phone}
-
                       </div>
-
                     </td>
                     {/* Bot Source */}
                     {isTp && (
@@ -816,6 +918,17 @@ const LeadsProspects = () => {
         )}
 
       </Card>
+
+      {isChatModalOpen && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/20 backdrop-blur-md p-4 transition-all duration-300">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
+            <div className="flex-1 relative overflow-hidden flex bg-[#efeae2]">
+              <ChatArea onBack={() => setIsChatModalOpen(false)} />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );
