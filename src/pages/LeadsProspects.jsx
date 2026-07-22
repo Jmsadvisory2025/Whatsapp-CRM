@@ -119,14 +119,37 @@ const LeadsProspects = () => {
     }
   };
 
-  const handlePhoneClick = (item) => {
+  const handlePhoneClick = async (item) => {
     if (item.conversation_id || item.phone) {
-      if (item.conversation_id) {
+      let convId = item.conversation_id;
+      
+      if (!convId && isTp && item.phone) {
+        try {
+          const token = localStorage.getItem("accessToken");
+          const res = await axios.get(`${API}api/industry/conversations/`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { phone: item.phone, page_size: 1 }
+          });
+          if (res.data && res.data.results && res.data.results.length > 0) {
+            convId = res.data.results[0].id;
+          }
+        } catch (err) {
+          console.error("Failed to fetch conversation ID for TP", err);
+        }
+      }
+
+      if (convId) {
+        dispatch(setSelectedCustomer({
+          ...item,
+          customer_id: item.id,
+          conversation_id: convId
+        }));
+        dispatch(fetchConversationMessages(convId));
+      } else {
         dispatch(setSelectedCustomer({
           ...item,
           customer_id: item.id,
         }));
-        dispatch(fetchConversationMessages(item.conversation_id));
       }
       setIsChatModalOpen(true);
     }
