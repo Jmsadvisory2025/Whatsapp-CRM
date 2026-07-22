@@ -176,6 +176,9 @@ const groupByDate = (items) => {
 
 // Render message content: image, link, or plain text
 const MessageContent = ({ text, isBot }) => {
+  const { user } = useSelector((s) => s.auth || {});
+  const isTp = user?.user_type === "tech_provider";
+  
   if (!text) return null;
   let trimmed = text.trim();
 
@@ -327,6 +330,16 @@ const MessageContent = ({ text, isBot }) => {
 
   // Text with inline URL detection (e.g. "📍 https://...")
   const parts = trimmed.split(/(https?:\/\/\S+)/g);
+  
+  const formatText = (t) => {
+    if (!isTp) return t;
+    let formatted = t.replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+                     .replace(/_(.*?)_/g, '<em>$1</em>')
+                     .replace(/~(.*?)~/g, '<del>$1</del>')
+                     .replace(/```(.*?)```/gs, '<code>$1</code>');
+    return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
+  };
+
   if (parts.length > 1) {
     return (
       <p className="whitespace-pre-wrap text-sm leading-relaxed">
@@ -342,20 +355,22 @@ const MessageContent = ({ text, isBot }) => {
               {part}
             </a>
           ) : (
-            <span key={i}>{part}</span>
+            <span key={i}>{formatText(part)}</span>
           )
         )}
       </p>
     );
   }
 
-  return <p className="whitespace-pre-wrap text-sm leading-relaxed">{text}</p>;
+  return <p className="whitespace-pre-wrap text-sm leading-relaxed">{formatText(text)}</p>;
 };
 
 /* ─── Main Component ───────────────────────────────────────── */
 
 const ChatArea = ({ onBack, onOpenBulkMessage }) => {
   const dispatch = useDispatch();
+  const { user } = useSelector((s) => s.auth || {});
+  const isTp = user?.user_type === "tech_provider";
   const { selectedCustomer, messages, isLoadingMessages, messagesError } = useSelector(
     (s) => s.whatsapp
   );

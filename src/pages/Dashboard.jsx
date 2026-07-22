@@ -178,13 +178,21 @@ export default function Dashboard() {
 
         // Fetch TP Clients count
         let realTotalClients = undefined;
+        let realClientsByDay = {};
         try {
-          const clientRes = await fetch(`${API_BASE}api/techprovider/clients/?limit=1`, {
+          // Fetching all clients to get their created_at date for the chart
+          const clientRes = await fetch(`${API_BASE}api/techprovider/clients/`, {
             headers: { Authorization: `Bearer ${tk}` },
           });
           if (clientRes.ok) {
             const clientJson = await clientRes.json();
             realTotalClients = clientJson.summary?.total;
+            (clientJson.clients || []).forEach(c => {
+              if (c.created_at) {
+                const dStr = c.created_at.split('T')[0];
+                realClientsByDay[dStr] = (realClientsByDay[dStr] || 0) + 1;
+              }
+            });
           }
         } catch (e) {
           console.error("Failed to fetch TP clients count", e);
@@ -216,6 +224,7 @@ export default function Dashboard() {
             total_clients: realTotalClients,
           },
           realCustomersByDay: realCustomersByDay,
+          realClientsByDay: realClientsByDay,
         });
       } else {
         const res = await fetch(`${API_BASE}api/analytics/`, {
@@ -334,20 +343,6 @@ export default function Dashboard() {
     }
   }
 
-  let fakeClientsDailyCounts = [];
-  if (isTp && summary.total_clients) {
-    let remaining = summary.total_clients;
-    const days = chronologicalStats.length || 7;
-    fakeClientsDailyCounts = new Array(days).fill(0);
-    for (let i = days - 1; i >= 0 && remaining > 0; i--) {
-      fakeClientsDailyCounts[i] = 1;
-      remaining--;
-    }
-    if (remaining > 0 && days > 0) {
-      fakeClientsDailyCounts[days - 1] += remaining;
-    }
-  }
-
   const chartDailyRaw = chronologicalStats.map((d, index) => {
     // Real values directly from backend (backend already sends daily independent counts)
     let dailyMsg = d.count || d.messages || 0;
@@ -363,13 +358,19 @@ export default function Dashboard() {
       dailyCust = realCust !== undefined ? realCust : (fakeDailyCounts[index] || 0);
     }
 
+    let dailyClients = 0;
+    if (data.realClientsByDay && Object.keys(data.realClientsByDay).length > 0) {
+      const dStr = d.day ? d.day.split('T')[0] : "";
+      dailyClients = data.realClientsByDay[dStr] || 0;
+    }
+
     return {
       date: d.day
         ? new Date(d.day).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })
         : "—",
       Messages: dailyMsg,
       Customers: dailyCust,
-      Clients: fakeClientsDailyCounts[index] || 0,
+      Clients: dailyClients,
     };
   });
 
