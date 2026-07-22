@@ -5,6 +5,7 @@ import {
   setSelectedCustomer,
   fetchConversationMessages,
 } from "../store/whatsappSlice";
+import axios from "axios";
 import {
   MessageCircle,
   AlertCircle,
@@ -82,6 +83,9 @@ const formatDate = (dateString) => {
 
 const WhatsappSidebar = ({ onSelectCustomer }) => {
   const dispatch = useDispatch();
+  const { user } = useSelector((s) => s.auth || {});
+  const isTp = user?.user_type === "tech_provider";
+
   const {
     customers,
     selectedCustomer,
@@ -107,13 +111,42 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
 
   // ── Auto-select first conversation when list loads ─────────────────────────
   useEffect(() => {
-    if (!selectedCustomer && customers.length > 0 && !hasAutoSelected.current) {
-      const first = customers[0];
-      dispatch(setSelectedCustomer(first));
-      dispatch(fetchConversationMessages(first.conversation_id));
-      hasAutoSelected.current = true;
-    }
-  }, [customers, selectedCustomer, dispatch]);
+    const autoSelect = async () => {
+      if (!selectedCustomer && customers.length > 0 && !hasAutoSelected.current) {
+        hasAutoSelected.current = true;
+        const first = customers[0];
+        let convId = first.conversation_id;
+        
+        if (!convId && isTp && first.phone) {
+          try {
+            const token = localStorage.getItem("accessToken");
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+            const res = await axios.get(`${API_BASE_URL}api/industry/conversations/`, {
+              headers: { Authorization: `Bearer ${token}` },
+              params: { phone: first.phone, page_size: 1 }
+            });
+            if (res.data && res.data.results && res.data.results.length > 0) {
+              convId = res.data.results[0].id;
+            }
+          } catch (err) {
+            console.error("Failed to fetch conversation ID for TP", err);
+          }
+        }
+        
+        const updatedCustomer = {
+          ...first,
+          customer_id: first.customer_id || first.id,
+          conversation_id: convId || first.conversation_id
+        };
+
+        dispatch(setSelectedCustomer(updatedCustomer));
+        if (convId) {
+          dispatch(fetchConversationMessages(convId));
+        }
+      }
+    };
+    autoSelect();
+  }, [customers, selectedCustomer, dispatch, isTp]);
 
   const handleApplyFilters = () => {
     setPage(1);
@@ -130,9 +163,35 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
     setShowFilters(false);
   };
 
-  const handleSelect = (customer) => {
-    dispatch(setSelectedCustomer(customer));
-    dispatch(fetchConversationMessages(customer.conversation_id));
+  const handleSelect = async (customer) => {
+    let convId = customer.conversation_id;
+    
+    if (!convId && isTp && customer.phone) {
+      try {
+        const token = localStorage.getItem("accessToken");
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        const res = await axios.get(`${API_BASE_URL}api/industry/conversations/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { phone: customer.phone, page_size: 1 }
+        });
+        if (res.data && res.data.results && res.data.results.length > 0) {
+          convId = res.data.results[0].id;
+        }
+      } catch (err) {
+        console.error("Failed to fetch conversation ID for TP", err);
+      }
+    }
+
+    const updatedCustomer = {
+      ...customer,
+      customer_id: customer.customer_id || customer.id,
+      conversation_id: convId || customer.conversation_id
+    };
+
+    dispatch(setSelectedCustomer(updatedCustomer));
+    if (convId) {
+      dispatch(fetchConversationMessages(convId));
+    }
     onSelectCustomer?.();
   };
 
@@ -368,15 +427,16 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
         ) : (
           <AnimatePresence mode="popLayout">
             {filtered.map((c, i) => {
-              const active  = selectedCustomer?.customer_id === c.customer_id;
+              const cId     = c.customer_id || c.id;
+              const active  = selectedCustomer && (selectedCustomer.customer_id || selectedCustomer.id) === cId;
               const st      = getStatus(c.status);
               const dname   = getDisplayName(c.name, c.phone);
               const phoneOnly = dname.startsWith("+");
-              const pal     = getPalette(c.customer_id);
+              const pal     = getPalette(cId);
 
               return (
                 <motion.button
-                  key={c.customer_id}
+                  key={cId}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: Math.min(i * 0.03, 0.2) }}
