@@ -438,7 +438,7 @@ export default function Dashboard() {
             icon={MessageSquare} label="Total Messages"
             value={fmt(totals.messages)} color={C.blue}
             onClick={() => navigate('/whatsapp')}
-            tooltip="Total number of outbound messages sent from your system."
+            tooltip="Total number of  messages sent from your system."
           />
         )}
         {summary.total_customers !== undefined && (
@@ -493,7 +493,7 @@ export default function Dashboard() {
         >
           <SectionHeader
             icon={Activity} title="Messages Over Time"
-            sub="Last 7 days outbound volume" color={C.blue}
+            sub="Last 7 days volume" color={C.blue}
           />
           {chartDailyRaw.length > 0 ? (
             <div className="mt-4 flex-1">
