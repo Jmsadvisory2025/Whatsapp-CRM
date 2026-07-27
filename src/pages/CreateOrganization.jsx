@@ -94,7 +94,7 @@ export default function ConnectWhatsApp() {
     if (event.origin !== "https://www.facebook.com") return;
     try {
       const data = JSON.parse(event.data);
-      if (data.type === "WA_EMBEDDED_SIGNUP" && data.event === "FINISH") {
+      if (data.type === "WA_EMBEDDED_SIGNUP" && (data.event === "FINISH" || data.event === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING")) {
         wabaRef.current = {
           waba_id:         data.data?.waba_id         || "",
           phone_number_id: data.data?.phone_number_id || "",
@@ -146,7 +146,7 @@ export default function ConnectWhatsApp() {
         override_default_response_type: true,
         extras: {
           setup: {},
-          featureType: "",
+          featureType: "whatsapp_business_app_onboarding",
           sessionInfoVersion: "3",
         },
       }
