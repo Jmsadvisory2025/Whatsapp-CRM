@@ -146,7 +146,7 @@ export default function ConnectWhatsApp() {
         override_default_response_type: true,
         extras: {
           setup: {},
-          featureType: "whatsapp_business_app_onboarding",
+          featureType: "",
           sessionInfoVersion: "3",
         },
       }
