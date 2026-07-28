@@ -144,61 +144,53 @@ export default function Dashboard() {
     setError(null);
     try {
       if (isTp) {
+        // 1. Tech Provider Path
         const tk = localStorage.getItem("accessToken");
-        const res = await fetch(`${API_BASE}api/industry/dashboard/`, {
-          headers: { Authorization: `Bearer ${tk}` },
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
+        const headers = { Authorization: `Bearer ${tk}` };
 
-        // Fetch accurate counts directly from the Customers API
+        // Fetch all 3 endpoints concurrently instead of waiting for one to finish before starting the next
+        const pDashboard = fetch(`${API_BASE}api/industry/dashboard/`, { headers })
+          .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); });
+          
+        const pCustomers = fetch(`${API_BASE}api/industry/customers/?page_size=200`, { headers })
+          .then(res => res.ok ? res.json() : null)
+          .catch(e => { console.error("Failed to fetch accurate TP leads count", e); return null; });
+          
+        const pClients = fetch(`${API_BASE}api/techprovider/clients/`, { headers })
+          .then(res => res.ok ? res.json() : null)
+          .catch(e => { console.error("Failed to fetch TP clients count", e); return null; });
+
+        const [json, lpJson, clientJson] = await Promise.all([pDashboard, pCustomers, pClients]);
+
         let realLeadCount = undefined;
         let realProspectCount = undefined;
         let realTotalCustomers = json.total_customers;
         let realCustomersByDay = {};
-        try {
-          const lpRes = await fetch(`${API_BASE}api/industry/customers/?page_size=200`, {
-            headers: { Authorization: `Bearer ${tk}` },
+        
+        if (lpJson) {
+          realLeadCount = lpJson.lead_count;
+          realProspectCount = lpJson.prospect_count;
+          realTotalCustomers = lpJson.total_count !== undefined ? lpJson.total_count : json.total_customers;
+          (lpJson.results || []).forEach(c => {
+            if (c.created_at) {
+              const dStr = c.created_at.split('T')[0];
+              realCustomersByDay[dStr] = (realCustomersByDay[dStr] || 0) + 1;
+            }
           });
-          if (lpRes.ok) {
-            const lpJson = await lpRes.json();
-            realLeadCount = lpJson.lead_count;
-            realProspectCount = lpJson.prospect_count;
-            realTotalCustomers = lpJson.total_count !== undefined ? lpJson.total_count : json.total_customers;
-            (lpJson.results || []).forEach(c => {
-              if (c.created_at) {
-                const dStr = c.created_at.split('T')[0];
-                realCustomersByDay[dStr] = (realCustomersByDay[dStr] || 0) + 1;
-              }
-            });
-          }
-        } catch (e) {
-          console.error("Failed to fetch accurate TP leads count", e);
         }
 
-        // Fetch TP Clients count
         let realTotalClients = undefined;
         let realClientsByDay = {};
-        try {
-          // Fetching all clients to get their created_at date for the chart
-          const clientRes = await fetch(`${API_BASE}api/techprovider/clients/`, {
-            headers: { Authorization: `Bearer ${tk}` },
+        if (clientJson) {
+          realTotalClients = clientJson.summary?.total;
+          (clientJson.clients || []).forEach(c => {
+            if (c.created_at) {
+              const dStr = c.created_at.split('T')[0];
+              realClientsByDay[dStr] = (realClientsByDay[dStr] || 0) + 1;
+            }
           });
-          if (clientRes.ok) {
-            const clientJson = await clientRes.json();
-            realTotalClients = clientJson.summary?.total;
-            (clientJson.clients || []).forEach(c => {
-              if (c.created_at) {
-                const dStr = c.created_at.split('T')[0];
-                realClientsByDay[dStr] = (realClientsByDay[dStr] || 0) + 1;
-              }
-            });
-          }
-        } catch (e) {
-          console.error("Failed to fetch TP clients count", e);
         }
 
-        // Map the backend TP format to a unified data format.
         setData({
           status: "connected",
           totals: {
@@ -227,33 +219,32 @@ export default function Dashboard() {
           realClientsByDay: realClientsByDay,
         });
       } else {
-        const res = await fetch(`${API_BASE}api/analytics/`, {
-          headers: { Authorization: `Bearer ${token()}` },
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
+        // 2. Normal Client Path
+        const tk = token();
+        const headers = { Authorization: `Bearer ${tk}` };
 
-        // Ensure summary exists on normal client response as well to unify frontend UI logic
+        // Fetch both endpoints concurrently
+        const pAnalytics = fetch(`${API_BASE}api/analytics/`, { headers })
+          .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); });
+          
+        const pCustomers = fetch(`${API_BASE}api/customer/?page_size=200`, { headers })
+          .then(res => res.ok ? res.json() : null)
+          .catch(e => { console.error("Failed to fetch real customer dates", e); return null; });
+
+        const [json, lpJson] = await Promise.all([pAnalytics, pCustomers]);
+
         if (json.client_summary) {
           json.summary = json.client_summary;
         }
 
         let realCustomersByDay = {};
-        try {
-          const lpRes = await fetch(`${API_BASE}api/customer/?page_size=200`, {
-            headers: { Authorization: `Bearer ${token()}` },
+        if (lpJson) {
+          (lpJson.results || []).forEach(c => {
+            if (c.created_at) {
+              const dStr = c.created_at.split('T')[0];
+              realCustomersByDay[dStr] = (realCustomersByDay[dStr] || 0) + 1;
+            }
           });
-          if (lpRes.ok) {
-            const lpJson = await lpRes.json();
-            (lpJson.results || []).forEach(c => {
-              if (c.created_at) {
-                const dStr = c.created_at.split('T')[0];
-                realCustomersByDay[dStr] = (realCustomersByDay[dStr] || 0) + 1;
-              }
-            });
-          }
-        } catch (e) {
-          console.error("Failed to fetch real customer dates", e);
         }
         json.realCustomersByDay = realCustomersByDay;
 
