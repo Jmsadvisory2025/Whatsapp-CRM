@@ -294,6 +294,7 @@ const Campaign = () => {
 
   const [templateSearch, setTemplateSearch] = useState("");
 
+  const topRef = useRef(null);
   const fileInputRef = useRef();
   const mediaInputRef = useRef();
   const [mediaFile, setMediaFile] = useState(null);
@@ -305,11 +306,17 @@ const Campaign = () => {
     try {
       setDownloadingId(campaignId);
       
+      const currentToken = token || localStorage.getItem("token") || sessionStorage.getItem("token");
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
       const resp = await fetch(`${API_BASE_URL}/api/campaigns/${campaignId}/`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${currentToken}` }
       });
       const data = await resp.json();
+      
+      if (!resp.ok) {
+        alert(`Error: ${data.detail || data.error || resp.statusText}`);
+        return;
+      }
       
       if (!data.recipients || data.recipients.length === 0) {
         alert("No recipient data available for this campaign.");
@@ -352,7 +359,7 @@ const Campaign = () => {
 
   useEffect(() => {
     if (sendSuccess || sendError) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      topRef.current?.scrollIntoView({ behavior: "smooth" });
     }
 
     if (sendSuccess) {
@@ -509,7 +516,7 @@ const Campaign = () => {
   /* ───────────────────────────────────────────────────────── */
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50/30 p-4 md:p-6">
+    <div ref={topRef} className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50/30 p-4 md:p-6">
       {/* HEADER */}
 
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-7">
