@@ -277,7 +277,7 @@ const Campaign = () => {
     sendError,
   } = useSelector((s) => s.campaign);
 
-  const token = useSelector((s) => s.auth?.token);
+  const token = useSelector((s) => s.auth?.accessToken);
 
   const [tab, setTab] = useState("new");
 
@@ -306,7 +306,7 @@ const Campaign = () => {
     try {
       setDownloadingId(campaignId);
       
-      const currentToken = token || localStorage.getItem("token") || sessionStorage.getItem("token");
+      const currentToken = token || localStorage.getItem("accessToken");
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
       const resp = await fetch(`${API_BASE_URL}/api/campaigns/${campaignId}/`, {
         headers: { Authorization: `Bearer ${currentToken}` }
