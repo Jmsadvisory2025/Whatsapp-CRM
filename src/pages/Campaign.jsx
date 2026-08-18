@@ -102,10 +102,9 @@ function statusBadge(status) {
 
   return (
     <span
-      className={`px-2 py-1 rounded-full text-[10px] font-semibold ${
-        map[status] ||
+      className={`px-2 py-1 rounded-full text-[10px] font-semibold ${map[status] ||
         "bg-gray-100 text-gray-600 border border-gray-200"
-      }`}
+        }`}
     >
       {status}
     </span>
@@ -125,10 +124,9 @@ function campaignStatusBadge(status) {
 
   return (
     <span
-      className={`px-2 py-1 rounded-full text-[10px] font-semibold ${
-        map[key] ||
+      className={`px-2 py-1 rounded-full text-[10px] font-semibold ${map[key] ||
         "bg-gray-100 text-gray-600 border border-gray-200"
-      }`}
+        }`}
     >
       {status || "—"}
     </span>
@@ -167,11 +165,10 @@ function TemplateCard({ template, selected, onSelect }) {
   return (
     <div
       onClick={onSelect}
-      className={`rounded-2xl border cursor-pointer transition-all duration-200 overflow-hidden ${
-        selected
+      className={`rounded-2xl border cursor-pointer transition-all duration-200 overflow-hidden ${selected
           ? "border-emerald-300 bg-emerald-50 shadow-md"
           : "border-gray-200 bg-white hover:border-emerald-200 hover:shadow-sm"
-      }`}
+        }`}
     >
       <div className="p-4">
         <div className="flex justify-between gap-3">
@@ -234,7 +231,7 @@ function TemplateCard({ template, selected, onSelect }) {
                 {headerText}
               </div>
             )}
-            
+
             {["IMAGE", "VIDEO", "DOCUMENT"].includes(template.header_type) && (
               <div className="bg-gray-200 rounded-xl h-24 mb-3 flex flex-col items-center justify-center text-gray-400">
                 {template.header_type === "IMAGE" && <Image size={24} />}
@@ -305,37 +302,37 @@ const Campaign = () => {
   const handleDownloadCSV = async (campaignId, campaignName) => {
     try {
       setDownloadingId(campaignId);
-      
+
       const currentToken = token || localStorage.getItem("accessToken");
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
       const resp = await fetch(`${API_BASE_URL}/api/campaigns/${campaignId}/`, {
         headers: { Authorization: `Bearer ${currentToken}` }
       });
       const data = await resp.json();
-      
+
       if (!resp.ok) {
         alert(`Error: ${data.detail || data.error || resp.statusText}`);
         return;
       }
-      
+
       if (!data.recipients || data.recipients.length === 0) {
         alert("No recipient data available for this campaign.");
         return;
       }
-      
+
       const csvRows = [
         ["Phone Number", "Status", "Sent At", "Error Detail"]
       ];
-      
+
       data.recipients.forEach(r => {
         csvRows.push([
           r.phone_number || "",
           r.status || "",
-          r.sent_at ? new Date(r.sent_at).toLocaleString() : "-",
+          r.sent_at ? `"${new Date(r.sent_at).toLocaleString()}"` : "-",
           r.error_detail ? `"${r.error_detail.replace(/"/g, '""')}"` : "-"
         ]);
       });
-      
+
       const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
@@ -544,11 +541,10 @@ const Campaign = () => {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                tab === t
+              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${tab === t
                   ? "bg-emerald-500 text-white shadow"
                   : "text-gray-600 hover:bg-gray-50"
-              }`}
+                }`}
             >
               {t === "new"
                 ? "New Campaign"
@@ -648,7 +644,7 @@ const Campaign = () => {
                   <div className="group relative flex items-center">
                     <Info size={16} className="text-blue-500 cursor-help" />
                     <div className="absolute left-7 top-0 w-72 p-4 bg-white border border-gray-200 text-gray-700 text-xs rounded-2xl shadow-xl z-50 hidden group-hover:block normal-case tracking-normal font-normal leading-relaxed pointer-events-none">
-                      <strong className="text-blue-600 text-sm">Meta Frequency Capping</strong><br/>
+                      <strong className="text-blue-600 text-sm">Meta Frequency Capping</strong><br />
                       <div className="mt-2 text-gray-600">To prevent spam, Meta limits how often you can send Marketing templates to the same user.</div>
                       <div className="mt-3 p-2 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-100">
                         <strong>Recommendation:</strong> Maintain a gap of 5-7 days between campaigns for the same contacts to avoid messages being blocked.
@@ -709,11 +705,10 @@ const Campaign = () => {
                 onClick={() =>
                   fileInputRef.current?.click()
                 }
-                className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer ${
-                  phoneNumbers.length > 0
+                className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer ${phoneNumbers.length > 0
                     ? "border-emerald-300 bg-emerald-50"
                     : "border-gray-200 bg-gray-50 hover:border-emerald-300 hover:bg-emerald-50/40"
-                }`}
+                  }`}
               >
                 <input
                   ref={fileInputRef}
@@ -950,15 +945,15 @@ const Campaign = () => {
                               </ul>
                             </div>
                           </div>
-                          
+
                           <input
                             type="file"
                             ref={mediaInputRef}
                             className="hidden"
                             accept={
                               selectedTemplate.header_type === "IMAGE" ? "image/jpeg,image/png" :
-                              selectedTemplate.header_type === "VIDEO" ? "video/mp4" :
-                              "application/pdf"
+                                selectedTemplate.header_type === "VIDEO" ? "video/mp4" :
+                                  "application/pdf"
                             }
                             onChange={(e) => {
                               setMediaError(null);
@@ -968,7 +963,7 @@ const Campaign = () => {
                                 let limit = 100;
                                 if (selectedTemplate.header_type === "IMAGE") limit = 5;
                                 if (selectedTemplate.header_type === "VIDEO") limit = 16;
-                                
+
                                 if (mb > limit) {
                                   setMediaError(`File is too large. ${selectedTemplate.header_type} max size is ${limit}MB.`);
                                   setMediaFile(null);
@@ -979,7 +974,7 @@ const Campaign = () => {
                               }
                             }}
                           />
-                          
+
                           <div className="flex-1 flex items-center gap-3">
                             <button
                               onClick={() => {
@@ -990,11 +985,11 @@ const Campaign = () => {
                             >
                               Choose File
                             </button>
-                            
+
                             <span className="text-sm text-gray-500 truncate max-w-[200px]">
                               {mediaFile ? mediaFile.name : "No file selected"}
                             </span>
-                            
+
                             {mediaFile && (
                               <button
                                 onClick={() => {
@@ -1017,7 +1012,7 @@ const Campaign = () => {
                         )}
                       </div>
                     )}
-                    
+
                     {/* Text Variables */}
                     {templateVarKeys.map((k) => (
                       <div
@@ -1129,10 +1124,10 @@ const Campaign = () => {
                   {!campaignName.trim()
                     ? "Please enter campaign name"
                     : !selectedTemplateId
-                    ? "Please select a template"
-                    : phoneNumbers.length === 0
-                    ? "Please upload CSV file"
-                    : ""}
+                      ? "Please select a template"
+                      : phoneNumbers.length === 0
+                        ? "Please upload CSV file"
+                        : ""}
                 </p>
               )}
             </div>
@@ -1253,15 +1248,15 @@ const Campaign = () => {
                       <td className="px-6 py-4 text-gray-500 text-sm">
                         {c.created_at
                           ? new Date(
-                              c.created_at
-                            ).toLocaleDateString(
-                              "en-IN",
-                              {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )
+                            c.created_at
+                          ).toLocaleDateString(
+                            "en-IN",
+                            {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            }
+                          )
                           : "—"}
                       </td>
 
