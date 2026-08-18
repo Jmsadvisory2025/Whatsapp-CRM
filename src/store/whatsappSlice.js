@@ -60,6 +60,7 @@ const fetchCustomers = createAsyncThunk(
         currentPage: data.page || reqPage,
         pageSize: data.page_size || 20, // using 20 as fallback to match backend
         wabaPhone: data.waba_phone || null,
+        wabaId: data.waba_id || null,
       };
 
 
@@ -70,32 +71,36 @@ const fetchCustomers = createAsyncThunk(
 );
 
 // ── Send direct message ──────────────────────────────────────────────────────
-// const sendDirectMessage = createAsyncThunk(
-//   "whatsapp/sendDirectMessage",
-//   async ({ conversation_id, message }, { getState, rejectWithValue }) => {
-//     const { auth } = getState();
-//     const token = auth.accessToken || localStorage.getItem("accessToken");
-//     if (!token) throw new Error("No authentication token available");
-// 
-//     try {
-//       const response = await fetch(`${API_BASE_URL}/api/send-direct-message/`, {
-//         method: "POST",
-//         headers: {
-//           "Content-Type": "application/json",
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify({ conversation_id, message }),
-//       });
-// 
-//       const data = await response.json();
-//       if (!response.ok) throw new Error(data.message || "Failed to send message");
-// 
-//       return { ...data, conversation_id, sent_message: message };
-//     } catch (error) {
-//       return rejectWithValue(error.message);
-//     }
-//   }
-// );
+const sendDirectMessage = createAsyncThunk(
+  "whatsapp/sendDirectMessage",
+  async ({ conversation_id, message }, { getState, rejectWithValue }) => {
+    const { auth } = getState();
+    const token = auth.accessToken || localStorage.getItem("accessToken");
+    if (!token) throw new Error("No authentication token available");
+
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+
+    try {
+      const response = await fetch(`${baseUrl}/api/send-direct-message/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ conversation_id, message }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || data.error || data.detail || "Failed to send message");
+
+      // Merge sent_message with data returned from backend so UI can render it immediately
+      return { ...data, conversation_id, sent_message: message };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 // ── Send bulk message ────────────────────────────────────────────────────────
 const sendBulkMessage = createAsyncThunk(
@@ -203,6 +208,7 @@ const whatsappSlice = createSlice({
         state.isLoading = false;
         state.customers = action.payload.results || [];
         state.wabaPhone = action.payload.wabaPhone;
+        state.wabaId = action.payload.wabaId;
         state.currentPage = action.payload.currentPage || 1;
         const total = action.payload.count || 0;
         const pageSize = action.payload.pageSize || 100;
@@ -237,21 +243,22 @@ const whatsappSlice = createSlice({
         state.messagesError = action.payload || "Failed to fetch messages";
       })
 
-      // sendDirectMessage — optimistically append to chat
-      // .addCase(sendDirectMessage.fulfilled, (state, action) => {
-      //   if (
-      //     state.selectedCustomer &&
-      //     state.selectedCustomer.conversation_id === action.payload.conversation_id
-      //   ) {
-      //     state.messages.push({
-      //       id: `temp-${Date.now()}`,
-      //       user_msg: null,
-      //       user_timestamp: null,
-      //       bot_msg: action.payload.sent_message,
-      //       bot_timestamp: new Date().toISOString(),
-      //     });
-      //   }
-      // });
+      // sendDirectMessage - optimistically append to chat
+      .addCase(sendDirectMessage.fulfilled, (state, action) => {
+        if (
+          state.selectedCustomer &&
+          state.selectedCustomer.conversation_id === action.payload.conversation_id
+        ) {
+          const newMsg = {
+            id: action.payload.id || Date.now(),
+            user_msg: null,
+            user_timestamp: null,
+            bot_msg: action.payload.text || action.payload.sent_message || action.payload.message || "",
+            bot_timestamp: new Date().toISOString(),
+          };
+          state.messages.push(newMsg);
+        }
+      });
   },
 });
 
@@ -265,7 +272,7 @@ export const {
 export {
   fetchCustomers,
   fetchConversationMessages,
-  // sendDirectMessage,
+  sendDirectMessage,
   sendBulkMessage,
 };
 

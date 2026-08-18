@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchConversationMessages, setSelectedCustomer } from "../store/whatsappSlice";
-// import { sendDirectMessage, fetchConversationMessages, setSelectedCustomer } from "../store/whatsappSlice";
+import { sendDirectMessage, fetchConversationMessages, setSelectedCustomer } from "../store/whatsappSlice";
 import {
   Send,
   ArrowLeft,
@@ -178,7 +177,7 @@ const groupByDate = (items) => {
 const MessageContent = ({ text, isBot }) => {
   const { user } = useSelector((s) => s.auth || {});
   const isTp = user?.user_type === "tech_provider";
-  
+
   if (!text) return null;
   let trimmed = text.trim();
 
@@ -212,9 +211,8 @@ const MessageContent = ({ text, isBot }) => {
           }}
         />
         <div
-          className={`hidden items-center gap-2 px-3 py-2 rounded-lg text-xs ${
-            isBot ? "text-green-100" : "text-gray-500"
-          }`}
+          className={`hidden items-center gap-2 px-3 py-2 rounded-lg text-xs ${isBot ? "text-green-100" : "text-gray-500"
+            }`}
           style={{ display: "none" }}
         >
           <ImageIcon size={14} />
@@ -228,9 +226,9 @@ const MessageContent = ({ text, isBot }) => {
   if (isUrl(trimmed) && isVideoUrl(trimmed)) {
     return (
       <div className="rounded-lg overflow-hidden border border-gray-200 bg-black">
-        <video 
-          src={trimmed} 
-          controls 
+        <video
+          src={trimmed}
+          controls
           className="max-w-full rounded-lg"
           style={{ maxHeight: "250px", minWidth: "200px" }}
         />
@@ -242,9 +240,9 @@ const MessageContent = ({ text, isBot }) => {
   if (isUrl(trimmed) && isAudioUrl(trimmed)) {
     return (
       <div className="rounded-lg overflow-hidden border border-gray-200 bg-white p-2">
-        <audio 
-          src={trimmed} 
-          controls 
+        <audio
+          src={trimmed}
+          controls
           className="max-w-[220px] md:max-w-[280px]"
           style={{ height: "40px" }}
         />
@@ -261,11 +259,10 @@ const MessageContent = ({ text, isBot }) => {
         target="_blank"
         rel="noopener noreferrer"
         download
-        className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-          isBot 
-            ? "bg-green-50 border-green-200 hover:bg-green-100" 
-            : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-        }`}
+        className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${isBot
+          ? "bg-green-50 border-green-200 hover:bg-green-100"
+          : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+          }`}
       >
         <div className={`p-2 rounded-full ${isBot ? "bg-green-200 text-green-700" : "bg-gray-200 text-gray-700"}`}>
           <Paperclip size={20} />
@@ -301,9 +298,8 @@ const MessageContent = ({ text, isBot }) => {
         href={trimmed}
         target="_blank"
         rel="noopener noreferrer"
-        className={`flex items-center gap-1.5 text-xs underline underline-offset-2 ${
-          isBot ? "text-green-700" : "text-blue-500"
-        }`}
+        className={`flex items-center gap-1.5 text-xs underline underline-offset-2 ${isBot ? "text-green-700" : "text-blue-500"
+          }`}
       >
         <PhoneCall size={15} /> Inquiry on this number
         <ExternalLink size={11} />
@@ -318,9 +314,8 @@ const MessageContent = ({ text, isBot }) => {
         href={trimmed}
         target="_blank"
         rel="noopener noreferrer"
-        className={`flex items-center gap-1.5 text-xs underline underline-offset-2 break-all ${
-          isBot ? "text-green-100" : "text-blue-500"
-        }`}
+        className={`flex items-center gap-1.5 text-xs underline underline-offset-2 break-all ${isBot ? "text-green-100" : "text-blue-500"
+          }`}
       >
         {trimmed}
         <ExternalLink size={11} className="flex-shrink-0" />
@@ -330,13 +325,13 @@ const MessageContent = ({ text, isBot }) => {
 
   // Text with inline URL detection (e.g. "📍 https://...")
   const parts = trimmed.split(/(https?:\/\/\S+)/g);
-  
+
   const formatText = (t) => {
     if (!isTp) return t;
     let formatted = t.replace(/\*(.*?)\*/g, '<strong>$1</strong>')
-                     .replace(/_(.*?)_/g, '<em>$1</em>')
-                     .replace(/~(.*?)~/g, '<del>$1</del>')
-                     .replace(/```(.*?)```/gs, '<code>$1</code>');
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      .replace(/~(.*?)~/g, '<del>$1</del>')
+      .replace(/```(.*?)```/gs, '<code>$1</code>');
     return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
   };
 
@@ -371,51 +366,71 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((s) => s.auth || {});
   const isTp = user?.user_type === "tech_provider";
-  const { selectedCustomer, messages, isLoadingMessages, messagesError } = useSelector(
+  const { selectedCustomer, messages, isLoadingMessages, messagesError, wabaId } = useSelector(
     (s) => s.whatsapp
   );
-  // const [input, setInput] = useState("");
-  // const [isSending, setIsSending] = useState(false);
+
+  const isSupportedWaba = String(wabaId) === "1168578376348442";
+
+  const is24hWindowOpen = React.useMemo(() => {
+    const flatItems = flattenMessages(messages || []);
+    if (flatItems.length === 0) return false;
+    let lastUserTs = null;
+    for (let i = flatItems.length - 1; i >= 0; i--) {
+      if (flatItems[i].side !== "bot") {
+        lastUserTs = flatItems[i].ts;
+        break;
+      }
+    }
+    if (!lastUserTs) return false;
+
+    const lastUserMs = new Date(lastUserTs).getTime();
+    const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+    return (Date.now() - lastUserMs) < twentyFourHoursMs;
+  }, [messages]);
+
+  const [input, setInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const bottomRef = useRef(null);
-  // const textareaRef = useRef(null);
+  const textareaRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // const handleSend = async () => {
-  //   if (!input.trim() || isSending) return;
-  //   const textToSend = input.trim();
-  //   setIsSending(true);
-  //   try {
-  //     await dispatch(
-  //       sendDirectMessage({
-  //         conversation_id: selectedCustomer.conversation_id,
-  //         message: textToSend,
-  //       })
-  //     ).unwrap();
-  //     setInput("");
-  //     if (textareaRef.current) textareaRef.current.style.height = "24px";
-  //   } catch (err) {
-  //     console.error("Failed to send message:", err);
-  //   } finally {
-  //     setIsSending(false);
-  //     textareaRef.current?.focus();
-  //   }
-  // };
+  const handleSend = async () => {
+    if (!input.trim() || isSending) return;
+    const textToSend = input.trim();
+    setIsSending(true);
+    try {
+      await dispatch(
+        sendDirectMessage({
+          conversation_id: selectedCustomer.conversation_id,
+          message: textToSend,
+        })
+      ).unwrap();
+      setInput("");
+      if (textareaRef.current) textareaRef.current.style.height = "24px";
+    } catch (err) {
+      console.error("Failed to send message:", err);
+    } finally {
+      setIsSending(false);
+      textareaRef.current?.focus();
+    }
+  };
 
-  // const handleKeyDown = (e) => {
-  //   if (e.key === "Enter" && !e.shiftKey) {
-  //     e.preventDefault();
-  //     handleSend();
-  //   }
-  // };
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
-  // const handleTextareaChange = (e) => {
-  //   setInput(e.target.value);
-  //   e.target.style.height = "40px";
-  //   e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
-  // };
+  const handleTextareaChange = (e) => {
+    setInput(e.target.value);
+    e.target.style.height = "40px";
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+  };
 
   /* ── No selection ── */
   if (!selectedCustomer) {
@@ -431,7 +446,7 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
         <p className="text-xs text-gray-400 mt-1 max-w-xs">
           Choose a contact from the list to view messages
         </p>
-        
+
       </div>
     );
   }
@@ -488,7 +503,7 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3 text-[#54656f]">
           <button
             onClick={() => {
@@ -510,7 +525,7 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
           background: "#efeae2",
           backgroundImage: `url(${bgImage})`,
           backgroundSize: "1300px auto",
-        
+
           backgroundAttachment: "local",
         }}
       >
@@ -562,9 +577,8 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
                         className={`flex ${isBot ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`relative max-w-[72%] md:max-w-[65%] shadow-sm ${
-                            isImg ? "p-1" : "px-2 pt-1.5 pb-1"
-                          }`}
+                          className={`relative max-w-[72%] md:max-w-[65%] shadow-sm ${isImg ? "p-1" : "px-2 pt-1.5 pb-1"
+                            }`}
                           style={{
                             background: isBot ? "#d9fdd3" : "#ffffff",
                             borderRadius: "7.5px",
@@ -605,7 +619,7 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
                                 {isBot && (
                                   <CheckCheck
                                     size={14}
-                                
+
                                     strokeWidth={2.5}
                                   />
                                 )}
@@ -626,41 +640,50 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
       </div>
 
       {/* ── Input Bar ── */}
-      {/* <div
-        className="flex-shrink-0 px-4 py-3 flex items-end gap-3"
-        style={{ background: "#f0f2f5" }}
-      >
-        <div className="flex-1 rounded-lg bg-white shadow-sm border border-gray-200 flex items-end px-4 py-1.5 transition-colors focus-within:border-gray-300">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            placeholder="Type a message"
-            value={input}
-            onChange={handleTextareaChange}
-            onKeyDown={handleKeyDown}
-            disabled={isSending}
-            className="flex-1 resize-none bg-transparent text-[15px] text-[#111b21] placeholder-[#667781] focus:outline-none leading-[24px] disabled:opacity-50 py-1.5"
-            style={{ 
-              minHeight: "36px", 
-              maxHeight: "120px"
-            }}
-          />
-        </div>
+      {isSupportedWaba && (
+        <div
+          className="flex-shrink-0 px-4 py-3 flex flex-col gap-2"
+          style={{ background: "#f0f2f5" }}
+        >
+          {!is24hWindowOpen && (
+            <div className="w-full text-center text-[13px] text-orange-700 bg-orange-100 py-2 rounded-md border border-orange-200 shadow-sm font-medium">
+              ⚠️ 24-hour window has closed. You cannot send manual messages until the customer replies.
+            </div>
+          )}
+          <div className="flex items-end gap-3 w-full">
+            <div className={`flex-1 rounded-lg bg-white shadow-sm border border-gray-200 flex items-end px-4 py-1.5 transition-colors focus-within:border-gray-300 ${!is24hWindowOpen ? "opacity-60 bg-gray-50" : ""}`}>
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                placeholder={is24hWindowOpen ? "Type a message" : "Window closed"}
+                value={input}
+                onChange={handleTextareaChange}
+                onKeyDown={handleKeyDown}
+                disabled={isSending || !is24hWindowOpen}
+                className="flex-1 resize-none bg-transparent text-[15px] text-[#111b21] placeholder-[#667781] focus:outline-none leading-[24px] disabled:opacity-50 py-1.5 disabled:cursor-not-allowed"
+                style={{
+                  minHeight: "36px",
+                  maxHeight: "120px"
+                }}
+              />
+            </div>
 
-        <div className="mb-1.5 flex-shrink-0">
-          <button
-            onClick={handleSend}
-            disabled={isSending || !input.trim()}
-            className="p-2.5 rounded-full flex items-center justify-center text-[#54656f] bg-transparent hover:bg-black/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            {isSending ? (
-              <Loader2 size={22} className="animate-spin" />
-            ) : (
-              <Send size={22} className="translate-x-[2px]" />
-            )}
-          </button>
+            <div className="mb-1.5 flex-shrink-0">
+              <button
+                onClick={handleSend}
+                disabled={isSending || !input.trim() || !is24hWindowOpen}
+                className="p-2.5 rounded-full flex items-center justify-center text-[#54656f] bg-transparent hover:bg-black/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {isSending ? (
+                  <Loader2 size={22} className="animate-spin" />
+                ) : (
+                  <Send size={22} className="translate-x-[2px]" />
+                )}
+              </button>
+            </div>
+          </div>
         </div>
-      </div> */}
+      )}
     </div>
   );
 };
