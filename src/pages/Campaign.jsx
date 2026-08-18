@@ -28,6 +28,7 @@ import {
   Clock3,
   Image,
   Film,
+  Download,
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────────────────────
@@ -276,6 +277,8 @@ const Campaign = () => {
     sendError,
   } = useSelector((s) => s.campaign);
 
+  const token = useSelector((s) => s.auth?.token);
+
   const [tab, setTab] = useState("new");
 
   const [campaignName, setCampaignName] = useState("");
@@ -296,12 +299,62 @@ const Campaign = () => {
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaError, setMediaError] = useState(null);
 
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  const handleDownloadCSV = async (campaignId, campaignName) => {
+    try {
+      setDownloadingId(campaignId);
+      
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const resp = await fetch(`${API_BASE_URL}/api/campaigns/${campaignId}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await resp.json();
+      
+      if (!data.recipients || data.recipients.length === 0) {
+        alert("No recipient data available for this campaign.");
+        return;
+      }
+      
+      const csvRows = [
+        ["Phone Number", "Status", "Sent At", "Error Detail"]
+      ];
+      
+      data.recipients.forEach(r => {
+        csvRows.push([
+          r.phone_number || "",
+          r.status || "",
+          r.sent_at ? new Date(r.sent_at).toLocaleString() : "-",
+          r.error_detail ? `"${r.error_detail.replace(/"/g, '""')}"` : "-"
+        ]);
+      });
+      
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `${campaignName || "Campaign"}_Report.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Failed to download CSV", err);
+      alert("Failed to download CSV. See console for details.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   useEffect(() => {
     dispatch(fetchApprovedTemplates());
     dispatch(fetchCampaigns());
   }, [dispatch]);
 
   useEffect(() => {
+    if (sendSuccess || sendError) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     if (sendSuccess) {
       const t = setTimeout(() => {
         dispatch(clearSendResult());
@@ -309,7 +362,7 @@ const Campaign = () => {
 
       return () => clearTimeout(t);
     }
-  }, [sendSuccess, dispatch]);
+  }, [sendSuccess, sendError, dispatch]);
 
   const selectedTemplate = approvedTemplates.find(
     (t) => t.id === selectedTemplateId
@@ -585,8 +638,15 @@ const Campaign = () => {
 
                 <h2 className="text-sm font-bold tracking-wide text-gray-700 uppercase flex items-center gap-2">
                   Campaign Details
-                  <div className="text-blue-500 cursor-help" title={`Meta Frequency Capping:\nTo prevent spam, Meta limits how often you can send Marketing templates to the same user.\n\nRecommendation: Please maintain a gap of 5-7 days between campaigns for the same contacts to avoid messages being blocked by Meta.`}>
-                    <Info size={16} />
+                  <div className="group relative flex items-center">
+                    <Info size={16} className="text-blue-500 cursor-help" />
+                    <div className="absolute left-7 top-0 w-72 p-4 bg-white border border-gray-200 text-gray-700 text-xs rounded-2xl shadow-xl z-50 hidden group-hover:block normal-case tracking-normal font-normal leading-relaxed pointer-events-none">
+                      <strong className="text-blue-600 text-sm">Meta Frequency Capping</strong><br/>
+                      <div className="mt-2 text-gray-600">To prevent spam, Meta limits how often you can send Marketing templates to the same user.</div>
+                      <div className="mt-3 p-2 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-100">
+                        <strong>Recommendation:</strong> Maintain a gap of 5-7 days between campaigns for the same contacts to avoid messages being blocked.
+                      </div>
+                    </div>
                   </div>
                 </h2>
               </div>
@@ -871,8 +931,16 @@ const Campaign = () => {
                         <div className="flex gap-3 items-center">
                           <div className="min-w-[70px] px-3 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-center text-sm font-mono text-amber-700 relative group">
                             {selectedTemplate.header_type}
-                            <div className="absolute -top-2 -right-2 bg-white rounded-full shadow-sm text-blue-500 cursor-help" title={`Meta Limits:\nImage: Max 5MB\nVideo: Max 16MB\nDocument: Max 100MB`}>
+                            <div className="absolute -top-2 -right-2 bg-white rounded-full shadow-sm text-blue-500 cursor-help">
                               <Info size={14} />
+                            </div>
+                            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 w-48 p-3 bg-white border border-gray-200 text-gray-700 text-xs rounded-2xl shadow-xl z-50 hidden group-hover:block normal-case tracking-normal font-normal leading-relaxed text-left pointer-events-none">
+                              <strong className="text-blue-600 text-sm">Meta Limits</strong>
+                              <ul className="mt-2 space-y-1 text-gray-600">
+                                <li><strong>Image:</strong> Max 5MB</li>
+                                <li><strong>Video:</strong> Max 16MB</li>
+                                <li><strong>Document:</strong> Max 100MB</li>
+                              </ul>
                             </div>
                           </div>
                           
@@ -1140,6 +1208,10 @@ const Campaign = () => {
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase text-gray-500">
                       Date
                     </th>
+
+                    <th className="px-6 py-4 text-center text-xs font-bold uppercase text-gray-500">
+                      Export
+                    </th>
                   </tr>
                 </thead>
 
@@ -1184,6 +1256,21 @@ const Campaign = () => {
                               }
                             )
                           : "—"}
+                      </td>
+
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleDownloadCSV(c.id, c.name)}
+                          disabled={downloadingId === c.id}
+                          className="inline-flex items-center justify-center p-2 rounded-full hover:bg-emerald-50 text-emerald-600 transition disabled:opacity-50"
+                          title="Download Report (CSV)"
+                        >
+                          {downloadingId === c.id ? (
+                            <Loader2 size={18} className="animate-spin" />
+                          ) : (
+                            <Download size={18} />
+                          )}
+                        </button>
                       </td>
                     </tr>
                   ))}
