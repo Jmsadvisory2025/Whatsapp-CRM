@@ -294,6 +294,7 @@ const Campaign = () => {
   const fileInputRef = useRef();
   const mediaInputRef = useRef();
   const [mediaFile, setMediaFile] = useState(null);
+  const [mediaError, setMediaError] = useState(null);
 
   useEffect(() => {
     dispatch(fetchApprovedTemplates());
@@ -508,12 +509,25 @@ const Campaign = () => {
 
           <div className="flex-1">
             <p className="text-sm font-semibold text-emerald-700">
-              Campaign sent successfully
+              Campaign "{sendSuccess.name || campaignName}" completed!
             </p>
 
-            <p className="text-sm text-emerald-600 mt-1">
-              {sendSuccess.name || campaignName}
-            </p>
+            <div className="mt-2 flex items-center gap-3 text-xs font-medium">
+              <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-md">
+                Total: {sendSuccess.total_count ?? 0}
+              </span>
+              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md">
+                Sent: {sendSuccess.sent_count ?? 0}
+              </span>
+              <span className="bg-red-100 text-red-800 px-2 py-1 rounded-md">
+                Failed: {sendSuccess.failed_count ?? 0}
+              </span>
+              {sendSuccess.invalid_numbers_skipped > 0 && (
+                <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-md">
+                  Invalid: {sendSuccess.invalid_numbers_skipped}
+                </span>
+              )}
+            </div>
           </div>
 
           <button
@@ -569,8 +583,11 @@ const Campaign = () => {
                   className="text-emerald-600"
                 />
 
-                <h2 className="text-sm font-bold tracking-wide text-gray-700 uppercase">
+                <h2 className="text-sm font-bold tracking-wide text-gray-700 uppercase flex items-center gap-2">
                   Campaign Details
+                  <div className="text-blue-500 cursor-help" title={`Meta Frequency Capping:\nTo prevent spam, Meta limits how often you can send Marketing templates to the same user.\n\nRecommendation: Please maintain a gap of 5-7 days between campaigns for the same contacts to avoid messages being blocked by Meta.`}>
+                    <Info size={16} />
+                  </div>
                 </h2>
               </div>
 
@@ -850,51 +867,79 @@ const Campaign = () => {
                   <div className="space-y-3">
                     {/* Media Input */}
                     {["IMAGE", "VIDEO", "DOCUMENT"].includes(selectedTemplate.header_type) && (
-                      <div className="flex gap-3 items-center">
-                        <div className="min-w-[70px] px-3 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-center text-sm font-mono text-amber-700">
-                          {selectedTemplate.header_type}
-                        </div>
-                        
-                        <input
-                          type="file"
-                          ref={mediaInputRef}
-                          className="hidden"
-                          accept={
-                            selectedTemplate.header_type === "IMAGE" ? "image/jpeg,image/png" :
-                            selectedTemplate.header_type === "VIDEO" ? "video/mp4" :
-                            "application/pdf"
-                          }
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files[0]) {
-                              setMediaFile(e.target.files[0]);
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-3 items-center">
+                          <div className="min-w-[70px] px-3 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-center text-sm font-mono text-amber-700 relative group">
+                            {selectedTemplate.header_type}
+                            <div className="absolute -top-2 -right-2 bg-white rounded-full shadow-sm text-blue-500 cursor-help" title={`Meta Limits:\nImage: Max 5MB\nVideo: Max 16MB\nDocument: Max 100MB`}>
+                              <Info size={14} />
+                            </div>
+                          </div>
+                          
+                          <input
+                            type="file"
+                            ref={mediaInputRef}
+                            className="hidden"
+                            accept={
+                              selectedTemplate.header_type === "IMAGE" ? "image/jpeg,image/png" :
+                              selectedTemplate.header_type === "VIDEO" ? "video/mp4" :
+                              "application/pdf"
                             }
-                          }}
-                        />
-                        
-                        <div className="flex-1 flex items-center gap-3">
-                          <button
-                            onClick={() => mediaInputRef.current?.click()}
-                            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition"
-                          >
-                            Choose File
-                          </button>
+                            onChange={(e) => {
+                              setMediaError(null);
+                              if (e.target.files && e.target.files[0]) {
+                                const file = e.target.files[0];
+                                const mb = file.size / (1024 * 1024);
+                                let limit = 100;
+                                if (selectedTemplate.header_type === "IMAGE") limit = 5;
+                                if (selectedTemplate.header_type === "VIDEO") limit = 16;
+                                
+                                if (mb > limit) {
+                                  setMediaError(`File is too large. ${selectedTemplate.header_type} max size is ${limit}MB.`);
+                                  setMediaFile(null);
+                                  if (mediaInputRef.current) mediaInputRef.current.value = "";
+                                } else {
+                                  setMediaFile(file);
+                                }
+                              }
+                            }}
+                          />
                           
-                          <span className="text-sm text-gray-500 truncate max-w-[200px]">
-                            {mediaFile ? mediaFile.name : "No file selected"}
-                          </span>
-                          
-                          {mediaFile && (
+                          <div className="flex-1 flex items-center gap-3">
                             <button
                               onClick={() => {
-                                setMediaFile(null);
-                                if (mediaInputRef.current) mediaInputRef.current.value = "";
+                                setMediaError(null);
+                                mediaInputRef.current?.click();
                               }}
-                              className="text-gray-400 hover:text-red-500 transition"
+                              className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition"
                             >
-                              <X size={16} />
+                              Choose File
                             </button>
-                          )}
+                            
+                            <span className="text-sm text-gray-500 truncate max-w-[200px]">
+                              {mediaFile ? mediaFile.name : "No file selected"}
+                            </span>
+                            
+                            {mediaFile && (
+                              <button
+                                onClick={() => {
+                                  setMediaFile(null);
+                                  setMediaError(null);
+                                  if (mediaInputRef.current) mediaInputRef.current.value = "";
+                                }}
+                                className="text-gray-400 hover:text-red-500 transition"
+                              >
+                                <X size={16} />
+                              </button>
+                            )}
+                          </div>
                         </div>
+                        {mediaError && (
+                          <div className="text-red-500 text-xs font-medium ml-[82px] flex items-center gap-1">
+                            <AlertCircle size={12} />
+                            {mediaError}
+                          </div>
+                        )}
                       </div>
                     )}
                     
@@ -1117,9 +1162,7 @@ const Campaign = () => {
                       </td>
 
                       <td className="px-6 py-4 text-center font-semibold text-gray-700">
-                        {c.total_sent ||
-                          c.recipient_count ||
-                          "—"}
+                        {c.sent_count ?? c.total_sent ?? c.recipient_count ?? "—"}
                       </td>
 
                       <td className="px-6 py-4 text-center">
