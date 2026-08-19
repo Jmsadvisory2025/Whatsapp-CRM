@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { sendDirectMessage, fetchConversationMessages, setSelectedCustomer } from "../store/whatsappSlice";
+import { fetchApprovedTemplates } from "../store/campaignSlice";
 import {
   Send,
   ArrowLeft,
@@ -177,9 +178,66 @@ const groupByDate = (items) => {
 const MessageContent = ({ text, isBot }) => {
   const { user } = useSelector((s) => s.auth || {});
   const isTp = user?.user_type === "tech_provider";
+  const approvedTemplates = useSelector((s) => s.campaign?.approvedTemplates || []);
 
   if (!text) return null;
   let trimmed = text.trim();
+
+  // Template Check
+  const templateMatch = trimmed.match(/^\[Template:\s*(.+?)\]$/i);
+  if (templateMatch) {
+    const templateName = templateMatch[1];
+    const template = approvedTemplates.find((t) => t.name === templateName || t.template_name === templateName);
+
+    if (template) {
+      const bodyComp = template.components?.find((c) => c.type === "BODY");
+      const bodyText = bodyComp?.text || template.body_text || template.body || "";
+
+      const headerComp = template.components?.find((c) => c.type === "HEADER");
+      const headerText = headerComp?.text || template.header_text || template.header || "";
+      
+      const footerComp = template.components?.find((c) => c.type === "FOOTER");
+      const footerText = footerComp?.text || template.footer_text || template.footer || "";
+
+      const buttonsComp = template.components?.find((c) => c.type === "BUTTONS");
+      const buttons = buttonsComp?.buttons || template.buttons || [];
+      
+      const formatTemplateText = (t) => {
+        let formatted = t.replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+                         .replace(/_(.*?)_/g, '<em>$1</em>')
+                         .replace(/~(.*?)~/g, '<del>$1</del>')
+                         .replace(/```(.*?)```/gs, '<code>$1</code>');
+        return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
+      };
+
+      return (
+        <div className="flex flex-col gap-1.5 w-full max-w-[280px]">
+          {headerText && <div className="font-semibold text-[14px] text-gray-800">{formatTemplateText(headerText)}</div>}
+          <div className="whitespace-pre-wrap text-[14px] leading-relaxed text-gray-700">{formatTemplateText(bodyText)}</div>
+          {footerText && <div className="text-[12px] text-gray-400 mt-0.5">{formatTemplateText(footerText)}</div>}
+          
+          {buttons?.length > 0 && (
+            <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-200 pt-2">
+              {buttons.map((btn, i) => (
+                <div key={i} className="text-center py-1.5 px-3 bg-[#f0f2f5] hover:bg-[#e9edef] rounded-md text-[#00a884] font-medium text-[13px] cursor-pointer transition-colors">
+                  {btn.text}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-[10px] opacity-40 mt-1 uppercase tracking-wider text-right font-medium">Template: {templateName}</div>
+        </div>
+      );
+    } else {
+      // If template not found yet, just render the name nicely
+      return (
+        <div className="whitespace-pre-wrap text-[13px] leading-relaxed italic opacity-80 text-blue-600 font-medium">
+          Template: {templateName}
+        </div>
+      );
+    }
+  }
 
   // Strip prefixes like [IMAGE] or [DOCUMENT] to extract the clean URL
   const prefixMatch = trimmed.match(/^\[(IMAGE|DOCUMENT|VIDEO|AUDIO|STICKER)\]\s+(https?:\/\/\S+)/i);
@@ -366,6 +424,10 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((s) => s.auth || {});
   const isTp = user?.user_type === "tech_provider";
+
+  useEffect(() => {
+    dispatch(fetchApprovedTemplates());
+  }, [dispatch]);
   const { selectedCustomer, messages, isLoadingMessages, messagesError, wabaId } = useSelector(
     (s) => s.whatsapp
   );
