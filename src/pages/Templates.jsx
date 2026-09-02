@@ -217,65 +217,69 @@ const WhatsAppPreview = ({ template }) => {
 /* TEMPLATE FORM (shared by Create & Edit modals)                              */
 /* -------------------------------------------------------------------------- */
 
-const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemove, onButtonChange, disabled }) => {
+const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemove, onButtonChange, disabled, isEditMode = false }) => {
   return (
     <div className="space-y-5">
-      {/* Name */}
-      <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-          Template Name <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={form.name}
-          onChange={(e) => onChange("name", e.target.value)}
-          disabled={disabled}
-          placeholder="e.g. order_confirmation"
-          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50 disabled:text-gray-500"
-        />
-        <p className="text-xs text-gray-400 mt-1">Lowercase letters, numbers, and underscores only.</p>
-      </div>
-
-      {/* Category + Language */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-            Category <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <select
-              value={form.category}
-              onChange={(e) => onChange("category", e.target.value)}
+      {!isEditMode && (
+        <>
+          {/* Name */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              Template Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => onChange("name", e.target.value)}
               disabled={disabled}
-              className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
-            >
-              <option value="UTILITY">Utility</option>
-              <option value="MARKETING">Marketing</option>
-              <option value="AUTHENTICATION">Authentication</option>
-            </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              placeholder="e.g. order_confirmation"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50 disabled:text-gray-500"
+            />
+            <p className="text-xs text-gray-400 mt-1">Lowercase letters, numbers, and underscores only.</p>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-            Language <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <select
-              value={form.language}
-              onChange={(e) => onChange("language", e.target.value)}
-              disabled={disabled}
-              className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
-            >
-              {LANGUAGE_OPTIONS.map((l) => (
-                <option key={l.value} value={l.value}>{l.label}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          {/* Category + Language */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={form.category}
+                  onChange={(e) => onChange("category", e.target.value)}
+                  disabled={disabled}
+                  className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
+                >
+                  <option value="UTILITY">Utility</option>
+                  <option value="MARKETING">Marketing</option>
+                  <option value="AUTHENTICATION">Authentication</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                Language <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={form.language}
+                  onChange={(e) => onChange("language", e.target.value)}
+                  disabled={disabled}
+                  className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
+                >
+                  {LANGUAGE_OPTIONS.map((l) => (
+                    <option key={l.value} value={l.value}>{l.label}</option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Header */}
       <div>
@@ -726,21 +730,31 @@ const EditTemplateModal = ({ template, onClose }) => {
             {/* Left: editable fields only */}
             <div className="p-6 space-y-5 overflow-y-auto">
               {/* Locked fields shown as read-only */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                    Category
+                    Template Name
                   </label>
-                  <div className={`px-4 py-2.5 rounded-xl border text-sm font-medium ${getCategoryStyle(template.category).bg} ${getCategoryStyle(template.category).text} ${getCategoryStyle(template.category).border}`}>
-                    {template.category}
+                  <div className="px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-600 font-mono">
+                    {template.name}
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
-                    Language
-                  </label>
-                  <div className="px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-600 uppercase">
-                    {template.language}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                      Category
+                    </label>
+                    <div className={`px-4 py-2.5 rounded-xl border text-sm font-medium ${getCategoryStyle(template.category).bg} ${getCategoryStyle(template.category).text} ${getCategoryStyle(template.category).border}`}>
+                      {template.category}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                      Language
+                    </label>
+                    <div className="px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-600 uppercase">
+                      {template.language}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -753,6 +767,7 @@ const EditTemplateModal = ({ template, onClose }) => {
                 onButtonRemove={handleButtonRemove}
                 onButtonChange={handleButtonChange}
                 disabled={isUpdating}
+                isEditMode={true}
               />
             </div>
 
