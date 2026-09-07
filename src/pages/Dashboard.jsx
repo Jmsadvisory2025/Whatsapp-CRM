@@ -141,6 +141,7 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [calendarViewDate, setCalendarViewDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
@@ -556,12 +557,16 @@ export default function Dashboard() {
             .custom-calendar-wrapper .react-calendar__navigation button {
               color: #334155;
               font-weight: 600;
-              border-radius: 8px;
-              padding: 6px 12px;
+              border-radius: 50%;
+              width: 36px;
+              height: 36px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 0;
               font-size: 1.25rem;
               transition: all 0.2s ease-in-out;
-              min-width: 36px;
-              background: transparent;
+              background: #f8fafc;
             }
             .custom-calendar-wrapper .react-calendar__navigation button:hover:not(:disabled) {
               background-color: #f1f5f9;
@@ -572,26 +577,29 @@ export default function Dashboard() {
             }
             .custom-calendar-wrapper .react-calendar__navigation__label {
               font-family: inherit;
-              font-weight: 700 !important;
-              font-size: 1.05rem !important;
+              font-weight: 800 !important;
+              font-size: 1.15rem !important;
               pointer-events: none;
               color: #0f172a;
               white-space: nowrap;
               flex-grow: 1;
               text-align: center;
+              background: transparent !important;
             }
             .custom-calendar-wrapper .react-calendar__month-view__weekdays {
               font-weight: 700;
               text-transform: uppercase;
-              font-size: 0.65rem;
+              font-size: 0.7rem;
               letter-spacing: 0.05em;
-              color: #94a3b8;
-              margin-bottom: 12px;
-              border-bottom: 1px solid #f1f5f9;
-              padding-bottom: 8px;
+              color: #64748b;
+              margin-bottom: 8px;
             }
             .custom-calendar-wrapper .react-calendar__month-view__weekdays__weekday abbr {
               text-decoration: none;
+            }
+            .custom-calendar-wrapper .react-calendar__month-view__weekdays__weekday:first-child abbr,
+            .custom-calendar-wrapper .react-calendar__month-view__weekdays__weekday:last-child abbr {
+              color: #ef4444; /* Red for SUN and SAT */
             }
             .custom-calendar-wrapper .react-calendar__month-view__days__day {
               position: relative !important;
@@ -603,49 +611,42 @@ export default function Dashboard() {
             .custom-calendar-wrapper .react-calendar__tile {
               position: relative !important;
               overflow: visible !important;
-              padding: 8px 0;
-              border-radius: 8px;
-              font-weight: 500;
+              padding: 4px;
+              font-weight: 600;
               color: #475569;
-              transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-              margin-bottom: 4px;
               background: transparent;
-              font-size: 0.85rem;
+              font-size: 0.9rem;
               display: flex;
               flex-direction: column;
               align-items: center;
               border: none !important;
+              height: 48px;
             }
             .custom-calendar-wrapper .react-calendar__tile abbr {
               display: flex;
               align-items: center;
               justify-content: center;
-              width: 32px;
-              height: 32px;
-              border-radius: 50%;
+              width: 100%;
+              height: 100%;
+              border-radius: 8px;
               transition: all 0.2s ease;
             }
             .custom-calendar-wrapper .has-data-tile abbr {
-              background-color: #f0fdf4;
-              color: #059669;
+              background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+              color: #1e3a8a;
               font-weight: 700;
-              box-shadow: inset 0 0 0 1px #a7f3d0;
+              box-shadow: inset 0 0 0 1.5px #bfdbfe;
             }
             .custom-calendar-wrapper .react-calendar__tile:hover abbr {
               background-color: #f1f5f9;
               color: #0f172a;
             }
             .custom-calendar-wrapper .react-calendar__tile--now abbr {
-              background-color: #f8fafc;
-              color: #0f172a;
-              font-weight: 700;
-              box-shadow: inset 0 0 0 1px #cbd5e1;
-            }
-            .custom-calendar-wrapper .react-calendar__tile--active abbr {
-              background-color: #0f172a !important;
+              background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
               color: #ffffff !important;
-              font-weight: 600 !important;
-              box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25) !important;
+              font-weight: 700 !important;
+              box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3) !important;
+              border: none !important;
             }
             .custom-calendar-wrapper .react-calendar__tile--active {
               background: transparent !important;
@@ -656,9 +657,12 @@ export default function Dashboard() {
             <Calendar
               onChange={setSelectedDate}
               value={selectedDate}
+              onActiveStartDateChange={({ activeStartDate }) => setCalendarViewDate(activeStartDate)}
+              calendarType="gregory"
               className="border-none w-full !font-sans text-sm"
-              tileClassName={({ date, view }) => {
+              tileClassName={({ date, view, activeStartDate }) => {
                 if (view !== 'month') return null;
+                if (date.getMonth() !== activeStartDate.getMonth()) return null;
                 const getLocalYMD = (d) => {
                   const yy = d.getFullYear();
                   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -669,8 +673,9 @@ export default function Dashboard() {
                 const hasData = data?.rawCustomers?.some(c => c.created_at && getLocalYMD(new Date(c.created_at)) === dateStr);
                 return hasData ? 'has-data-tile' : null;
               }}
-              tileContent={({ date, view }) => {
+              tileContent={({ date, view, activeStartDate }) => {
                 if (view !== 'month') return null;
+                if (date.getMonth() !== activeStartDate.getMonth()) return null;
                 
                 const getLocalYMD = (d) => {
                   const yy = d.getFullYear();
@@ -692,6 +697,11 @@ export default function Dashboard() {
 
                 return (
                   <div className="absolute inset-0 group flex justify-center w-full h-full pointer-events-auto">
+                    {/* Badge overlapping top-right of the rounded rectangle */}
+                    <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 w-[18px] h-[18px] bg-indigo-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-sm z-10">
+                      {totalOnDate}
+                    </div>
+                    
                     {/* Tooltip on hover (White theme) */}
                     <div className="absolute bottom-[110%] left-1/2 -translate-x-1/2 mb-1 w-44 p-3 bg-white/95 backdrop-blur-md border border-gray-200 text-gray-800 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:-translate-y-2 pointer-events-none">
                       <p className="font-bold text-[11px] mb-2 border-b border-gray-100 pb-1.5 text-center text-gray-800">
@@ -717,6 +727,43 @@ export default function Dashboard() {
                 );
               }}
             />
+            
+            {/* Active days & Total Footer */}
+            {(() => {
+              const activeYear = calendarViewDate.getFullYear();
+              const activeMonth = calendarViewDate.getMonth();
+              
+              const monthlyCustomers = data?.rawCustomers?.filter(c => {
+                if (!c.created_at) return false;
+                const d = new Date(c.created_at);
+                return d.getFullYear() === activeYear && d.getMonth() === activeMonth;
+              }) || [];
+              
+              const monthlyTotalAdded = monthlyCustomers.length;
+              const monthlyActiveDays = new Set(
+                monthlyCustomers.map(c => {
+                  const d = new Date(c.created_at);
+                  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+                })
+              ).size;
+
+              return (
+                <div className="flex justify-between items-center text-[11px] text-gray-500 font-medium mt-auto pt-4 border-t border-gray-100">
+                   <span>Active Days: {monthlyActiveDays}</span>
+                   <span>Total Added: {monthlyTotalAdded}</span>
+                </div>
+              );
+            })()}
+            
+            {/* Legend */}
+            <div className="flex gap-4 mt-4 text-xs font-semibold text-gray-700">
+                <span className="flex items-center gap-2">
+                   <div className="w-3.5 h-3.5 rounded-full bg-indigo-500 shadow-sm"></div> Added
+                </span>
+                <span className="flex items-center gap-2">
+                   <div className="w-3.5 h-3.5 rounded-full bg-orange-500 shadow-sm"></div> Today
+                </span>
+            </div>
           </div>
         </div>
       </div>
