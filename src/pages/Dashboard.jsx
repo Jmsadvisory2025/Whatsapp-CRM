@@ -691,7 +691,10 @@ export default function Dashboard() {
                 
                 if (customersOnDate.length === 0) return null;
                 
-                const leadsOnDate = customersOnDate.filter(c => c.status?.toLowerCase() === "lead").length;
+                const leadsOnDate = customersOnDate.filter(c => {
+                  const s = c.status?.toLowerCase();
+                  return s === "lead" || s === "confirmed";
+                }).length;
                 const prospectsOnDate = customersOnDate.filter(c => c.status?.toLowerCase() === "prospect").length;
                 const totalOnDate = customersOnDate.length;
 
