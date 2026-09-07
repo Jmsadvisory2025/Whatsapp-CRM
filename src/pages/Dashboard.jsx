@@ -7,8 +7,10 @@ import {
 import {
   MessageSquare, CheckCheck, Eye, AlertCircle, Layout,
   Users, TrendingUp, TrendingDown, RefreshCw, Wifi, WifiOff,
-  Calendar, Activity, Zap, BarChart2, Building2, Info
+  Calendar as CalendarIcon, Activity, Zap, BarChart2, Building2, Info
 } from "lucide-react";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 import { isTechProvider } from "../store/authUtils";
 import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
 
@@ -138,6 +140,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -171,6 +175,7 @@ export default function Dashboard() {
           realLeadCount = lpJson.lead_count;
           realProspectCount = lpJson.prospect_count;
           realTotalCustomers = lpJson.total_count !== undefined ? lpJson.total_count : json.total_customers;
+          json.rawCustomers = lpJson.results || [];
           (lpJson.results || []).forEach(c => {
             if (c.created_at) {
               const dStr = c.created_at.split('T')[0];
@@ -217,6 +222,7 @@ export default function Dashboard() {
           },
           realCustomersByDay: realCustomersByDay,
           realClientsByDay: realClientsByDay,
+          rawCustomers: json.rawCustomers,
         });
       } else {
         // 2. Normal Client Path
@@ -239,6 +245,7 @@ export default function Dashboard() {
 
         let realCustomersByDay = {};
         if (lpJson) {
+          json.rawCustomers = lpJson.results || [];
           (lpJson.results || []).forEach(c => {
             if (c.created_at) {
               const dStr = c.created_at.split('T')[0];
@@ -399,13 +406,14 @@ export default function Dashboard() {
               <span className="uppercase tracking-wider text-[10px]">{waba.status}</span>
             </span>
           )}
-          {lastUpdated && (
-            <span className="text-xs font-medium text-gray-400">
-              Updated {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-            </span>
-          )}
-          <button
-            onClick={fetchAnalytics}
+            {lastUpdated && (
+              <span className="text-xs font-medium text-gray-400">
+                Updated {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+            
+            <button
+              onClick={fetchAnalytics}
             disabled={loading}
             className="flex items-center gap-2 text-sm font-medium px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm disabled:opacity-50"
           >
@@ -475,12 +483,13 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ── Charts Row 1 ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Messages Over Time */}
+      {/* ── Main Content Area ─────────────────────────────────────── */}
+      
+      {/* Row 1: Messages Chart & Calendar */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        {/* Messages Over Time (2/3 width) */}
         <div
-          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col"
+          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col h-full lg:col-span-2"
           style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
         >
           <SectionHeader
@@ -516,9 +525,207 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* ── Acquisition Calendar (1/3 width) ──────── */}
+        <div 
+          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col h-full lg:col-span-1"
+          style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
+        >
+          <SectionHeader icon={CalendarIcon} title="Calendar" sub="Daily counts" color={C.amber} />
+          
+          <style>{`
+            .custom-calendar-wrapper {
+               width: 100%;
+               height: 100%;
+               display: flex;
+               flex-direction: column;
+               padding-top: 0.5rem;
+            }
+            .custom-calendar-wrapper .react-calendar {
+              border: none;
+              width: 100%;
+              font-family: inherit;
+              background: transparent;
+            }
+            .custom-calendar-wrapper .react-calendar__navigation {
+              margin-bottom: 1.5rem;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 0 4px;
+            }
+            .custom-calendar-wrapper .react-calendar__navigation button {
+              color: #334155;
+              font-weight: 600;
+              border-radius: 8px;
+              padding: 6px 12px;
+              font-size: 1.25rem;
+              transition: all 0.2s ease-in-out;
+              min-width: 36px;
+              background: transparent;
+            }
+            .custom-calendar-wrapper .react-calendar__navigation button:hover:not(:disabled) {
+              background-color: #f1f5f9;
+            }
+            .custom-calendar-wrapper .react-calendar__navigation__prev2-button,
+            .custom-calendar-wrapper .react-calendar__navigation__next2-button {
+              display: none !important;
+            }
+            .custom-calendar-wrapper .react-calendar__navigation__label {
+              font-family: inherit;
+              font-weight: 700 !important;
+              font-size: 1.05rem !important;
+              pointer-events: none;
+              color: #0f172a;
+              white-space: nowrap;
+              flex-grow: 1;
+              text-align: center;
+            }
+            .custom-calendar-wrapper .react-calendar__month-view__weekdays {
+              font-weight: 700;
+              text-transform: uppercase;
+              font-size: 0.65rem;
+              letter-spacing: 0.05em;
+              color: #94a3b8;
+              margin-bottom: 12px;
+              border-bottom: 1px solid #f1f5f9;
+              padding-bottom: 8px;
+            }
+            .custom-calendar-wrapper .react-calendar__month-view__weekdays__weekday abbr {
+              text-decoration: none;
+            }
+            .custom-calendar-wrapper .react-calendar__month-view__days__day {
+              position: relative !important;
+              overflow: visible !important;
+            }
+            .custom-calendar-wrapper .react-calendar__month-view__days__day--neighboringMonth {
+              color: #cbd5e1 !important;
+            }
+            .custom-calendar-wrapper .react-calendar__tile {
+              position: relative !important;
+              overflow: visible !important;
+              padding: 8px 0;
+              border-radius: 8px;
+              font-weight: 500;
+              color: #475569;
+              transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+              margin-bottom: 4px;
+              background: transparent;
+              font-size: 0.85rem;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              border: none !important;
+            }
+            .custom-calendar-wrapper .react-calendar__tile abbr {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              transition: all 0.2s ease;
+            }
+            .custom-calendar-wrapper .has-data-tile abbr {
+              background-color: #f0fdf4;
+              color: #059669;
+              font-weight: 700;
+              box-shadow: inset 0 0 0 1px #a7f3d0;
+            }
+            .custom-calendar-wrapper .react-calendar__tile:hover abbr {
+              background-color: #f1f5f9;
+              color: #0f172a;
+            }
+            .custom-calendar-wrapper .react-calendar__tile--now abbr {
+              background-color: #f8fafc;
+              color: #0f172a;
+              font-weight: 700;
+              box-shadow: inset 0 0 0 1px #cbd5e1;
+            }
+            .custom-calendar-wrapper .react-calendar__tile--active abbr {
+              background-color: #0f172a !important;
+              color: #ffffff !important;
+              font-weight: 600 !important;
+              box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25) !important;
+            }
+            .custom-calendar-wrapper .react-calendar__tile--active {
+              background: transparent !important;
+            }
+          `}</style>
+          
+          <div className="custom-calendar-wrapper flex-1">
+            <Calendar
+              onChange={setSelectedDate}
+              value={selectedDate}
+              className="border-none w-full !font-sans text-sm"
+              tileClassName={({ date, view }) => {
+                if (view !== 'month') return null;
+                const getLocalYMD = (d) => {
+                  const yy = d.getFullYear();
+                  const mm = String(d.getMonth() + 1).padStart(2, '0');
+                  const dd = String(d.getDate()).padStart(2, '0');
+                  return `${yy}-${mm}-${dd}`;
+                };
+                const dateStr = getLocalYMD(date);
+                const hasData = data?.rawCustomers?.some(c => c.created_at && getLocalYMD(new Date(c.created_at)) === dateStr);
+                return hasData ? 'has-data-tile' : null;
+              }}
+              tileContent={({ date, view }) => {
+                if (view !== 'month') return null;
+                
+                const getLocalYMD = (d) => {
+                  const yy = d.getFullYear();
+                  const mm = String(d.getMonth() + 1).padStart(2, '0');
+                  const dd = String(d.getDate()).padStart(2, '0');
+                  return `${yy}-${mm}-${dd}`;
+                };
+                const dateStr = getLocalYMD(date);
+                const customersOnDate = data?.rawCustomers?.filter(c => {
+                    if (!c.created_at) return false;
+                    return getLocalYMD(new Date(c.created_at)) === dateStr;
+                }) || [];
+                
+                if (customersOnDate.length === 0) return null;
+                
+                const leadsOnDate = customersOnDate.filter(c => c.status?.toLowerCase() === "lead").length;
+                const prospectsOnDate = customersOnDate.filter(c => c.status?.toLowerCase() === "prospect").length;
+                const totalOnDate = customersOnDate.length;
+
+                return (
+                  <div className="absolute inset-0 group flex justify-center w-full h-full pointer-events-auto">
+                    {/* Tooltip on hover (White theme) */}
+                    <div className="absolute bottom-[110%] left-1/2 -translate-x-1/2 mb-1 w-44 p-3 bg-white/95 backdrop-blur-md border border-gray-200 text-gray-800 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:-translate-y-2 pointer-events-none">
+                      <p className="font-bold text-[11px] mb-2 border-b border-gray-100 pb-1.5 text-center text-gray-800">
+                        {date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Total Added</span>
+                        <span className="font-bold text-gray-900 text-sm">{totalOnDate}</span>
+                      </div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[10px] uppercase tracking-wider text-teal-600 font-semibold">Leads</span>
+                        <span className="font-bold text-teal-600 text-sm">{leadsOnDate}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] uppercase tracking-wider text-purple-600 font-semibold">Prospects</span>
+                        <span className="font-bold text-purple-600 text-sm">{prospectsOnDate}</span>
+                      </div>
+                      
+                      {/* Arrow pointing down */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-white/95 filter drop-shadow-[0_2px_2px_rgba(0,0,0,0.05)]"></div>
+                    </div>
+                  </div>
+                );
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Row 2: Customer & Client Charts */}
+      <div className={`grid grid-cols-1 gap-6 mt-6 ${isTp ? 'lg:grid-cols-2' : ''}`}>
         {/* Customers Over Time */}
         <div
-          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col"
+          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col h-full"
           style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
         >
           <SectionHeader
@@ -557,7 +764,7 @@ export default function Dashboard() {
         {/* Clients Over Time (TP Only) */}
         {isTp && (
           <div
-            className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col lg:col-span-2"
+            className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col h-full"
             style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
           >
             <SectionHeader

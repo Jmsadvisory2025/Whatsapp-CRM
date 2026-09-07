@@ -184,7 +184,7 @@ const MessageContent = ({ text, isBot }) => {
   let trimmed = text.trim();
 
   // Template Check
-  const templateMatch = trimmed.match(/^\[Template:\s*(.+?)\]$/i);
+  const templateMatch = trimmed.match(/^\[?Template:\s*(.+?)\]?$/i);
   if (templateMatch) {
     const templateName = templateMatch[1];
     const template = approvedTemplates.find((t) => t.name === templateName || t.template_name === templateName);
@@ -234,6 +234,61 @@ const MessageContent = ({ text, isBot }) => {
       return (
         <div className="whitespace-pre-wrap text-[13px] leading-relaxed italic opacity-80 text-blue-600 font-medium">
           Template: {templateName}
+        </div>
+      );
+    }
+  }
+
+  // Unsupported message fallback
+  if (trimmed.startsWith("[unsupported]")) {
+    return (
+      <div className="text-[13px] italic opacity-80" style={{ color: isBot ? "#4b5e4b" : "#667781" }}>
+        Unsupported message or action from WhatsApp App
+      </div>
+    );
+  }
+
+  // Reaction message fallback
+  if (trimmed.startsWith("[reaction]")) {
+    try {
+      const jsonStr = trimmed.substring(10).trim();
+      const reactionData = JSON.parse(jsonStr);
+      const emoji = reactionData.emoji || "👍";
+      return (
+        <div className="text-[13px] italic opacity-80 flex items-center gap-1.5" style={{ color: isBot ? "#4b5e4b" : "#667781" }}>
+          <span>Reacted with</span>
+          <span className="text-base not-italic">{emoji}</span>
+        </div>
+      );
+    } catch (e) {
+      return (
+        <div className="text-[13px] italic opacity-80" style={{ color: isBot ? "#4b5e4b" : "#667781" }}>
+          Reacted to a message
+        </div>
+      );
+    }
+  }
+
+  // Edit message fallback
+  if (trimmed.startsWith("[edit]")) {
+    try {
+      const jsonStr = trimmed.substring(6).trim();
+      const editData = JSON.parse(jsonStr);
+      const newText = editData.message?.text?.body || "Edited a message";
+      return (
+        <div className="flex flex-col gap-0.5">
+          <div className="text-[11px] italic opacity-70 flex items-center gap-1" style={{ color: isBot ? "#4b5e4b" : "#667781" }}>
+            <span>✏️ Edited</span>
+          </div>
+          <div className="whitespace-pre-wrap text-[14px] leading-relaxed">
+            {newText}
+          </div>
+        </div>
+      );
+    } catch (e) {
+      return (
+        <div className="text-[13px] italic opacity-80" style={{ color: isBot ? "#4b5e4b" : "#667781" }}>
+          ✏️ Edited a message
         </div>
       );
     }
