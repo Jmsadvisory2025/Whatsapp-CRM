@@ -67,11 +67,12 @@ const LeadsProspects = () => {
       }
 
       const exportData = res.data.results || [];
-      const headers = ["Phone", "Status", "Stage", "Last Chat"];
+      const headers = ["Customer", "Phone", "Status", "Stage", "Last Chat"];
         
       const csvRows = [headers.join(",")];
       
       exportData.forEach(item => {
+        const customer = `"${(item.name || "Unknown").replace(/"/g, '""')}"`;
         // Use ="..." syntax to force Excel to treat the phone number as text, preventing scientific notation
         const phone = `"=""${item.phone || ""}"""`;
         const status = `"${(item.status || "prospect").replace(/"/g, '""')}"`;
@@ -98,7 +99,7 @@ const LeadsProspects = () => {
         }
         const lastChat = `"${formattedDate.replace(/"/g, '""')}"`;
         
-        csvRows.push([phone, status, stage, lastChat].join(","));
+        csvRows.push([customer, phone, status, stage, lastChat].join(","));
       });
       
       const csvString = csvRows.join("\n");
