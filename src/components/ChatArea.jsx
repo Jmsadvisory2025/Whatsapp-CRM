@@ -483,11 +483,9 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
   useEffect(() => {
     dispatch(fetchApprovedTemplates());
   }, [dispatch]);
-  const { selectedCustomer, messages, isLoadingMessages, messagesError, wabaId } = useSelector(
+  const { selectedCustomer, messages, isLoadingMessages, messagesError } = useSelector(
     (s) => s.whatsapp
   );
-
-  const isSupportedWaba = String(wabaId) === "1168578376348442";
 
   const is24hWindowOpen = React.useMemo(() => {
     const flatItems = flattenMessages(messages || []);
@@ -757,11 +755,10 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
       </div>
 
       {/* ── Input Bar ── */}
-      {isSupportedWaba && (
-        <div
-          className="flex-shrink-0 px-4 py-3 flex flex-col gap-2"
-          style={{ background: "#f0f2f5" }}
-        >
+      <div
+        className="flex-shrink-0 px-4 py-3 flex flex-col gap-2"
+        style={{ background: "#f0f2f5" }}
+      >
           {!is24hWindowOpen && (
             <div className="w-full text-center text-[13px] text-orange-700 bg-orange-100 py-2 rounded-md border border-orange-200 shadow-sm font-medium">
               ⚠️ 24-hour window has closed. You cannot send manual messages until the customer replies.
@@ -800,7 +797,6 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
             </div>
           </div>
         </div>
-      )}
     </div>
   );
 };
