@@ -182,6 +182,9 @@ const MessageContent = ({ text, isBot }) => {
 
   if (!text) return null;
   let trimmed = text.trim();
+  
+  // Clean Azure Blob URLs by removing SAS token/query string
+  trimmed = trimmed.replace(/(https:\/\/[a-zA-Z0-9-]+\.blob\.core\.windows\.net[^\s\?]*)\?[^\s]*/g, '$1');
 
   // Template Check
   const templateMatch = trimmed.match(/^\[?Template:\s*(.+?)\]?$/i);
@@ -195,18 +198,18 @@ const MessageContent = ({ text, isBot }) => {
 
       const headerComp = template.components?.find((c) => c.type === "HEADER");
       const headerText = headerComp?.text || template.header_text || template.header || "";
-      
+
       const footerComp = template.components?.find((c) => c.type === "FOOTER");
       const footerText = footerComp?.text || template.footer_text || template.footer || "";
 
       const buttonsComp = template.components?.find((c) => c.type === "BUTTONS");
       const buttons = buttonsComp?.buttons || template.buttons || [];
-      
+
       const formatTemplateText = (t) => {
         let formatted = t.replace(/\*(.*?)\*/g, '<strong>$1</strong>')
-                         .replace(/_(.*?)_/g, '<em>$1</em>')
-                         .replace(/~(.*?)~/g, '<del>$1</del>')
-                         .replace(/```(.*?)```/gs, '<code>$1</code>');
+          .replace(/_(.*?)_/g, '<em>$1</em>')
+          .replace(/~(.*?)~/g, '<del>$1</del>')
+          .replace(/```(.*?)```/gs, '<code>$1</code>');
         return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
       };
 
@@ -215,7 +218,7 @@ const MessageContent = ({ text, isBot }) => {
           {headerText && <div className="font-semibold text-[14px] text-gray-800">{formatTemplateText(headerText)}</div>}
           <div className="whitespace-pre-wrap text-[14px] leading-relaxed text-gray-700">{formatTemplateText(bodyText)}</div>
           {footerText && <div className="text-[12px] text-gray-400 mt-0.5">{formatTemplateText(footerText)}</div>}
-          
+
           {buttons?.length > 0 && (
             <div className="mt-2 flex flex-col gap-1.5 border-t border-gray-200 pt-2">
               {buttons.map((btn, i) => (
@@ -759,44 +762,44 @@ const ChatArea = ({ onBack, onOpenBulkMessage }) => {
         className="flex-shrink-0 px-4 py-3 flex flex-col gap-2"
         style={{ background: "#f0f2f5" }}
       >
-          {!is24hWindowOpen && (
-            <div className="w-full text-center text-[13px] text-orange-700 bg-orange-100 py-2 rounded-md border border-orange-200 shadow-sm font-medium">
-              ⚠️ 24-hour window has closed. You cannot send manual messages until the customer replies.
-            </div>
-          )}
-          <div className="flex items-end gap-3 w-full">
-            <div className={`flex-1 rounded-lg bg-white shadow-sm border border-gray-200 flex items-end px-4 py-1.5 transition-colors focus-within:border-gray-300 ${!is24hWindowOpen ? "opacity-60 bg-gray-50" : ""}`}>
-              <textarea
-                ref={textareaRef}
-                rows={1}
-                placeholder={is24hWindowOpen ? "Type a message" : "Window closed"}
-                value={input}
-                onChange={handleTextareaChange}
-                onKeyDown={handleKeyDown}
-                disabled={isSending || !is24hWindowOpen}
-                className="flex-1 resize-none bg-transparent text-[15px] text-[#111b21] placeholder-[#667781] focus:outline-none leading-[24px] disabled:opacity-50 py-1.5 disabled:cursor-not-allowed"
-                style={{
-                  minHeight: "36px",
-                  maxHeight: "120px"
-                }}
-              />
-            </div>
+        {!is24hWindowOpen && (
+          <div className="w-full text-center text-[13px] text-orange-700 bg-orange-100 py-2 rounded-md border border-orange-200 shadow-sm font-medium">
+            ⚠️ 24-hour window has closed. You cannot send manual messages until the customer replies.
+          </div>
+        )}
+        <div className="flex items-end gap-3 w-full">
+          <div className={`flex-1 rounded-lg bg-white shadow-sm border border-gray-200 flex items-end px-4 py-1.5 transition-colors focus-within:border-gray-300 ${!is24hWindowOpen ? "opacity-60 bg-gray-50" : ""}`}>
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              placeholder={is24hWindowOpen ? "Type a message" : "Window closed"}
+              value={input}
+              onChange={handleTextareaChange}
+              onKeyDown={handleKeyDown}
+              disabled={isSending || !is24hWindowOpen}
+              className="flex-1 resize-none bg-transparent text-[15px] text-[#111b21] placeholder-[#667781] focus:outline-none leading-[24px] disabled:opacity-50 py-1.5 disabled:cursor-not-allowed"
+              style={{
+                minHeight: "36px",
+                maxHeight: "120px"
+              }}
+            />
+          </div>
 
-            <div className="mb-1.5 flex-shrink-0">
-              <button
-                onClick={handleSend}
-                disabled={isSending || !input.trim() || !is24hWindowOpen}
-                className="p-2.5 rounded-full flex items-center justify-center text-[#54656f] bg-transparent hover:bg-black/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                {isSending ? (
-                  <Loader2 size={22} className="animate-spin" />
-                ) : (
-                  <Send size={22} className="translate-x-[2px]" />
-                )}
-              </button>
-            </div>
+          <div className="mb-1.5 flex-shrink-0">
+            <button
+              onClick={handleSend}
+              disabled={isSending || !input.trim() || !is24hWindowOpen}
+              className="p-2.5 rounded-full flex items-center justify-center text-[#54656f] bg-transparent hover:bg-black/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {isSending ? (
+                <Loader2 size={22} className="animate-spin" />
+              ) : (
+                <Send size={22} className="translate-x-[2px]" />
+              )}
+            </button>
           </div>
         </div>
+      </div>
     </div>
   );
 };
