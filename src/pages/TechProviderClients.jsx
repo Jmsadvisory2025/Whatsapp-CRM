@@ -376,8 +376,15 @@ function ClientRow({ client, onStatusChange }) {
                 : null}
             />
             <InfoRow icon={<Calendar size={13}/>}    label="Onboarded"         value={fmt(client.created_at)} />
-            
-            {/* Messages Stats */}
+          </div>
+
+          {/* ── Messages Stats Grid ── */}
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))",
+            gap: "14px 24px", marginBottom: 20,
+            paddingTop: 16, borderTop: "1px dashed #e5e7eb"
+          }}>
             <InfoRow icon={<MessageSquare size={13}/>} label="Daily Msgs"      value={client.daily_messages ?? 0} />
             <InfoRow icon={<MessageSquare size={13}/>} label="Weekly Msgs"     value={client.weekly_messages ?? 0} />
             <InfoRow icon={<MessageSquare size={13}/>} label="Monthly Msgs"    value={client.monthly_messages ?? 0} />
