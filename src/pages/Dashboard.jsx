@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import { isTechProvider } from "../store/authUtils";
+import { isTechProvider, canViewClients } from "../store/authUtils";
 import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -426,7 +426,7 @@ export default function Dashboard() {
 
       {/* ── KPI Cards ────────────────────────────────────────── */}
       <div className="flex flex-row flex-nowrap w-full gap-2 sm:gap-3 lg:gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {summary.total_clients !== undefined && isTp && (
+        {summary.total_clients !== undefined && isTp && canViewClients(userEmail) && (
           <StatCard
             icon={Building2} label="Total Clients"
             value={fmt(summary.total_clients)} color={C.indigo}

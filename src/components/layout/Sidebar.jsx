@@ -18,7 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../store/authSlice";
 import jmsLogo from "../../assets/jms.png";
-import { isTechProvider } from "../../store/authUtils";
+import { isTechProvider, canViewClients } from "../../store/authUtils";
 
 const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -57,7 +57,7 @@ const Sidebar = ({ onToggle = () => { } }) => {
   }
 
   const navItems = isTechProvider(userEmail)
-    ? [...baseFiltered.filter(item => item.label !== 'Meta Documents'), techProviderItem]
+    ? [...baseFiltered.filter(item => item.label !== 'Meta Documents'), ...(canViewClients(userEmail) ? [techProviderItem] : [])]
     : userRole.startsWith('client_')
       ? baseFiltered.filter(item => !['Templates', 'Campaign'].includes(item.label))
       : baseFiltered;

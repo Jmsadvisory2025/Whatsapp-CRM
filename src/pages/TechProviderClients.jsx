@@ -4,12 +4,12 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { isTechProvider } from "../store/authUtils";
+import { isTechProvider, canViewClients } from "../store/authUtils";
 import {
   Building2, Wifi, WifiOff, Search, RefreshCw,
   ChevronDown, ChevronUp, Users, Globe, Mail,
   Phone, Calendar, CheckCircle2, Clock, XCircle,
-  Shield, BadgeCheck, AlertTriangle, Star, Zap, FileText, X
+  Shield, BadgeCheck, AlertTriangle, Star, Zap, FileText, X, MessageSquare
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -376,6 +376,12 @@ function ClientRow({ client, onStatusChange }) {
                 : null}
             />
             <InfoRow icon={<Calendar size={13}/>}    label="Onboarded"         value={fmt(client.created_at)} />
+            
+            {/* Messages Stats */}
+            <InfoRow icon={<MessageSquare size={13}/>} label="Daily Msgs"      value={client.daily_messages ?? 0} />
+            <InfoRow icon={<MessageSquare size={13}/>} label="Weekly Msgs"     value={client.weekly_messages ?? 0} />
+            <InfoRow icon={<MessageSquare size={13}/>} label="Monthly Msgs"    value={client.monthly_messages ?? 0} />
+            <InfoRow icon={<MessageSquare size={13}/>} label="Total Msgs"      value={client.total_messages ?? 0} />
           </div>
 
           {/* ── CRM Status changer & Documents ── */}
@@ -465,25 +471,36 @@ export default function TechProviderClients() {
   const [search,       setSearch]       = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true); setError(null);
+  const load = useCallback(async (isBackground = false) => {
+    if (!isBackground) { setLoading(true); setError(null); }
     try {
       const params = {};
       if (statusFilter) params.status = statusFilter;
       if (search)       params.search = search;
+      if (isBackground) params.meta = '0'; // Skip live Meta fetch on background auto-refresh
       const res = await axios.get(`${API_BASE_URL}api/techprovider/clients/`, {
         headers: { Authorization: `Bearer ${token}` },
         params,
       });
       setData(res.data);
     } catch (e) {
-      setError(e?.response?.data?.detail || e?.response?.data?.message || "Failed to load clients.");
+      if (!isBackground) {
+        setError(e?.response?.data?.detail || e?.response?.data?.message || "Failed to load clients.");
+      }
     } finally {
-      setLoading(false);
+      if (!isBackground) { setLoading(false); }
     }
   }, [token, statusFilter, search]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { 
+    load(); 
+    // Auto refresh fast (every 10 seconds) without showing loader
+    const intervalId = setInterval(() => {
+      load(true);
+    }, 10000); 
+    
+    return () => clearInterval(intervalId);
+  }, [load]);
 
   const handleStatusChange = async (clientId, newStatus) => {
     await axios.patch(
@@ -494,7 +511,7 @@ export default function TechProviderClients() {
     await load();
   };
 
-  if (!isTechProvider(userEmail)) {
+  if (!canViewClients(userEmail)) {
     return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"60vh", color:"#dc2626", gap:12 }}>
         <XCircle size={48}/><div style={{fontSize:18,fontWeight:600}}>Access Denied</div>
