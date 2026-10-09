@@ -35,9 +35,11 @@ import {
   Minus,
   Image,
   Film,
+  BarChart3,
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
+import TemplateAnalyticsModal from "../components/TemplateAnalyticsModal";
 
 /* -------------------------------------------------------------------------- */
 /* STATUS CONFIG                                                                */
@@ -902,10 +904,33 @@ const PreviewModal = ({ template, onClose, onEdit }) => {
 /* TEMPLATE ROW                                                                 */
 /* -------------------------------------------------------------------------- */
 
-const TableRow = ({ template, idx, onPreview, onEdit, onSync, onDelete, isDeletingId, isSyncingId }) => {
+const TableRow = ({ template, idx, onPreview, onEdit, onAnalytics, onSync, onDelete, isDeletingId, isSyncingId }) => {
   const isDeleting = isDeletingId === template.id;
   const isSyncing = isSyncingId === template.id;
   const catStyle = getCategoryStyle(template.category);
+
+  const [featureClicks, setFeatureClicks] = useState(() => {
+    return parseInt(localStorage.getItem('template_feature_clicks') || '0', 10);
+  });
+
+  // New feature indicator logic (shows for 7 days from release date)
+  const isFeatureNew = (releaseDateString, daysToKeep = 7) => {
+    const releaseDate = new Date(releaseDateString);
+    const expiryDate = new Date(releaseDate);
+    expiryDate.setDate(expiryDate.getDate() + daysToKeep);
+    return new Date() < expiryDate;
+  };
+
+  const showAnalyticsPing = isFeatureNew("2026-10-09") && idx === 0 && featureClicks < 4;
+
+  const handleAnalyticsClick = () => {
+    const current = parseInt(localStorage.getItem('template_feature_clicks') || '0', 10);
+    if (current < 4) {
+      localStorage.setItem('template_feature_clicks', (current + 1).toString());
+      setFeatureClicks(current + 1);
+    }
+    onAnalytics(template);
+  };
 
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50 transition-all">
@@ -950,6 +975,20 @@ const TableRow = ({ template, idx, onPreview, onEdit, onSync, onDelete, isDeleti
             title="Preview"
           >
             <Eye size={15} />
+          </button>
+
+          <button
+            onClick={handleAnalyticsClick}
+            className="relative p-2 rounded-xl hover:bg-indigo-50 text-gray-500 hover:text-indigo-600 transition"
+            title="Analytics"
+          >
+            <BarChart3 size={15} />
+            {showAnalyticsPing && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+              </span>
+            )}
           </button>
 
           <button
@@ -1000,6 +1039,7 @@ const Templates = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [editTemplate, setEditTemplate] = useState(null);
+  const [analyticsTemplate, setAnalyticsTemplate] = useState(null);
   const [activeFilter, setActiveFilter] = useState("ALL");
 
   useEffect(() => {
@@ -1132,6 +1172,7 @@ const Templates = () => {
                     idx={i}
                     onPreview={setPreviewTemplate}
                     onEdit={setEditTemplate}
+                    onAnalytics={setAnalyticsTemplate}
                     onSync={(id) => dispatch(syncTemplate(id))}
                     onDelete={(id) => dispatch(deleteTemplate(id))}
                     isDeletingId={isDeletingId}
@@ -1169,6 +1210,15 @@ const Templates = () => {
               setPreviewTemplate(null);
               setEditTemplate(t);
             }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {analyticsTemplate && (
+          <TemplateAnalyticsModal
+            template={analyticsTemplate}
+            onClose={() => setAnalyticsTemplate(null)}
           />
         )}
       </AnimatePresence>

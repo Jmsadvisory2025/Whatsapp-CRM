@@ -71,6 +71,30 @@ const Sidebar = ({ onToggle = () => { } }) => {
 
   const [hoveredItem, setHoveredItem] = useState(null);
 
+  const [featureClicks, setFeatureClicks] = useState(() => {
+    return parseInt(localStorage.getItem('template_feature_clicks') || '0', 10);
+  });
+
+  // New feature indicator logic (shows for 7 days from release date)
+  const isFeatureNew = (releaseDateString, daysToKeep = 7) => {
+    const releaseDate = new Date(releaseDateString);
+    const expiryDate = new Date(releaseDate);
+    expiryDate.setDate(expiryDate.getDate() + daysToKeep);
+    return new Date() < expiryDate;
+  };
+
+  const showTemplatesNewBadge = isFeatureNew("2026-10-09") && featureClicks < 4;
+
+  const handleNavClick = (label) => {
+    if (label === 'Templates') {
+      const current = parseInt(localStorage.getItem('template_feature_clicks') || '0', 10);
+      if (current < 4) {
+        localStorage.setItem('template_feature_clicks', (current + 1).toString());
+        setFeatureClicks(current + 1);
+      }
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem("sidebar-collapsed", JSON.stringify(isCollapsed));
     onToggle?.(isCollapsed);
@@ -148,6 +172,7 @@ const Sidebar = ({ onToggle = () => { } }) => {
                 <NavLink
                   to={item.path}
                   end={item.path === "/"}
+                  onClick={() => handleNavClick(item.label)}
                   onMouseEnter={() => setHoveredItem(item.label)}
                   onMouseLeave={() => setHoveredItem(null)}
                   className="relative flex items-center rounded-xl transition-all duration-200 cursor-pointer"
@@ -196,6 +221,11 @@ const Sidebar = ({ onToggle = () => { } }) => {
                               }`}
                           >
                             {item.label}
+                            {item.label === 'Templates' && showTemplatesNewBadge && (
+                               <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white bg-red-500 rounded-full animate-pulse shadow-sm">
+                                 NEW
+                               </span>
+                            )}
                           </motion.span>
                         )}
                       </AnimatePresence>

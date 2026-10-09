@@ -187,10 +187,27 @@ const MessageContent = ({ text, isBot }) => {
   trimmed = trimmed.replace(/(https:\/\/[a-zA-Z0-9-]+\.blob\.core\.windows\.net[^\s\?]*)\?[^\s]*/g, '$1');
 
   // Template Check
+  let templateName = null;
   const templateMatch = trimmed.match(/^\[?Template:\s*(.+?)\]?$/i);
+  
   if (templateMatch) {
-    const templateName = templateMatch[1];
-    const template = approvedTemplates.find((t) => t.name === templateName || t.template_name === templateName);
+    templateName = templateMatch[1].trim();
+  } else if (isBot) {
+    // Some webhooks save just the template name for outbound template messages
+    const exactMatch = approvedTemplates.find((t) => 
+      (t.name || "").toLowerCase() === trimmed.toLowerCase() || 
+      (t.template_name || "").toLowerCase() === trimmed.toLowerCase()
+    );
+    if (exactMatch) {
+      templateName = exactMatch.name || exactMatch.template_name;
+    }
+  }
+
+  if (templateName) {
+    const template = approvedTemplates.find((t) => 
+      (t.name || "").toLowerCase() === templateName.toLowerCase() || 
+      (t.template_name || "").toLowerCase() === templateName.toLowerCase()
+    );
 
     if (template) {
       const bodyComp = template.components?.find((c) => c.type === "BODY");

@@ -29,7 +29,11 @@ import {
   Image,
   Film,
   Download,
+  BarChart3,
 } from "lucide-react";
+
+import { motion, AnimatePresence } from "framer-motion";
+import TemplateAnalyticsModal from "../components/TemplateAnalyticsModal";
 
 /* ─────────────────────────────────────────────────────────────
    Helpers
@@ -76,19 +80,27 @@ function parsePhoneNumbers(text) {
 
   const seen = new Set();
   const result = [];
+  let duplicates = 0;
+  let invalid = 0;
 
   for (const raw of numbers) {
     const n = raw.replace(/[\s\-().]/g, "");
     const digits = n.replace(/\D/g, "");
 
-    if (digits.length < 7 || digits.length > 15) continue;
-    if (seen.has(digits)) continue;
+    if (digits.length < 7 || digits.length > 15) {
+      invalid++;
+      continue;
+    }
+    if (seen.has(digits)) {
+      duplicates++;
+      continue;
+    }
 
     seen.add(digits);
     result.push(n);
   }
 
-  return result;
+  return { valid: result, duplicates, invalid };
 }
 
 function statusBadge(status) {
@@ -277,6 +289,7 @@ const Campaign = () => {
   const token = useSelector((s) => s.auth?.accessToken);
 
   const [tab, setTab] = useState("new");
+  const [analyticsTemplate, setAnalyticsTemplate] = useState(null);
 
   const [campaignName, setCampaignName] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] =
@@ -284,6 +297,7 @@ const Campaign = () => {
 
   const [phoneNumbers, setPhoneNumbers] = useState([]);
   const [fileName, setFileName] = useState(null);
+  const [csvStats, setCsvStats] = useState({ duplicates: 0, invalid: 0 });
 
   const [rawCSVError, setRawCSVError] = useState(null);
 
@@ -429,18 +443,20 @@ const Campaign = () => {
     reader.onload = (e) => {
       const text = e.target.result;
 
-      const parsed = parsePhoneNumbers(text);
+      const parsedStats = parsePhoneNumbers(text);
 
-      if (parsed.length === 0) {
+      if (parsedStats.valid.length === 0) {
         setRawCSVError(
           "No valid phone numbers found inside CSV."
         );
 
         setPhoneNumbers([]);
         setFileName(null);
+        setCsvStats({ duplicates: 0, invalid: 0 });
       } else {
-        setPhoneNumbers(parsed);
+        setPhoneNumbers(parsedStats.valid);
         setFileName(file.name);
+        setCsvStats({ duplicates: parsedStats.duplicates, invalid: parsedStats.invalid });
       }
     };
 
@@ -688,6 +704,7 @@ const Campaign = () => {
                     onClick={() => {
                       setPhoneNumbers([]);
                       setFileName(null);
+                      setCsvStats({ duplicates: 0, invalid: 0 });
                     }}
                     className="text-red-500 hover:text-red-600 text-xs font-semibold flex items-center gap-1"
                   >
@@ -734,9 +751,23 @@ const Campaign = () => {
                     </h3>
 
                     <p className="text-sm text-gray-500 mt-1">
-                      {phoneNumbers.length} numbers
-                      parsed successfully
+                      {phoneNumbers.length} valid numbers parsed successfully
                     </p>
+                    
+                    {(csvStats.duplicates > 0 || csvStats.invalid > 0) && (
+                      <div className="flex items-center justify-center gap-4 mt-3 text-xs">
+                        {csvStats.duplicates > 0 && (
+                          <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-full font-medium">
+                            {csvStats.duplicates} Duplicates Removed
+                          </span>
+                        )}
+                        {csvStats.invalid > 0 && (
+                          <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full font-medium">
+                            {csvStats.invalid} Invalid Skipped
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
@@ -1212,7 +1243,7 @@ const Campaign = () => {
                     </th>
 
                     <th className="px-6 py-4 text-center text-xs font-bold uppercase text-gray-500">
-                      Export
+                      Actions
                     </th>
                   </tr>
                 </thead>
@@ -1261,18 +1292,34 @@ const Campaign = () => {
                       </td>
 
                       <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => handleDownloadCSV(c.id, c.name)}
-                          disabled={downloadingId === c.id}
-                          className="inline-flex items-center justify-center p-2 rounded-full hover:bg-emerald-50 text-emerald-600 transition disabled:opacity-50"
-                          title="Download Report (CSV)"
-                        >
-                          {downloadingId === c.id ? (
-                            <Loader2 size={18} className="animate-spin" />
-                          ) : (
-                            <Download size={18} />
-                          )}
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => setAnalyticsTemplate(c)}
+                            className="relative inline-flex items-center justify-center p-2 rounded-full hover:bg-indigo-50 text-indigo-500 hover:text-indigo-600 transition"
+                            title="Template Analytics"
+                          >
+                            <BarChart3 size={18} />
+                            {new Date() < new Date('2026-10-17') && (
+                              <span className="absolute top-0 right-0 flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+                              </span>
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDownloadCSV(c.id, c.name)}
+                            disabled={downloadingId === c.id}
+                            className="inline-flex items-center justify-center p-2 rounded-full hover:bg-emerald-50 text-emerald-600 transition disabled:opacity-50"
+                            title="Download Report (CSV)"
+                          >
+                            {downloadingId === c.id ? (
+                              <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                              <Download size={18} />
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1282,6 +1329,15 @@ const Campaign = () => {
           )}
         </div>
       )}
+
+      <AnimatePresence>
+        {analyticsTemplate && (
+          <TemplateAnalyticsModal
+            template={analyticsTemplate}
+            onClose={() => setAnalyticsTemplate(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
