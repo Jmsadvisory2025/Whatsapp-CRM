@@ -162,13 +162,24 @@ const StatusBadge = ({ status }) => {
 /* WHATSAPP PREVIEW                                                             */
 /* -------------------------------------------------------------------------- */
 
+const formatWhatsAppText = (text) => {
+  if (!text) return null;
+  const parts = text.split(/(\*[^*]+\*)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return <strong key={idx} className="font-bold">{part.slice(1, -1)}</strong>;
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
+};
+
 const WhatsAppPreview = ({ template }) => {
   return (
     <div className="rounded-2xl border border-gray-200 bg-[#efeae2] overflow-hidden">
       <div className="p-4 space-y-2">
         {template.header_type === "TEXT" && template.header_text && (
           <div className="bg-white rounded-2xl px-4 py-3 shadow-sm max-w-[85%]">
-            <p className="text-sm font-bold text-gray-800">{template.header_text}</p>
+            <p className="text-sm font-bold text-gray-800">{formatWhatsAppText(template.header_text)}</p>
           </div>
         )}
 
@@ -190,14 +201,14 @@ const WhatsAppPreview = ({ template }) => {
         <div className="bg-white rounded-2xl px-4 py-3 shadow-sm max-w-[85%]">
           {template.body_text ? (
             <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-              {template.body_text}
+              {formatWhatsAppText(template.body_text)}
             </p>
           ) : (
             <p className="text-sm text-gray-400 italic">No body text</p>
           )}
 
           {template.footer_text && (
-            <p className="text-xs text-gray-400 mt-3 border-t pt-2">{template.footer_text}</p>
+            <p className="text-xs text-gray-400 mt-3 border-t pt-2">{formatWhatsAppText(template.footer_text)}</p>
           )}
         </div>
 
@@ -220,6 +231,31 @@ const WhatsAppPreview = ({ template }) => {
 /* -------------------------------------------------------------------------- */
 
 const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemove, onButtonChange, disabled, isEditMode = false }) => {
+  const handleFormatBold = (e, field) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+      e.preventDefault();
+      const target = e.target;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const val = target.value;
+      const selectedText = val.substring(start, end);
+      
+      const newText = val.substring(0, start) + `*${selectedText}*` + val.substring(end);
+      onChange(field, newText);
+      
+      setTimeout(() => {
+        target.focus();
+        if (start === end) {
+          // If no text was selected, put cursor between asterisks
+          target.setSelectionRange(start + 1, start + 1);
+        } else {
+          // If text was selected, select the text inside asterisks
+          target.setSelectionRange(start + 1, end + 1);
+        }
+      }, 0);
+    }
+  };
+
   return (
     <div className="space-y-5">
       {!isEditMode && (
@@ -305,14 +341,18 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
         </div>
 
         {form.header_type === "TEXT" && (
-          <input
-            type="text"
-            value={form.header_text}
-            onChange={(e) => onChange("header_text", e.target.value)}
-            disabled={disabled}
-            placeholder="Header text…"
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50"
-          />
+          <div>
+            <input
+              type="text"
+              value={form.header_text}
+              onChange={(e) => onChange("header_text", e.target.value)}
+              onKeyDown={(e) => handleFormatBold(e, "header_text")}
+              disabled={disabled}
+              placeholder="Header text…"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">Press Ctrl+B to bold selected text.</p>
+          </div>
         )}
 
         {["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) && (
@@ -346,14 +386,18 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
         <textarea
           value={form.body_text}
           onChange={(e) => onChange("body_text", e.target.value)}
+          onKeyDown={(e) => handleFormatBold(e, "body_text")}
           disabled={disabled}
           rows={4}
           placeholder="Hi {{1}}, your order {{2}} has been confirmed!"
           className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 resize-none disabled:bg-gray-50"
         />
-        <p className="text-xs text-gray-400 mt-1">
-          Use <code className="bg-gray-100 px-1 rounded">{"{{1}}"}</code>, <code className="bg-gray-100 px-1 rounded">{"{{2}}"}</code>… for dynamic variables.
-        </p>
+        <div className="flex justify-between mt-1">
+          <p className="text-[10px] text-gray-400">
+            Use <code className="bg-gray-100 px-1 rounded">{"{{1}}"}</code>, <code className="bg-gray-100 px-1 rounded">{"{{2}}"}</code>… for dynamic variables.
+          </p>
+          <p className="text-[10px] text-gray-400">Press Ctrl+B to bold text</p>
+        </div>
       </div>
 
       {/* Footer */}
