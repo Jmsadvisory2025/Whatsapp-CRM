@@ -36,6 +36,9 @@ import {
   Image,
   Film,
   BarChart3,
+  Globe,
+  Phone,
+  Copy,
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -215,8 +218,15 @@ const WhatsAppPreview = ({ template }) => {
         {template.buttons?.length > 0 && (
           <div className="space-y-2 max-w-[85%]">
             {template.buttons.map((btn, i) => (
-              <div key={i} className="bg-white rounded-xl py-2 text-center shadow-sm">
-                <span className="text-sm font-medium text-blue-600">{btn.text}</span>
+              <div key={i} className="bg-white rounded-xl py-2 px-3 text-center shadow-sm flex items-center justify-center gap-1.5 text-blue-600">
+                {btn.type === "URL" && <Globe size={13} className="text-blue-500" />}
+                {btn.type === "PHONE_NUMBER" && <Phone size={13} className="text-green-600" />}
+                {(btn.type === "OTP" || btn.otp_type === "COPY_CODE" || btn.text === "Copy Code") && (
+                  <Copy size={13} className="text-blue-500" />
+                )}
+                <span className="text-sm font-medium">
+                  {btn.text || (btn.type === "URL" ? "Visit Website" : btn.type === "PHONE_NUMBER" ? "Call Phone" : "Copy Code")}
+                </span>
               </div>
             ))}
           </div>
@@ -231,6 +241,41 @@ const WhatsAppPreview = ({ template }) => {
 /* -------------------------------------------------------------------------- */
 
 const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemove, onButtonChange, disabled, isEditMode = false }) => {
+  const isAuth = form.category === "AUTHENTICATION";
+
+  const handleCategoryChange = (val) => {
+    onChange("category", val);
+    if (val === "AUTHENTICATION") {
+      onChange("header_type", "");
+      onChange("header_text", "");
+      onChange(
+        "body_text",
+        "{{1}} is your verification code. For your security, do not share this code."
+      );
+      onChange("footer_text", "Expires in 10 minutes.");
+      onChange("buttons", [
+        {
+          type: "OTP",
+          otp_type: "COPY_CODE",
+          text: "Copy Code",
+        },
+      ]);
+    } else {
+      if (
+        form.body_text ===
+        "{{1}} is your verification code. For your security, do not share this code."
+      ) {
+        onChange("body_text", "");
+      }
+      if (form.footer_text === "Expires in 10 minutes.") {
+        onChange("footer_text", "");
+      }
+      if (form.buttons?.some((b) => b.type === "OTP")) {
+        onChange("buttons", []);
+      }
+    }
+  };
+
   const handleFormatBold = (e, field) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
       e.preventDefault();
@@ -270,7 +315,7 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
               value={form.name}
               onChange={(e) => onChange("name", e.target.value)}
               disabled={disabled}
-              placeholder="e.g. order_confirmation"
+              placeholder="e.g. otp_verification"
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50 disabled:text-gray-500"
             />
             <p className="text-xs text-gray-400 mt-1">Lowercase letters, numbers, and underscores only.</p>
@@ -285,12 +330,12 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
               <div className="relative">
                 <select
                   value={form.category}
-                  onChange={(e) => onChange("category", e.target.value)}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
                   disabled={disabled}
                   className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
                 >
-                  <option value="UTILITY">Utility</option>
                   <option value="MARKETING">Marketing</option>
+                  <option value="UTILITY">Utility</option>
                   <option value="AUTHENTICATION">Authentication</option>
                 </select>
                 <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -319,148 +364,261 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
         </>
       )}
 
-      {/* Header */}
-      <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-          Header (Optional)
-        </label>
-        <div className="relative mb-2">
-          <select
-            value={form.header_type}
-            onChange={(e) => onChange("header_type", e.target.value)}
-            disabled={disabled}
-            className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
-          >
-            <option value="">None</option>
-            <option value="TEXT">Text</option>
-            <option value="IMAGE">Image</option>
-            <option value="VIDEO">Video</option>
-            <option value="DOCUMENT">Document</option>
-          </select>
-          <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+      {/* Authentication Alert */}
+      {isAuth && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+          ⚠️ <strong>Authentication Template:</strong> Meta allows only OTP body text. Headers, footers, and custom marketing buttons are prohibited.
         </div>
+      )}
 
-        {form.header_type === "TEXT" && (
-          <div>
-            <input
-              type="text"
-              value={form.header_text}
-              onChange={(e) => onChange("header_text", e.target.value)}
-              onKeyDown={(e) => handleFormatBold(e, "header_text")}
+      {/* Header — Authentication માં Hide */}
+      {!isAuth && (
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+            Header (Optional)
+          </label>
+          <div className="relative mb-2">
+            <select
+              value={form.header_type}
+              onChange={(e) => onChange("header_type", e.target.value)}
               disabled={disabled}
-              placeholder="Header text…"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50"
-            />
-            <p className="text-[10px] text-gray-400 mt-1">Press Ctrl+B to bold selected text.</p>
+              className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
+            >
+              <option value="">None</option>
+              <option value="TEXT">Text</option>
+              <option value="IMAGE">Image</option>
+              <option value="VIDEO">Video</option>
+              <option value="DOCUMENT">Document</option>
+            </select>
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
-        )}
 
-        {["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) && (
-          <div className="mt-2">
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-              Sample {form.header_type.toLowerCase()} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="file"
-              onChange={(e) => onFileChange && onFileChange(e.target.files[0])}
-              disabled={disabled}
-              accept={
-                form.header_type === "IMAGE" ? "image/jpeg, image/png" :
-                form.header_type === "VIDEO" ? "video/mp4" :
-                "application/pdf"
-              }
-              className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
-            />
-            <p className="text-xs text-gray-400 mt-1">
-              Meta requires a sample file for review. Max size: 16MB.
-            </p>
-          </div>
-        )}
-      </div>
+          {form.header_type === "TEXT" && (
+            <div>
+              <input
+                type="text"
+                value={form.header_text}
+                onChange={(e) => onChange("header_text", e.target.value)}
+                onKeyDown={(e) => handleFormatBold(e, "header_text")}
+                disabled={disabled}
+                placeholder="Header text…"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">Press Ctrl+B to bold selected text.</p>
+            </div>
+          )}
+
+          {["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) && (
+            <div className="mt-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                Sample {form.header_type.toLowerCase()} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="file"
+                onChange={(e) => onFileChange && onFileChange(e.target.files[0])}
+                disabled={disabled}
+                accept={
+                  form.header_type === "IMAGE" ? "image/jpeg, image/png" :
+                  form.header_type === "VIDEO" ? "video/mp4" :
+                  "application/pdf"
+                }
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Meta requires a sample file for review. Max size: 16MB.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Body */}
       <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-          Body <span className="text-red-500">*</span>
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+            Body <span className="text-red-500">*</span>
+          </label>
+          {isAuth && (
+            <span className="text-[11px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+              Fixed Meta Preset
+            </span>
+          )}
+        </div>
         <textarea
-          value={form.body_text}
-          onChange={(e) => onChange("body_text", e.target.value)}
-          onKeyDown={(e) => handleFormatBold(e, "body_text")}
-          disabled={disabled}
+          value={
+            isAuth
+              ? "{{1}} is your verification code. For your security, do not share this code."
+              : form.body_text
+          }
+          onChange={(e) => !isAuth && onChange("body_text", e.target.value)}
+          onKeyDown={(e) => !isAuth && handleFormatBold(e, "body_text")}
+          disabled={disabled || isAuth}
+          readOnly={isAuth}
           rows={4}
           placeholder="Hi {{1}}, your order {{2}} has been confirmed!"
-          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 resize-none disabled:bg-gray-50"
+          className={`w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 resize-none ${
+            isAuth ? "bg-gray-100 text-gray-600 cursor-not-allowed select-none" : "disabled:bg-gray-50"
+          }`}
         />
         <div className="flex justify-between mt-1">
           <p className="text-[10px] text-gray-400">
-            Use <code className="bg-gray-100 px-1 rounded">{"{{1}}"}</code>, <code className="bg-gray-100 px-1 rounded">{"{{2}}"}</code>… for dynamic variables.
+            {isAuth ? (
+              <span className="text-amber-700">🔒 Meta rules require standard fixed OTP text. Custom editing is prohibited.</span>
+            ) : (
+              <>Use <code className="bg-gray-100 px-1 rounded">{"{{1}}"}</code>, <code className="bg-gray-100 px-1 rounded">{"{{2}}"}</code>… for dynamic variables.</>
+            )}
           </p>
-          <p className="text-[10px] text-gray-400">Press Ctrl+B to bold text</p>
+          {!isAuth && <p className="text-[10px] text-gray-400">Press Ctrl+B to bold text</p>}
         </div>
       </div>
 
-      {/* Footer */}
-      <div>
-        <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-          Footer (Optional)
-        </label>
-        <input
-          type="text"
-          value={form.footer_text}
-          onChange={(e) => onChange("footer_text", e.target.value)}
-          disabled={disabled}
-          placeholder="Reply STOP to unsubscribe"
-          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50"
-        />
-      </div>
-
-      {/* Buttons */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-            Buttons (Optional)
+      {/* Footer — Authentication માં Hide */}
+      {!isAuth && (
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+            Footer (Optional)
           </label>
-          {form.buttons.length < 3 && (
-            <button
-              type="button"
-              onClick={onButtonAdd}
-              disabled={disabled}
-              className="flex items-center gap-1 text-xs text-green-600 font-medium hover:text-green-700 disabled:opacity-50"
-            >
-              <PlusCircle size={13} />
-              Add Button
-            </button>
+          <input
+            type="text"
+            value={form.footer_text}
+            onChange={(e) => onChange("footer_text", e.target.value)}
+            disabled={disabled}
+            placeholder="Reply STOP to unsubscribe"
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50"
+          />
+        </div>
+      )}
+
+      {/* Buttons (Quick Reply vs CTA - Meta strictly forbids mixing) */}
+      {!isAuth && (() => {
+        const hasQuickReply = form.buttons.some((b) => b.type === "QUICK_REPLY");
+        const hasCta = form.buttons.some((b) => b.type === "URL" || b.type === "PHONE_NUMBER");
+        const urlCount = form.buttons.filter((b) => b.type === "URL").length;
+        const phoneCount = form.buttons.filter((b) => b.type === "PHONE_NUMBER").length;
+
+        const canAddQuickReply = !hasCta && form.buttons.length < 3;
+        const canAddUrl = !hasQuickReply && form.buttons.length < 2 && urlCount < 2;
+        const canAddPhone = !hasQuickReply && form.buttons.length < 2 && phoneCount < 1;
+
+        return (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Buttons (Optional)
+                </label>
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {hasQuickReply
+                    ? "Quick Replies selected (Max 3. Website/Phone cannot be mixed)."
+                    : hasCta
+                    ? "Call-to-Action selected (Max 2: up to 2 Websites, 1 Phone)."
+                    : "Choose either Quick Reply (max 3) OR Website/Phone (max 2). Meta prohibits mixing."}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {canAddQuickReply && (
+                  <button
+                    type="button"
+                    onClick={() => onButtonAdd("QUICK_REPLY")}
+                    disabled={disabled}
+                    className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-[11px] font-medium rounded-lg text-gray-700 transition"
+                  >
+                    + Quick Reply
+                  </button>
+                )}
+                {canAddUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onButtonAdd("URL")}
+                    disabled={disabled}
+                    className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-[11px] font-medium rounded-lg text-blue-700 transition"
+                  >
+                    + Website
+                  </button>
+                )}
+                {canAddPhone && (
+                  <button
+                    type="button"
+                    onClick={() => onButtonAdd("PHONE_NUMBER")}
+                    disabled={disabled}
+                    className="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-[11px] font-medium rounded-lg text-green-700 transition"
+                  >
+                    + Call Phone
+                  </button>
+                )}
+              </div>
+            </div>
+
+          <div className="space-y-3">
+            {form.buttons.map((btn, i) => (
+              <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-gray-600 uppercase flex items-center gap-1">
+                    {btn.type === "URL" ? (
+                      <>
+                        <Globe size={13} className="text-blue-600" /> Visit Website
+                      </>
+                    ) : btn.type === "PHONE_NUMBER" ? (
+                      <>
+                        <Phone size={13} className="text-green-600" /> Call Phone
+                      </>
+                    ) : (
+                      "💬 Quick Reply"
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onButtonRemove(i)}
+                    disabled={disabled}
+                    className="p-1 text-gray-400 hover:text-red-500 rounded transition"
+                  >
+                    <Minus size={14} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={btn.text}
+                    onChange={(e) => onButtonChange(i, "text", e.target.value)}
+                    disabled={disabled}
+                    placeholder="Button text (e.g. Visit Us)"
+                    className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500"
+                  />
+
+                  {btn.type === "URL" && (
+                    <input
+                      type="url"
+                      value={btn.url || ""}
+                      onChange={(e) => onButtonChange(i, "url", e.target.value)}
+                      disabled={disabled}
+                      placeholder="https://example.com"
+                      className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  )}
+
+                  {btn.type === "PHONE_NUMBER" && (
+                    <input
+                      type="tel"
+                      value={btn.phone_number || ""}
+                      onChange={(e) => onButtonChange(i, "phone_number", e.target.value)}
+                      disabled={disabled}
+                      placeholder="+919876543210"
+                      className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500"
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {form.buttons.length === 0 && (
+            <p className="text-xs text-gray-400">No buttons added.</p>
           )}
         </div>
-
-        <div className="space-y-2">
-          {form.buttons.map((btn, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={btn.text}
-                onChange={(e) => onButtonChange(i, "text", e.target.value)}
-                disabled={disabled}
-                placeholder={`Button ${i + 1} label`}
-                className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50"
-              />
-              <button
-                type="button"
-                onClick={() => onButtonRemove(i)}
-                disabled={disabled}
-                className="p-2 rounded-xl hover:bg-red-50 text-gray-400 hover:text-red-500 transition disabled:opacity-50"
-              >
-                <Minus size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {form.buttons.length === 0 && (
-          <p className="text-xs text-gray-400">No buttons added.</p>
-        )}
-      </div>
+        );
+      })()}
     </div>
   );
 };
@@ -491,10 +649,18 @@ const CreateTemplateModal = ({ onClose }) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleButtonAdd = () => {
+  const handleButtonAdd = (type = "QUICK_REPLY") => {
     setForm((prev) => ({
       ...prev,
-      buttons: [...prev.buttons, { type: "QUICK_REPLY", text: "" }],
+      buttons: [
+        ...prev.buttons,
+        {
+          type,
+          text: "",
+          ...(type === "URL" ? { url: "" } : {}),
+          ...(type === "PHONE_NUMBER" ? { phone_number: "" } : {}),
+        },
+      ],
     }));
   };
 
@@ -519,6 +685,26 @@ const CreateTemplateModal = ({ onClose }) => {
     
     if (["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) && !exampleMedia) {
       return setLocalError("A sample file is required for media headers.");
+    }
+
+    // Meta button validation
+    if (form.buttons?.length > 0) {
+      const hasQR = form.buttons.some((b) => b.type === "QUICK_REPLY");
+      const hasCTA = form.buttons.some((b) => b.type === "URL" || b.type === "PHONE_NUMBER");
+      if (hasQR && hasCTA) {
+        return setLocalError("Meta prohibits mixing Quick Reply with Website/Phone buttons.");
+      }
+      for (const btn of form.buttons) {
+        if (!btn.text?.trim()) {
+          return setLocalError("Please enter text for all buttons.");
+        }
+        if (btn.type === "URL" && !btn.url?.trim()) {
+          return setLocalError("Please enter a URL for the website button.");
+        }
+        if (btn.type === "PHONE_NUMBER" && !btn.phone_number?.trim()) {
+          return setLocalError("Please enter a phone number for the call button.");
+        }
+      }
     }
 
     // Sanitise name: lowercase + underscores
@@ -687,10 +873,18 @@ const EditTemplateModal = ({ template, onClose }) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleButtonAdd = () => {
+  const handleButtonAdd = (type = "QUICK_REPLY") => {
     setForm((prev) => ({
       ...prev,
-      buttons: [...prev.buttons, { type: "QUICK_REPLY", text: "" }],
+      buttons: [
+        ...prev.buttons,
+        {
+          type,
+          text: "",
+          ...(type === "URL" ? { url: "" } : {}),
+          ...(type === "PHONE_NUMBER" ? { phone_number: "" } : {}),
+        },
+      ],
     }));
   };
 
@@ -711,6 +905,26 @@ const EditTemplateModal = ({ template, onClose }) => {
 
   const handleSave = () => {
     if (!form.body_text.trim()) return setLocalError("Body text is required.");
+
+    // Meta button validation
+    if (form.buttons?.length > 0) {
+      const hasQR = form.buttons.some((b) => b.type === "QUICK_REPLY");
+      const hasCTA = form.buttons.some((b) => b.type === "URL" || b.type === "PHONE_NUMBER");
+      if (hasQR && hasCTA) {
+        return setLocalError("Meta prohibits mixing Quick Reply with Website/Phone buttons.");
+      }
+      for (const btn of form.buttons) {
+        if (!btn.text?.trim()) {
+          return setLocalError("Please enter text for all buttons.");
+        }
+        if (btn.type === "URL" && !btn.url?.trim()) {
+          return setLocalError("Please enter a URL for the website button.");
+        }
+        if (btn.type === "PHONE_NUMBER" && !btn.phone_number?.trim()) {
+          return setLocalError("Please enter a phone number for the call button.");
+        }
+      }
+    }
 
     const varCount = (form.body_text.match(/\{\{\d+\}\}/g) || []).length;
 
@@ -929,15 +1143,21 @@ const PreviewModal = ({ template, onClose, onEdit }) => {
           >
             Close
           </button>
-          <button
-            onClick={() => {
-              onClose();
-              onEdit(template);
-            }}
-            className="flex-1 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition"
-          >
-            Edit Template
-          </button>
+          {template.category !== "AUTHENTICATION" ? (
+            <button
+              onClick={() => {
+                onClose();
+                onEdit(template);
+              }}
+              className="flex-1 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition"
+            >
+              Edit Template
+            </button>
+          ) : (
+            <div className="flex-1 py-3 text-center text-xs text-gray-400 bg-gray-100 rounded-2xl border border-gray-200">
+              🔒 Fixed Meta Preset (Cannot Edit)
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
@@ -1035,13 +1255,15 @@ const TableRow = ({ template, idx, onPreview, onEdit, onAnalytics, onSync, onDel
             )}
           </button>
 
-          <button
-            onClick={() => onEdit(template)}
-            className="p-2 rounded-xl hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition"
-            title="Edit"
-          >
-            <Pencil size={15} />
-          </button>
+          {template.category !== "AUTHENTICATION" && (
+            <button
+              onClick={() => onEdit(template)}
+              className="p-2 rounded-xl hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition"
+              title="Edit"
+            >
+              <Pencil size={15} />
+            </button>
+          )}
 
 
           <button
