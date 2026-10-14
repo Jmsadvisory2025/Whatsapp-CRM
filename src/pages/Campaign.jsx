@@ -628,8 +628,8 @@ const Campaign = () => {
       if (selectedTemplate.header_type === "DOCUMENT") {
         return (
           <div className="mb-2.5 flex items-center gap-3 p-3 bg-white/90 rounded-xl border border-emerald-200 text-gray-800 shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center text-red-600 shrink-0 font-bold text-xs">
-              PDF
+            <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center text-red-600 shrink-0 font-bold text-xs uppercase">
+              {mediaFile.name?.split('.').pop() || "DOC"}
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-xs font-bold truncate">{mediaFile.name}</div>
@@ -1365,8 +1365,11 @@ const Campaign = () => {
                             ref={mediaInputRef}
                             className="hidden"
                             accept={
-                              selectedTemplate.header_type === "IMAGE" ? "image/jpeg,image/png" :
-                              selectedTemplate.header_type === "VIDEO" ? "video/mp4" : "application/pdf"
+                              selectedTemplate.header_type === "IMAGE"
+                                ? "image/jpeg,image/png"
+                                : selectedTemplate.header_type === "VIDEO"
+                                ? "video/mp4"
+                                : ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/csv"
                             }
                             onChange={(e) => {
                               setMediaError(null);
