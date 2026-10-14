@@ -460,11 +460,12 @@ const MessageContent = ({ text, isBot }) => {
   const parts = trimmed.split(/(https?:\/\/\S+)/g);
 
   const formatText = (t) => {
-    if (!isTp) return t;
-    let formatted = t.replace(/\*(.*?)\*/g, '<strong>$1</strong>')
-      .replace(/_(.*?)_/g, '<em>$1</em>')
-      .replace(/~(.*?)~/g, '<del>$1</del>')
-      .replace(/```(.*?)```/gs, '<code>$1</code>');
+    if (!t) return "";
+    let formatted = t
+      .replace(/\*([^\*]+?)\*/g, '<strong>$1</strong>')
+      .replace(/_([^_]+?)_/g, '<em>$1</em>')
+      .replace(/~([^~]+?)~/g, '<del>$1</del>')
+      .replace(/```([\s\S]*?)```/g, '<code>$1</code>');
     return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
   };
 
