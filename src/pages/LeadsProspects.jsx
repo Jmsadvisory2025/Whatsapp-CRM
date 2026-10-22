@@ -641,6 +641,7 @@ const LeadsProspects = () => {
                           mutual_funds: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">Mutual Funds Bot</span>,
                           hotel: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">Service Bot</span>,
                           service: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">Service Bot</span>,
+                          mody: <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">Mody Toyota Bot</span>,
                         }[item.bot_source] || <span className="text-xs text-gray-400">—</span>}
                       </td>
                     )}
