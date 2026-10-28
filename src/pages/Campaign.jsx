@@ -33,6 +33,8 @@ import {
   ArrowRight,
   ArrowLeft,
   ChevronDown,
+  Globe,
+  Copy,
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -317,6 +319,34 @@ function TemplateCard({ template, selected, onSelect }) {
             {footerText && (
               <div className="mt-3 text-[11px] text-gray-400 border-t border-gray-200 pt-2">
                 {footerText}
+              </div>
+            )}
+
+            {Array.isArray(template.buttons) && template.buttons.length > 0 && (
+              <div className="mt-3 pt-2 border-t border-gray-200 space-y-1.5">
+                {template.buttons.map((btn, i) => (
+                  <div
+                    key={i}
+                    className="bg-white rounded-lg py-1.5 px-3 text-center text-xs font-semibold text-blue-600 border border-gray-200 flex items-center justify-center gap-1.5 shadow-2xs"
+                  >
+                    {btn.type === "URL" && <Globe size={12} className="text-blue-500" />}
+                    {btn.type === "PHONE_NUMBER" && <Phone size={12} className="text-green-600" />}
+                    {(btn.type === "OTP" || btn.otp_type === "COPY_CODE") && (
+                      <Copy size={12} className="text-blue-500" />
+                    )}
+                    <span>
+                      {btn.text || (
+                        btn.type === "URL"
+                          ? "Visit Website"
+                          : btn.type === "PHONE_NUMBER"
+                          ? "Call Phone"
+                          : btn.type === "OTP" || btn.otp_type === "COPY_CODE"
+                          ? "Copy Code"
+                          : "Quick Reply"
+                      )}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -649,6 +679,43 @@ const Campaign = () => {
         {selectedTemplate.header_type === "DOCUMENT" && <FileText size={24} className="text-gray-400" />}
         <span className="text-xs font-semibold text-gray-600">[{selectedTemplate.header_type} Header]</span>
         <span className="text-[10px] text-gray-400">Upload media in Step 2 to preview</span>
+      </div>
+    );
+  };
+
+  const renderButtonsPreviewBlock = () => {
+    const buttons =
+      selectedTemplate?.buttons ||
+      selectedTemplate?.components?.find((c) => c.type === "BUTTONS")?.buttons ||
+      [];
+
+    if (!Array.isArray(buttons) || buttons.length === 0) return null;
+
+    return (
+      <div className="space-y-1.5 mt-3 pt-2 border-t border-emerald-200/50">
+        {buttons.map((btn, i) => (
+          <div
+            key={i}
+            className="bg-white rounded-xl py-2 px-3 text-center shadow-sm flex items-center justify-center gap-1.5 text-blue-600 border border-gray-100"
+          >
+            {btn.type === "URL" && <Globe size={13} className="text-blue-500" />}
+            {btn.type === "PHONE_NUMBER" && <Phone size={13} className="text-green-600" />}
+            {(btn.type === "OTP" || btn.otp_type === "COPY_CODE") && (
+              <Copy size={13} className="text-blue-500" />
+            )}
+            <span className="text-xs font-semibold">
+              {btn.text || (
+                btn.type === "URL"
+                  ? "Visit Website"
+                  : btn.type === "PHONE_NUMBER"
+                  ? "Call Phone"
+                  : btn.type === "OTP" || btn.otp_type === "COPY_CODE"
+                  ? "Copy Code"
+                  : "Quick Reply"
+              )}
+            </span>
+          </div>
+        ))}
       </div>
     );
   };
@@ -1545,6 +1612,7 @@ const Campaign = () => {
                               {footerText}
                             </div>
                           )}
+                          {renderButtonsPreviewBlock()}
                         </div>
                       </div>
                     </div>
@@ -1669,6 +1737,7 @@ const Campaign = () => {
                         {footerText}
                       </div>
                     )}
+                    {renderButtonsPreviewBlock()}
                     <div className="text-[10px] text-gray-400 text-right">
                       Just now • Delivered
                     </div>

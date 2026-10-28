@@ -221,11 +221,19 @@ const WhatsAppPreview = ({ template }) => {
               <div key={i} className="bg-white rounded-xl py-2 px-3 text-center shadow-sm flex items-center justify-center gap-1.5 text-blue-600">
                 {btn.type === "URL" && <Globe size={13} className="text-blue-500" />}
                 {btn.type === "PHONE_NUMBER" && <Phone size={13} className="text-green-600" />}
-                {(btn.type === "OTP" || btn.otp_type === "COPY_CODE" || btn.text === "Copy Code") && (
+                {(btn.type === "OTP" || btn.otp_type === "COPY_CODE") && (
                   <Copy size={13} className="text-blue-500" />
                 )}
                 <span className="text-sm font-medium">
-                  {btn.text || (btn.type === "URL" ? "Visit Website" : btn.type === "PHONE_NUMBER" ? "Call Phone" : "Copy Code")}
+                  {btn.text || (
+                    btn.type === "URL"
+                      ? "Visit Website"
+                      : btn.type === "PHONE_NUMBER"
+                      ? "Call Phone"
+                      : btn.type === "OTP" || btn.otp_type === "COPY_CODE"
+                      ? "Copy Code"
+                      : "Quick Reply"
+                  )}
                 </span>
               </div>
             ))}
@@ -489,30 +497,26 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
         </div>
       )}
 
-      {/* Buttons (Quick Reply vs CTA - Meta strictly forbids mixing) */}
+      {/* Buttons (Up to 10 buttons supported by Meta) */}
       {!isAuth && (() => {
-        const hasQuickReply = form.buttons.some((b) => b.type === "QUICK_REPLY");
-        const hasCta = form.buttons.some((b) => b.type === "URL" || b.type === "PHONE_NUMBER");
+        const totalCount = form.buttons.length;
+        const qrCount = form.buttons.filter((b) => b.type === "QUICK_REPLY").length;
         const urlCount = form.buttons.filter((b) => b.type === "URL").length;
         const phoneCount = form.buttons.filter((b) => b.type === "PHONE_NUMBER").length;
 
-        const canAddQuickReply = !hasCta && form.buttons.length < 3;
-        const canAddUrl = !hasQuickReply && form.buttons.length < 2 && urlCount < 2;
-        const canAddPhone = !hasQuickReply && form.buttons.length < 2 && phoneCount < 1;
+        const canAddQuickReply = totalCount < 10 && qrCount < 10;
+        const canAddUrl = totalCount < 10 && urlCount < 2;
+        const canAddPhone = totalCount < 10 && phoneCount < 1;
 
         return (
           <div>
             <div className="flex items-center justify-between mb-2">
               <div>
                 <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                  Buttons (Optional)
+                  Buttons (Optional — {totalCount}/10)
                 </label>
                 <p className="text-[10px] text-gray-400 mt-0.5">
-                  {hasQuickReply
-                    ? "Quick Replies selected (Max 3. Website/Phone cannot be mixed)."
-                    : hasCta
-                    ? "Call-to-Action selected (Max 2: up to 2 Websites, 1 Phone)."
-                    : "Choose either Quick Reply (max 3) OR Website/Phone (max 2). Meta prohibits mixing."}
+                  Add up to 10 buttons (Max 2 Website, 1 Phone, up to 10 Quick Replies).
                 </p>
               </div>
 
@@ -689,10 +693,8 @@ const CreateTemplateModal = ({ onClose }) => {
 
     // Meta button validation
     if (form.buttons?.length > 0) {
-      const hasQR = form.buttons.some((b) => b.type === "QUICK_REPLY");
-      const hasCTA = form.buttons.some((b) => b.type === "URL" || b.type === "PHONE_NUMBER");
-      if (hasQR && hasCTA) {
-        return setLocalError("Meta prohibits mixing Quick Reply with Website/Phone buttons.");
+      if (form.buttons.length > 10) {
+        return setLocalError("Meta allows a maximum of 10 buttons.");
       }
       for (const btn of form.buttons) {
         if (!btn.text?.trim()) {
@@ -859,6 +861,7 @@ const EditTemplateModal = ({ template, onClose }) => {
     footer_text: template.footer_text || "",
     buttons: template.buttons || [],
   });
+  const [exampleMedia, setExampleMedia] = useState(null);
   const [localError, setLocalError] = useState("");
 
   useEffect(() => {
@@ -870,7 +873,13 @@ const EditTemplateModal = ({ template, onClose }) => {
 
   const handleChange = (field, value) => {
     setLocalError("");
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const updated = { ...prev, [field]: value };
+      if (field === "header_type" && !["IMAGE", "VIDEO", "DOCUMENT"].includes(value)) {
+        setExampleMedia(null);
+      }
+      return updated;
+    });
   };
 
   const handleButtonAdd = (type = "QUICK_REPLY") => {
@@ -906,12 +915,15 @@ const EditTemplateModal = ({ template, onClose }) => {
   const handleSave = () => {
     if (!form.body_text.trim()) return setLocalError("Body text is required.");
 
+    const isMedia = ["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type);
+    if (isMedia && !exampleMedia && template.header_type !== form.header_type) {
+      return setLocalError(`Please choose a sample ${form.header_type.toLowerCase()} file for Meta review.`);
+    }
+
     // Meta button validation
     if (form.buttons?.length > 0) {
-      const hasQR = form.buttons.some((b) => b.type === "QUICK_REPLY");
-      const hasCTA = form.buttons.some((b) => b.type === "URL" || b.type === "PHONE_NUMBER");
-      if (hasQR && hasCTA) {
-        return setLocalError("Meta prohibits mixing Quick Reply with Website/Phone buttons.");
+      if (form.buttons.length > 10) {
+        return setLocalError("Meta allows a maximum of 10 buttons.");
       }
       for (const btn of form.buttons) {
         if (!btn.text?.trim()) {
@@ -928,12 +940,30 @@ const EditTemplateModal = ({ template, onClose }) => {
 
     const varCount = (form.body_text.match(/\{\{\d+\}\}/g) || []).length;
 
-    dispatch(
-      updateTemplate({
-        id: template.id,
-        payload: { ...form, variables_count: varCount },
-      })
-    );
+    if (exampleMedia) {
+      const formData = new FormData();
+      formData.append("header_type", form.header_type);
+      formData.append("header_text", form.header_text || "");
+      formData.append("body_text", form.body_text);
+      formData.append("footer_text", form.footer_text || "");
+      formData.append("buttons", JSON.stringify(form.buttons || []));
+      formData.append("variables_count", varCount);
+      formData.append("example_media", exampleMedia);
+
+      dispatch(
+        updateTemplate({
+          id: template.id,
+          payload: formData,
+        })
+      );
+    } else {
+      dispatch(
+        updateTemplate({
+          id: template.id,
+          payload: { ...form, variables_count: varCount },
+        })
+      );
+    }
   };
 
   const errorMsg = localError || updateError;
@@ -1023,6 +1053,7 @@ const EditTemplateModal = ({ template, onClose }) => {
               <TemplateForm
                 form={form}
                 onChange={handleChange}
+                onFileChange={setExampleMedia}
                 onButtonAdd={handleButtonAdd}
                 onButtonRemove={handleButtonRemove}
                 onButtonChange={handleButtonChange}
