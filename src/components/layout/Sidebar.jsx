@@ -128,8 +128,10 @@ const Sidebar = ({ onToggle = () => {} }) => {
   }, [isCollapsed]);
 
   const handleToggle = () => setIsCollapsed((p) => !p);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   
-  const handleLogout = () => {
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
     dispatch(logout());
     sessionStorage.clear();
     navigate("/signin", { replace: true });
@@ -407,7 +409,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
             </div>
 
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutModal(true)}
               className="p-1.5 rounded-lg text-[#64748B] hover:text-[#EF4444] hover:bg-red-50 transition-colors cursor-pointer"
               title="Log Out"
             >
@@ -425,7 +427,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
             </div>
 
             <button
-              onClick={handleLogout}
+              onClick={() => setShowLogoutModal(true)}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-[#64748B] hover:text-[#EF4444] hover:bg-red-50 transition-colors cursor-pointer"
               title="Log Out"
             >
@@ -445,6 +447,44 @@ const Sidebar = ({ onToggle = () => {} }) => {
           </button>
         </div>
       </div>
+
+      {/* ── Logout Confirmation Modal ── */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm bg-white rounded-2xl p-5 sm:p-6 shadow-2xl border border-slate-200/90 text-left font-sans"
+          >
+            <div className="w-11 h-11 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center mb-4 text-[#EF4444]">
+              <LogOut size={20} strokeWidth={2.2} />
+            </div>
+
+            <h3 className="text-base font-bold text-[#172033] tracking-tight">
+              Log out of your account?
+            </h3>
+            <p className="text-xs text-[#64748B] mt-1.5 leading-relaxed">
+              Are you sure you want to log out? You will need to sign back in with your credentials to access your CRM workspace.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-[#64748B] hover:text-[#172033] hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogout}
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#EF4444] hover:bg-[#DC2626] rounded-xl shadow-xs shadow-red-500/20 transition-all cursor-pointer"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.aside>
   );
 };

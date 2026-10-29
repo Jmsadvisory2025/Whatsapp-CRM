@@ -8,6 +8,7 @@
   :root {
     --color-primary-rgb: 22 93 255;
     --color-cyan-rgb: 56 189 248;
+    font-size: 17px;
   }
 
   body {

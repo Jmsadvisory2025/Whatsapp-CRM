@@ -460,18 +460,40 @@ const TemplateForm = ({
 
           {form.header_type === "TEXT" && (
             <div>
-              <input
-                type="text"
-                value={form.header_text}
-                onChange={(e) => onChange("header_text", e.target.value)}
-                onKeyDown={(e) => handleFormatBold(e, "header_text")}
-                disabled={disabled}
-                placeholder="Header text…"
-                className={inputCls}
-              />
-              <p className="text-[10px] text-[#94A3B8] mt-1">
-                Press Ctrl+B to bold selected text.
-              </p>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={form.header_text}
+                  onChange={(e) => onChange("header_text", e.target.value)}
+                  onKeyDown={(e) => handleFormatBold(e, "header_text")}
+                  disabled={disabled}
+                  placeholder="Header text…"
+                  className={`${inputCls} ${
+                    (form.header_text || "").length > 60
+                      ? "border-red-500 focus:border-red-500 bg-red-50/20"
+                      : ""
+                  }`}
+                />
+              </div>
+              <div className="flex items-center justify-between mt-1 text-[10px]">
+                <span className="text-[#94A3B8]">Press Ctrl+B to bold selected text.</span>
+                <span
+                  className={`font-semibold ${
+                    (form.header_text || "").length > 60
+                      ? "text-red-500 font-bold"
+                      : (form.header_text || "").length >= 50
+                      ? "text-amber-500"
+                      : "text-[#94A3B8]"
+                  }`}
+                >
+                  {(form.header_text || "").length}/60
+                </span>
+              </div>
+              {(form.header_text || "").length > 60 && (
+                <p className="text-[11px] font-medium text-red-500 mt-0.5">
+                  Header text cannot exceed 60 characters (including spaces).
+                </p>
+              )}
             </div>
           )}
 
@@ -508,11 +530,26 @@ const TemplateForm = ({
           <label className="block text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">
             Body <span className="text-red-500">*</span>
           </label>
-          {isAuth && (
-            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-              Fixed Meta Preset
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {!isAuth && (
+              <span
+                className={`text-[10px] font-semibold ${
+                  (form.body_text || "").length > 1024
+                    ? "text-red-500 font-bold"
+                    : (form.body_text || "").length >= 950
+                    ? "text-amber-500"
+                    : "text-[#94A3B8]"
+                }`}
+              >
+                {(form.body_text || "").length}/1024
+              </span>
+            )}
+            {isAuth && (
+              <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                Fixed Meta Preset
+              </span>
+            )}
+          </div>
         </div>
         <textarea
           value={
@@ -528,8 +565,17 @@ const TemplateForm = ({
           placeholder="Hi {{1}}, your order {{2}} has been confirmed!"
           className={`${inputCls} resize-none ${
             isAuth ? "bg-slate-100 text-[#64748B] cursor-not-allowed select-none" : ""
+          } ${
+            !isAuth && (form.body_text || "").length > 1024
+              ? "border-red-500 focus:border-red-500 bg-red-50/20"
+              : ""
           }`}
         />
+        {(form.body_text || "").length > 1024 && !isAuth && (
+          <p className="text-[11px] font-medium text-red-500 mt-1">
+            Body text cannot exceed 1024 characters (including spaces).
+          </p>
+        )}
         <div className="flex justify-between mt-1">
           <p className="text-[10px] text-[#94A3B8]">
             {isAuth ? (
@@ -559,15 +605,39 @@ const TemplateForm = ({
       {/* Footer */}
       {!isAuth && (
         <div>
-          <label className={labelCls}>Footer (Optional)</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">
+              Footer (Optional)
+            </label>
+            <span
+              className={`text-[10px] font-semibold ${
+                (form.footer_text || "").length > 60
+                  ? "text-red-500 font-bold"
+                  : (form.footer_text || "").length >= 50
+                  ? "text-amber-500"
+                  : "text-[#94A3B8]"
+              }`}
+            >
+              {(form.footer_text || "").length}/60
+            </span>
+          </div>
           <input
             type="text"
             value={form.footer_text}
             onChange={(e) => onChange("footer_text", e.target.value)}
             disabled={disabled}
             placeholder="Reply STOP to unsubscribe"
-            className={inputCls}
+            className={`${inputCls} ${
+              (form.footer_text || "").length > 60
+                ? "border-red-500 focus:border-red-500 bg-red-50/20"
+                : ""
+            }`}
           />
+          {(form.footer_text || "").length > 60 && (
+            <p className="text-[11px] font-medium text-red-500 mt-1">
+              Footer text cannot exceed 60 characters (including spaces).
+            </p>
+          )}
         </div>
       )}
 
@@ -666,16 +736,44 @@ const TemplateForm = ({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={btn.text}
-                        onChange={(e) =>
-                          onButtonChange(i, "text", e.target.value)
-                        }
-                        disabled={disabled}
-                        placeholder="Button text (e.g. Visit Us)"
-                        className="w-full px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs bg-white text-[#172033] focus:outline-none focus:border-[#165DFF]"
-                      />
+                      <div>
+                        <input
+                          type="text"
+                          value={btn.text}
+                          onChange={(e) =>
+                            onButtonChange(i, "text", e.target.value)
+                          }
+                          disabled={disabled}
+                          placeholder={
+                            btn.type === "QUICK_REPLY"
+                              ? "Button text (max 40 chars)"
+                              : "Button text (e.g. Visit Us)"
+                          }
+                          className={`w-full px-3 py-1.5 rounded-lg border text-xs bg-white text-[#172033] focus:outline-none ${
+                            btn.type === "QUICK_REPLY" && (btn.text || "").length > 40
+                              ? "border-red-500 focus:border-red-500 bg-red-50/20"
+                              : "border-[#E5E7EB] focus:border-[#165DFF]"
+                          }`}
+                        />
+                        {btn.type === "QUICK_REPLY" && (
+                          <div className="flex items-center justify-between mt-1 text-[10px]">
+                            <span
+                              className={`font-semibold ${
+                                (btn.text || "").length > 40
+                                  ? "text-red-500 font-bold"
+                                  : "text-[#94A3B8]"
+                              }`}
+                            >
+                              {(btn.text || "").length}/40
+                            </span>
+                            {(btn.text || "").length > 40 && (
+                              <span className="text-red-500 font-medium">
+                                Max 40 characters
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
                       {btn.type === "URL" && (
                         <input
@@ -778,6 +876,19 @@ const CreateTemplateModal = ({ onClose }) => {
     if (!form.name.trim()) return setLocalError("Template name is required.");
     if (!form.body_text.trim()) return setLocalError("Body text is required.");
 
+    // Length Validations (Including spaces)
+    if (form.header_type === "TEXT" && (form.header_text || "").length > 60) {
+      return setLocalError("Header text cannot exceed 60 characters (including spaces).");
+    }
+
+    if ((form.body_text || "").length > 1024) {
+      return setLocalError("Body text cannot exceed 1024 characters (including spaces).");
+    }
+
+    if ((form.footer_text || "").length > 60) {
+      return setLocalError("Footer text cannot exceed 60 characters (including spaces).");
+    }
+
     if (
       ["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) &&
       !exampleMedia
@@ -792,6 +903,9 @@ const CreateTemplateModal = ({ onClose }) => {
       for (const btn of form.buttons) {
         if (!btn.text?.trim()) {
           return setLocalError("Please enter text for all buttons.");
+        }
+        if (btn.type === "QUICK_REPLY" && (btn.text || "").length > 40) {
+          return setLocalError("Quick Reply button text cannot exceed 40 characters (including spaces).");
         }
         if (btn.type === "URL" && !btn.url?.trim()) {
           return setLocalError("Please enter a URL for the website button.");
@@ -1024,6 +1138,19 @@ const EditTemplateModal = ({ template, onClose }) => {
   const handleSave = () => {
     if (!form.body_text.trim()) return setLocalError("Body text is required.");
 
+    // Length Validations (Including spaces)
+    if (form.header_type === "TEXT" && (form.header_text || "").length > 60) {
+      return setLocalError("Header text cannot exceed 60 characters (including spaces).");
+    }
+
+    if ((form.body_text || "").length > 1024) {
+      return setLocalError("Body text cannot exceed 1024 characters (including spaces).");
+    }
+
+    if ((form.footer_text || "").length > 60) {
+      return setLocalError("Footer text cannot exceed 60 characters (including spaces).");
+    }
+
     const isMedia = ["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type);
     if (isMedia && !exampleMedia && template.header_type !== form.header_type) {
       return setLocalError(
@@ -1038,6 +1165,9 @@ const EditTemplateModal = ({ template, onClose }) => {
       for (const btn of form.buttons) {
         if (!btn.text?.trim()) {
           return setLocalError("Please enter text for all buttons.");
+        }
+        if (btn.type === "QUICK_REPLY" && (btn.text || "").length > 40) {
+          return setLocalError("Quick Reply button text cannot exceed 40 characters (including spaces).");
         }
         if (btn.type === "URL" && !btn.url?.trim()) {
           return setLocalError("Please enter a URL for the website button.");
