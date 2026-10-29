@@ -58,7 +58,8 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
     fetchAnalytics();
   }, [template, wabaId, metaToken, token, API_BASE_URL]);
 
-  let stats = { sent: 0, delivered: 0, read: 0, clicked: 0, amount_spent: 0 };
+  let stats = { sent: 0, delivered: 0, read: 0, replied: 0, clicked: 0, amount_spent: 0 };
+  let buttonBreakdown = {};
   let startDate = null;
   let endDate = null;
   
@@ -77,12 +78,23 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
       stats.sent += pt.sent || 0;
       stats.delivered += pt.delivered || 0;
       stats.read += pt.read || 0;
+      stats.replied += pt.replied || 0;
       
       if (Array.isArray(pt.clicked)) {
         pt.clicked.forEach(c => {
-          if (c.type === "url_button") {
-            stats.clicked += c.count || 0;
+          const count = c.count || 0;
+          stats.clicked += count;
+
+          const label = c.button_content || (c.type === "url_button" ? "Visit Website" : c.type === "phone_number_button" ? "Call Phone" : c.type || "Button");
+          const key = `${c.type || "button"}:${label}`;
+          if (!buttonBreakdown[key]) {
+            buttonBreakdown[key] = {
+              type: c.type || "button",
+              label,
+              count: 0,
+            };
           }
+          buttonBreakdown[key].count += count;
         });
       }
 
@@ -102,6 +114,8 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
       endDate = today;
     }
   }
+
+  const buttonClicksList = Object.values(buttonBreakdown).filter((b) => b.count > 0);
 
   // Calculate aggregate costs
   const costPerDelivered = stats.delivered > 0 ? (stats.amount_spent / stats.delivered).toFixed(2) : "0.00";
@@ -214,6 +228,49 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
                   <p className="text-3xl font-bold text-gray-800 mt-1">{stats.clicked}</p>
                 </div>
               </div>
+
+              {/* Button Click Breakdown */}
+              {buttonClicksList.length > 0 && (
+                <div className="p-4 border border-amber-100 rounded-2xl bg-amber-50/40 shadow-sm space-y-3">
+                  <h4 className="text-xs font-bold text-amber-800 uppercase flex items-center gap-1.5">
+                    <MousePointerClick size={14} /> Button Clicks Breakdown
+                  </h4>
+                  <div className="space-y-2">
+                    {buttonClicksList.map((btn, idx) => {
+                      const pctVal = stats.clicked > 0 ? Math.round((btn.count / stats.clicked) * 100) : 0;
+                      const typeLabel =
+                        btn.type === "quick_reply_button"
+                          ? "Quick Reply"
+                          : btn.type === "url_button"
+                          ? "URL"
+                          : btn.type === "phone_number_button"
+                          ? "Phone"
+                          : "Button";
+                      return (
+                        <div key={idx} className="bg-white rounded-xl p-3 border border-amber-100/80 space-y-1.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-semibold text-gray-800 truncate">{btn.label}</span>
+                              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 shrink-0">
+                                {typeLabel}
+                              </span>
+                            </div>
+                            <span className="font-bold text-amber-900 shrink-0">
+                              {btn.count} <span className="text-xs font-normal text-gray-400">({pctVal}%)</span>
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 bg-amber-100/70 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                              style={{ width: `${pctVal}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Cost Insights */}
               {stats.sent > 0 && (
