@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTemplates,
@@ -25,13 +25,11 @@ import {
   AlertCircle,
   Loader2,
   FileText,
-  RotateCcw,
   Eye,
   Info,
   Pencil,
   MessageSquare,
   ChevronDown,
-  PlusCircle,
   Minus,
   Image,
   Film,
@@ -39,47 +37,48 @@ import {
   Globe,
   Phone,
   Copy,
+  Search,
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
 import TemplateAnalyticsModal from "../components/TemplateAnalyticsModal";
 
 /* -------------------------------------------------------------------------- */
-/* STATUS CONFIG                                                                */
+/* STATUS & CATEGORY CONFIG                                                   */
 /* -------------------------------------------------------------------------- */
 
 const STATUS_CONFIG = {
   APPROVED: {
     label: "Approved",
     icon: CheckCircle2,
-    bg: "bg-green-50",
-    text: "text-green-700",
-    border: "border-green-200",
-    dot: "bg-green-500",
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200/80",
+    dot: "bg-emerald-500",
   },
   PENDING: {
     label: "Pending",
     icon: Clock,
-    bg: "bg-yellow-50",
-    text: "text-yellow-700",
-    border: "border-yellow-200",
-    dot: "bg-yellow-500",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200/80",
+    dot: "bg-amber-500",
   },
   REJECTED: {
     label: "Rejected",
     icon: XCircle,
     bg: "bg-red-50",
     text: "text-red-700",
-    border: "border-red-200",
+    border: "border-red-200/80",
     dot: "bg-red-500",
   },
   PAUSED: {
     label: "Paused",
     icon: PauseCircle,
-    bg: "bg-gray-50",
-    text: "text-gray-600",
-    border: "border-gray-200",
-    dot: "bg-gray-400",
+    bg: "bg-slate-100",
+    text: "text-[#64748B]",
+    border: "border-slate-200",
+    dot: "bg-slate-400",
   },
 };
 
@@ -87,38 +86,43 @@ const getStatus = (key) =>
   STATUS_CONFIG[key] ?? {
     label: key ?? "Unknown",
     icon: Info,
-    bg: "bg-gray-50",
-    text: "text-gray-600",
-    border: "border-gray-200",
-    dot: "bg-gray-400",
+    bg: "bg-slate-100",
+    text: "text-[#64748B]",
+    border: "border-slate-200",
+    dot: "bg-slate-400",
   };
 
 const CATEGORY_COLORS = {
   MARKETING: {
-    bg: "bg-pink-50",
-    text: "text-pink-700",
-    border: "border-pink-200",
+    bg: "bg-purple-50",
+    text: "text-[#8B5CF6]",
+    border: "border-purple-200/70",
   },
   UTILITY: {
     bg: "bg-blue-50",
-    text: "text-blue-700",
-    border: "border-blue-200",
+    text: "text-[#165DFF]",
+    border: "border-blue-200/70",
   },
   AUTHENTICATION: {
-    bg: "bg-orange-50",
-    text: "text-orange-700",
-    border: "border-orange-200",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200/70",
   },
 };
 
 const getCategoryStyle = (cat) =>
   CATEGORY_COLORS[cat] ?? {
-    bg: "bg-gray-50",
-    text: "text-gray-700",
-    border: "border-gray-200",
+    bg: "bg-slate-100",
+    text: "text-[#64748B]",
+    border: "border-slate-200",
   };
 
-const FILTER_TABS = ["ALL", "APPROVED", "PENDING", "REJECTED", "PAUSED"];
+const FILTER_TABS = [
+  { key: "ALL", label: "All" },
+  { key: "APPROVED", label: "Approved", dot: "bg-emerald-500" },
+  { key: "PENDING", label: "Pending", dot: "bg-amber-500" },
+  { key: "REJECTED", label: "Rejected", dot: "bg-red-500" },
+];
 
 const EMPTY_FORM = {
   name: "",
@@ -146,14 +150,14 @@ const LANGUAGE_OPTIONS = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/* STATUS BADGE                                                                 */
+/* STATUS BADGE                                                               */
 /* -------------------------------------------------------------------------- */
 
 const StatusBadge = ({ status }) => {
   const cfg = getStatus(status);
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${cfg.bg} ${cfg.text} ${cfg.border}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${cfg.bg} ${cfg.text} ${cfg.border}`}
     >
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
@@ -162,15 +166,19 @@ const StatusBadge = ({ status }) => {
 };
 
 /* -------------------------------------------------------------------------- */
-/* WHATSAPP PREVIEW                                                             */
+/* WHATSAPP PREVIEW                                                           */
 /* -------------------------------------------------------------------------- */
 
 const formatWhatsAppText = (text) => {
   if (!text) return null;
   const parts = text.split(/(\*[^*]+\*)/g);
   return parts.map((part, idx) => {
-    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-      return <strong key={idx} className="font-bold">{part.slice(1, -1)}</strong>;
+    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) {
+      return (
+        <strong key={idx} className="font-bold">
+          {part.slice(1, -1)}
+        </strong>
+      );
     }
     return <React.Fragment key={idx}>{part}</React.Fragment>;
   });
@@ -178,62 +186,85 @@ const formatWhatsAppText = (text) => {
 
 const WhatsAppPreview = ({ template }) => {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-[#efeae2] overflow-hidden">
+    <div
+      className="rounded-2xl border border-slate-200/80 bg-[#F8FAFC] overflow-hidden"
+      style={{
+        backgroundImage: `radial-gradient(#CBD5E1 0.75px, transparent 0.75px)`,
+        backgroundSize: "18px 18px",
+      }}
+    >
       <div className="p-4 space-y-2">
         {template.header_type === "TEXT" && template.header_text && (
-          <div className="bg-white rounded-2xl px-4 py-3 shadow-sm max-w-[85%]">
-            <p className="text-sm font-bold text-gray-800">{formatWhatsAppText(template.header_text)}</p>
+          <div className="bg-white rounded-2xl px-3.5 py-2.5 border border-slate-200/80 shadow-2xs max-w-[90%]">
+            <p className="text-xs font-bold text-[#172033]">
+              {formatWhatsAppText(template.header_text)}
+            </p>
           </div>
         )}
 
         {["IMAGE", "VIDEO", "DOCUMENT"].includes(template.header_type) && (
-          <div className="bg-gray-200 rounded-2xl h-32 flex flex-col items-center justify-center shadow-sm max-w-[85%] text-gray-400 overflow-hidden relative">
-            {template.header_type === "IMAGE" && template.example_media instanceof File ? (
-              <img src={URL.createObjectURL(template.example_media)} className="w-full h-full object-cover" alt="Preview" />
+          <div className="bg-slate-100 rounded-2xl h-32 flex flex-col items-center justify-center border border-slate-200/80 shadow-2xs max-w-[90%] text-[#94A3B8] overflow-hidden relative">
+            {template.header_type === "IMAGE" &&
+            template.example_media instanceof File ? (
+              <img
+                src={URL.createObjectURL(template.example_media)}
+                className="w-full h-full object-cover"
+                alt="Preview"
+              />
             ) : (
               <>
-                {template.header_type === "IMAGE" && <Image size={32} />}
-                {template.header_type === "VIDEO" && <Film size={32} />}
-                {template.header_type === "DOCUMENT" && <FileText size={32} />}
-                <span className="text-xs font-semibold mt-2">{template.header_type}</span>
+                {template.header_type === "IMAGE" && <Image size={28} />}
+                {template.header_type === "VIDEO" && <Film size={28} />}
+                {template.header_type === "DOCUMENT" && <FileText size={28} />}
+                <span className="text-[11px] font-semibold mt-1.5">
+                  {template.header_type}
+                </span>
               </>
             )}
           </div>
         )}
 
-        <div className="bg-white rounded-2xl px-4 py-3 shadow-sm max-w-[85%]">
+        <div className="bg-[#EFF6FF] rounded-2xl rounded-br-sm px-3.5 py-3 border border-blue-200/70 shadow-2xs max-w-[90%]">
           {template.body_text ? (
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+            <p className="text-xs text-[#172033] whitespace-pre-wrap leading-relaxed">
               {formatWhatsAppText(template.body_text)}
             </p>
           ) : (
-            <p className="text-sm text-gray-400 italic">No body text</p>
+            <p className="text-xs text-[#94A3B8] italic">No body text</p>
           )}
 
           {template.footer_text && (
-            <p className="text-xs text-gray-400 mt-3 border-t pt-2">{formatWhatsAppText(template.footer_text)}</p>
+            <p className="text-[11px] text-[#64748B] mt-2.5 border-t border-blue-200/60 pt-1.5">
+              {formatWhatsAppText(template.footer_text)}
+            </p>
           )}
         </div>
 
         {template.buttons?.length > 0 && (
-          <div className="space-y-2 max-w-[85%]">
+          <div className="space-y-1.5 max-w-[90%]">
             {template.buttons.map((btn, i) => (
-              <div key={i} className="bg-white rounded-xl py-2 px-3 text-center shadow-sm flex items-center justify-center gap-1.5 text-blue-600">
-                {btn.type === "URL" && <Globe size={13} className="text-blue-500" />}
-                {btn.type === "PHONE_NUMBER" && <Phone size={13} className="text-green-600" />}
-                {(btn.type === "OTP" || btn.otp_type === "COPY_CODE") && (
-                  <Copy size={13} className="text-blue-500" />
+              <div
+                key={i}
+                className="bg-white rounded-xl py-2 px-3 text-center border border-blue-200/70 shadow-2xs flex items-center justify-center gap-1.5 text-[#165DFF]"
+              >
+                {btn.type === "URL" && (
+                  <Globe size={12} className="text-[#165DFF]" />
                 )}
-                <span className="text-sm font-medium">
-                  {btn.text || (
-                    btn.type === "URL"
+                {btn.type === "PHONE_NUMBER" && (
+                  <Phone size={12} className="text-emerald-600" />
+                )}
+                {(btn.type === "OTP" || btn.otp_type === "COPY_CODE") && (
+                  <Copy size={12} className="text-[#165DFF]" />
+                )}
+                <span className="text-xs font-semibold">
+                  {btn.text ||
+                    (btn.type === "URL"
                       ? "Visit Website"
                       : btn.type === "PHONE_NUMBER"
-                      ? "Call Phone"
-                      : btn.type === "OTP" || btn.otp_type === "COPY_CODE"
-                      ? "Copy Code"
-                      : "Quick Reply"
-                  )}
+                        ? "Call Phone"
+                        : btn.type === "OTP" || btn.otp_type === "COPY_CODE"
+                          ? "Copy Code"
+                          : "Quick Reply")}
                 </span>
               </div>
             ))}
@@ -245,10 +276,19 @@ const WhatsAppPreview = ({ template }) => {
 };
 
 /* -------------------------------------------------------------------------- */
-/* TEMPLATE FORM (shared by Create & Edit modals)                              */
+/* TEMPLATE FORM (shared by Create & Edit modals)                             */
 /* -------------------------------------------------------------------------- */
 
-const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemove, onButtonChange, disabled, isEditMode = false }) => {
+const TemplateForm = ({
+  form,
+  onChange,
+  onFileChange,
+  onButtonAdd,
+  onButtonRemove,
+  onButtonChange,
+  disabled,
+  isEditMode = false,
+}) => {
   const isAuth = form.category === "AUTHENTICATION";
 
   const handleCategoryChange = (val) => {
@@ -285,37 +325,42 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
   };
 
   const handleFormatBold = (e, field) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    if ((e.ctrlKey || e.metaKey) && e.key === "b") {
       e.preventDefault();
       const target = e.target;
       const start = target.selectionStart;
       const end = target.selectionEnd;
       const val = target.value;
       const selectedText = val.substring(start, end);
-      
-      const newText = val.substring(0, start) + `*${selectedText}*` + val.substring(end);
+
+      const newText =
+        val.substring(0, start) + `*${selectedText}*` + val.substring(end);
       onChange(field, newText);
-      
+
       setTimeout(() => {
         target.focus();
         if (start === end) {
-          // If no text was selected, put cursor between asterisks
           target.setSelectionRange(start + 1, start + 1);
         } else {
-          // If text was selected, select the text inside asterisks
           target.setSelectionRange(start + 1, end + 1);
         }
       }, 0);
     }
   };
 
+  const inputCls =
+    "w-full px-3.5 py-2 rounded-xl border border-[#E5E7EB] bg-slate-50/70 focus:bg-white text-xs text-[#172033] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 transition-all disabled:bg-slate-100 disabled:text-[#94A3B8]";
+
+  const labelCls =
+    "block text-[11px] font-semibold text-[#64748B] mb-1.5 uppercase tracking-wider";
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {!isEditMode && (
         <>
           {/* Name */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+            <label className={labelCls}>
               Template Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -324,15 +369,17 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
               onChange={(e) => onChange("name", e.target.value)}
               disabled={disabled}
               placeholder="e.g. otp_verification"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50 disabled:text-gray-500"
+              className={inputCls}
             />
-            <p className="text-xs text-gray-400 mt-1">Lowercase letters, numbers, and underscores only.</p>
+            <p className="text-[11px] text-[#94A3B8] mt-1">
+              Lowercase letters, numbers, and underscores only.
+            </p>
           </div>
 
           {/* Category + Language */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              <label className={labelCls}>
                 Category <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -340,18 +387,21 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
                   value={form.category}
                   onChange={(e) => handleCategoryChange(e.target.value)}
                   disabled={disabled}
-                  className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
+                  className={`${inputCls} appearance-none pr-8`}
                 >
                   <option value="MARKETING">Marketing</option>
                   <option value="UTILITY">Utility</option>
                   <option value="AUTHENTICATION">Authentication</option>
                 </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <ChevronDown
+                  size={13}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none"
+                />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              <label className={labelCls}>
                 Language <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -359,13 +409,18 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
                   value={form.language}
                   onChange={(e) => onChange("language", e.target.value)}
                   disabled={disabled}
-                  className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
+                  className={`${inputCls} appearance-none pr-8`}
                 >
                   {LANGUAGE_OPTIONS.map((l) => (
-                    <option key={l.value} value={l.value}>{l.label}</option>
+                    <option key={l.value} value={l.value}>
+                      {l.label}
+                    </option>
                   ))}
                 </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <ChevronDown
+                  size={13}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none"
+                />
               </div>
             </div>
           </div>
@@ -374,23 +429,22 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
 
       {/* Authentication Alert */}
       {isAuth && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
-          ⚠️ <strong>Authentication Template:</strong> Meta allows only OTP body text. Headers, footers, and custom marketing buttons are prohibited.
+        <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-xs text-amber-800">
+          ⚠️ <strong>Authentication Template:</strong> Meta allows only OTP body
+          text. Headers, footers, and custom marketing buttons are prohibited.
         </div>
       )}
 
-      {/* Header — Authentication માં Hide */}
+      {/* Header */}
       {!isAuth && (
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-            Header (Optional)
-          </label>
+          <label className={labelCls}>Header (Optional)</label>
           <div className="relative mb-2">
             <select
               value={form.header_type}
               onChange={(e) => onChange("header_type", e.target.value)}
               disabled={disabled}
-              className="w-full appearance-none px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white disabled:bg-gray-50"
+              className={`${inputCls} appearance-none pr-8`}
             >
               <option value="">None</option>
               <option value="TEXT">Text</option>
@@ -398,7 +452,10 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
               <option value="VIDEO">Video</option>
               <option value="DOCUMENT">Document</option>
             </select>
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <ChevronDown
+              size={13}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none"
+            />
           </div>
 
           {form.header_type === "TEXT" && (
@@ -410,29 +467,34 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
                 onKeyDown={(e) => handleFormatBold(e, "header_text")}
                 disabled={disabled}
                 placeholder="Header text…"
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50"
+                className={inputCls}
               />
-              <p className="text-[10px] text-gray-400 mt-1">Press Ctrl+B to bold selected text.</p>
+              <p className="text-[10px] text-[#94A3B8] mt-1">
+                Press Ctrl+B to bold selected text.
+              </p>
             </div>
           )}
 
           {["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) && (
             <div className="mt-2">
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-                Sample {form.header_type.toLowerCase()} <span className="text-red-500">*</span>
+              <label className={labelCls}>
+                Sample {form.header_type.toLowerCase()}{" "}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="file"
                 onChange={(e) => onFileChange && onFileChange(e.target.files[0])}
                 disabled={disabled}
                 accept={
-                  form.header_type === "IMAGE" ? "image/jpeg, image/png" :
-                  form.header_type === "VIDEO" ? "video/mp4" :
-                  "application/pdf"
+                  form.header_type === "IMAGE"
+                    ? "image/jpeg, image/png"
+                    : form.header_type === "VIDEO"
+                      ? "video/mp4"
+                      : "application/pdf"
                 }
-                className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-800 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 disabled:opacity-50"
+                className="w-full px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-xs text-[#172033] bg-white file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#165DFF] hover:file:bg-blue-100 disabled:opacity-50"
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-[11px] text-[#94A3B8] mt-1">
                 Meta requires a sample file for review. Max size: 16MB.
               </p>
             </div>
@@ -443,11 +505,11 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
       {/* Body */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+          <label className="block text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">
             Body <span className="text-red-500">*</span>
           </label>
           {isAuth && (
-            <span className="text-[11px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
               Fixed Meta Preset
             </span>
           )}
@@ -464,182 +526,211 @@ const TemplateForm = ({ form, onChange, onFileChange, onButtonAdd, onButtonRemov
           readOnly={isAuth}
           rows={4}
           placeholder="Hi {{1}}, your order {{2}} has been confirmed!"
-          className={`w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 resize-none ${
-            isAuth ? "bg-gray-100 text-gray-600 cursor-not-allowed select-none" : "disabled:bg-gray-50"
+          className={`${inputCls} resize-none ${
+            isAuth ? "bg-slate-100 text-[#64748B] cursor-not-allowed select-none" : ""
           }`}
         />
         <div className="flex justify-between mt-1">
-          <p className="text-[10px] text-gray-400">
+          <p className="text-[10px] text-[#94A3B8]">
             {isAuth ? (
-              <span className="text-amber-700">🔒 Meta rules require standard fixed OTP text. Custom editing is prohibited.</span>
+              <span className="text-amber-700">
+                🔒 Meta rules require standard fixed OTP text.
+              </span>
             ) : (
-              <>Use <code className="bg-gray-100 px-1 rounded">{"{{1}}"}</code>, <code className="bg-gray-100 px-1 rounded">{"{{2}}"}</code>… for dynamic variables.</>
+              <>
+                Use{" "}
+                <code className="bg-slate-100 px-1 rounded text-[#172033]">
+                  {"{{1}}"}
+                </code>
+                ,{" "}
+                <code className="bg-slate-100 px-1 rounded text-[#172033]">
+                  {"{{2}}"}
+                </code>
+                … for dynamic variables.
+              </>
             )}
           </p>
-          {!isAuth && <p className="text-[10px] text-gray-400">Press Ctrl+B to bold text</p>}
+          {!isAuth && (
+            <p className="text-[10px] text-[#94A3B8]">Ctrl+B for bold</p>
+          )}
         </div>
       </div>
 
-      {/* Footer — Authentication માં Hide */}
+      {/* Footer */}
       {!isAuth && (
         <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
-            Footer (Optional)
-          </label>
+          <label className={labelCls}>Footer (Optional)</label>
           <input
             type="text"
             value={form.footer_text}
             onChange={(e) => onChange("footer_text", e.target.value)}
             disabled={disabled}
             placeholder="Reply STOP to unsubscribe"
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent placeholder-gray-400 disabled:bg-gray-50"
+            className={inputCls}
           />
         </div>
       )}
 
-      {/* Buttons (Up to 10 buttons supported by Meta) */}
-      {!isAuth && (() => {
-        const totalCount = form.buttons.length;
-        const qrCount = form.buttons.filter((b) => b.type === "QUICK_REPLY").length;
-        const urlCount = form.buttons.filter((b) => b.type === "URL").length;
-        const phoneCount = form.buttons.filter((b) => b.type === "PHONE_NUMBER").length;
+      {/* Buttons */}
+      {!isAuth &&
+        (() => {
+          const totalCount = form.buttons.length;
+          const qrCount = form.buttons.filter(
+            (b) => b.type === "QUICK_REPLY"
+          ).length;
+          const urlCount = form.buttons.filter((b) => b.type === "URL").length;
+          const phoneCount = form.buttons.filter(
+            (b) => b.type === "PHONE_NUMBER"
+          ).length;
 
-        const canAddQuickReply = totalCount < 10 && qrCount < 10;
-        const canAddUrl = totalCount < 10 && urlCount < 2;
-        const canAddPhone = totalCount < 10 && phoneCount < 1;
+          const canAddQuickReply = totalCount < 10 && qrCount < 10;
+          const canAddUrl = totalCount < 10 && urlCount < 2;
+          const canAddPhone = totalCount < 10 && phoneCount < 1;
 
-        return (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                  Buttons (Optional — {totalCount}/10)
-                </label>
-                <p className="text-[10px] text-gray-400 mt-0.5">
-                  Add up to 10 buttons (Max 2 Website, 1 Phone, up to 10 Quick Replies).
-                </p>
+          return (
+            <div>
+              <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                <div>
+                  <label className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">
+                    Buttons (Optional — {totalCount}/10)
+                  </label>
+                  <p className="text-[10px] text-[#94A3B8] mt-0.5">
+                    Max 2 Website, 1 Phone, up to 10 Quick Replies.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {canAddQuickReply && (
+                    <button
+                      type="button"
+                      onClick={() => onButtonAdd("QUICK_REPLY")}
+                      disabled={disabled}
+                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200/80 text-[11px] font-semibold rounded-lg text-[#172033] transition cursor-pointer"
+                    >
+                      + Quick Reply
+                    </button>
+                  )}
+                  {canAddUrl && (
+                    <button
+                      type="button"
+                      onClick={() => onButtonAdd("URL")}
+                      disabled={disabled}
+                      className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-[11px] font-semibold rounded-lg text-[#165DFF] transition cursor-pointer"
+                    >
+                      + Website
+                    </button>
+                  )}
+                  {canAddPhone && (
+                    <button
+                      type="button"
+                      onClick={() => onButtonAdd("PHONE_NUMBER")}
+                      disabled={disabled}
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-semibold rounded-lg text-emerald-700 transition cursor-pointer"
+                    >
+                      + Call Phone
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {canAddQuickReply && (
-                  <button
-                    type="button"
-                    onClick={() => onButtonAdd("QUICK_REPLY")}
-                    disabled={disabled}
-                    className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-[11px] font-medium rounded-lg text-gray-700 transition"
+              <div className="space-y-2.5">
+                {form.buttons.map((btn, i) => (
+                  <div
+                    key={i}
+                    className="p-3 bg-slate-50/80 rounded-xl border border-[#E5E7EB] space-y-2"
                   >
-                    + Quick Reply
-                  </button>
-                )}
-                {canAddUrl && (
-                  <button
-                    type="button"
-                    onClick={() => onButtonAdd("URL")}
-                    disabled={disabled}
-                    className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-[11px] font-medium rounded-lg text-blue-700 transition"
-                  >
-                    + Website
-                  </button>
-                )}
-                {canAddPhone && (
-                  <button
-                    type="button"
-                    onClick={() => onButtonAdd("PHONE_NUMBER")}
-                    disabled={disabled}
-                    className="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-[11px] font-medium rounded-lg text-green-700 transition"
-                  >
-                    + Call Phone
-                  </button>
-                )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-[#64748B] uppercase flex items-center gap-1">
+                        {btn.type === "URL" ? (
+                          <>
+                            <Globe size={12} className="text-[#165DFF]" /> Visit
+                            Website
+                          </>
+                        ) : btn.type === "PHONE_NUMBER" ? (
+                          <>
+                            <Phone size={12} className="text-emerald-600" /> Call
+                            Phone
+                          </>
+                        ) : (
+                          "💬 Quick Reply"
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onButtonRemove(i)}
+                        disabled={disabled}
+                        className="p-1 text-[#94A3B8] hover:text-red-500 rounded transition cursor-pointer"
+                      >
+                        <Minus size={13} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={btn.text}
+                        onChange={(e) =>
+                          onButtonChange(i, "text", e.target.value)
+                        }
+                        disabled={disabled}
+                        placeholder="Button text (e.g. Visit Us)"
+                        className="w-full px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs bg-white text-[#172033] focus:outline-none focus:border-[#165DFF]"
+                      />
+
+                      {btn.type === "URL" && (
+                        <input
+                          type="url"
+                          value={btn.url || ""}
+                          onChange={(e) =>
+                            onButtonChange(i, "url", e.target.value)
+                          }
+                          disabled={disabled}
+                          placeholder="https://example.com"
+                          className="w-full px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs bg-white text-[#172033] focus:outline-none focus:border-[#165DFF]"
+                        />
+                      )}
+
+                      {btn.type === "PHONE_NUMBER" && (
+                        <input
+                          type="tel"
+                          value={btn.phone_number || ""}
+                          onChange={(e) =>
+                            onButtonChange(i, "phone_number", e.target.value)
+                          }
+                          disabled={disabled}
+                          placeholder="+919876543210"
+                          className="w-full px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs bg-white text-[#172033] focus:outline-none focus:border-[#165DFF]"
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              {form.buttons.length === 0 && (
+                <p className="text-xs text-[#94A3B8]">No buttons added.</p>
+              )}
             </div>
-
-          <div className="space-y-3">
-            {form.buttons.map((btn, i) => (
-              <div key={i} className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-gray-600 uppercase flex items-center gap-1">
-                    {btn.type === "URL" ? (
-                      <>
-                        <Globe size={13} className="text-blue-600" /> Visit Website
-                      </>
-                    ) : btn.type === "PHONE_NUMBER" ? (
-                      <>
-                        <Phone size={13} className="text-green-600" /> Call Phone
-                      </>
-                    ) : (
-                      "💬 Quick Reply"
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onButtonRemove(i)}
-                    disabled={disabled}
-                    className="p-1 text-gray-400 hover:text-red-500 rounded transition"
-                  >
-                    <Minus size={14} />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={btn.text}
-                    onChange={(e) => onButtonChange(i, "text", e.target.value)}
-                    disabled={disabled}
-                    placeholder="Button text (e.g. Visit Us)"
-                    className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500"
-                  />
-
-                  {btn.type === "URL" && (
-                    <input
-                      type="url"
-                      value={btn.url || ""}
-                      onChange={(e) => onButtonChange(i, "url", e.target.value)}
-                      disabled={disabled}
-                      placeholder="https://example.com"
-                      className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  )}
-
-                  {btn.type === "PHONE_NUMBER" && (
-                    <input
-                      type="tel"
-                      value={btn.phone_number || ""}
-                      onChange={(e) => onButtonChange(i, "phone_number", e.target.value)}
-                      disabled={disabled}
-                      placeholder="+919876543210"
-                      className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-green-500"
-                    />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {form.buttons.length === 0 && (
-            <p className="text-xs text-gray-400">No buttons added.</p>
-          )}
-        </div>
-        );
-      })()}
+          );
+        })()}
     </div>
   );
 };
 
 /* -------------------------------------------------------------------------- */
-/* CREATE TEMPLATE MODAL                                                        */
+/* CREATE TEMPLATE MODAL                                                      */
 /* -------------------------------------------------------------------------- */
 
 const CreateTemplateModal = ({ onClose }) => {
   const dispatch = useDispatch();
-  const { isCreating, createSuccess, createError } = useSelector((s) => s.templates);
+  const { isCreating, createSuccess, createError } = useSelector(
+    (s) => s.templates
+  );
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [exampleMedia, setExampleMedia] = useState(null);
   const [localError, setLocalError] = useState("");
 
-  // Close automatically on success
   useEffect(() => {
     if (createSuccess) {
       dispatch(fetchTemplates());
@@ -686,12 +777,14 @@ const CreateTemplateModal = ({ onClose }) => {
   const handleSubmit = () => {
     if (!form.name.trim()) return setLocalError("Template name is required.");
     if (!form.body_text.trim()) return setLocalError("Body text is required.");
-    
-    if (["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) && !exampleMedia) {
+
+    if (
+      ["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type) &&
+      !exampleMedia
+    ) {
       return setLocalError("A sample file is required for media headers.");
     }
 
-    // Meta button validation
     if (form.buttons?.length > 0) {
       if (form.buttons.length > 10) {
         return setLocalError("Meta allows a maximum of 10 buttons.");
@@ -704,14 +797,18 @@ const CreateTemplateModal = ({ onClose }) => {
           return setLocalError("Please enter a URL for the website button.");
         }
         if (btn.type === "PHONE_NUMBER" && !btn.phone_number?.trim()) {
-          return setLocalError("Please enter a phone number for the call button.");
+          return setLocalError(
+            "Please enter a phone number for the call button."
+          );
         }
       }
     }
 
-    // Sanitise name: lowercase + underscores
-    const finalName = form.name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-    
+    const finalName = form.name
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/g, "");
+
     if (exampleMedia) {
       const formData = new FormData();
       formData.append("name", finalName);
@@ -723,7 +820,7 @@ const CreateTemplateModal = ({ onClose }) => {
       formData.append("footer_text", form.footer_text);
       formData.append("buttons", JSON.stringify(form.buttons));
       formData.append("example_media", exampleMedia);
-      
+
       dispatch(createTemplate(formData));
     } else {
       const payload = {
@@ -736,7 +833,6 @@ const CreateTemplateModal = ({ onClose }) => {
 
   const errorMsg = localError || createError;
 
-  // Live preview from form
   const previewTemplate = {
     header_type: form.header_type,
     header_text: form.header_text,
@@ -747,36 +843,43 @@ const CreateTemplateModal = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+        onClick={onClose}
+      />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        className="relative z-10 w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className="relative z-10 w-full max-w-3xl bg-white rounded-2xl border border-slate-200/80 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center">
-              <Plus size={18} className="text-green-600" />
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+              <Plus size={16} className="text-[#165DFF]" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900">New Template</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Submit to Meta for review</p>
+              <h2 className="text-sm font-bold text-[#172033]">New Template</h2>
+              <p className="text-xs text-[#64748B] mt-0.5">
+                Submit WhatsApp template to Meta for review
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 transition">
-            <X size={18} className="text-gray-500" />
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-[#64748B] hover:text-[#172033] hover:bg-slate-100 transition cursor-pointer"
+          >
+            <X size={16} />
           </button>
         </div>
 
-        {/* Body — two-column */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-            {/* Left: form */}
-            <div className="p-6 overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+            <div className="p-5 sm:p-6 overflow-y-auto">
               <TemplateForm
                 form={form}
                 onChange={handleChange}
@@ -788,19 +891,20 @@ const CreateTemplateModal = ({ onClose }) => {
               />
             </div>
 
-            {/* Right: live preview */}
-            <div className="p-6 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            <div className="p-5 sm:p-6 bg-[#FAFAFC]">
+              <p className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-3">
                 Live Preview
               </p>
               <WhatsAppPreview template={previewTemplate} />
 
               {form.body_text && (
-                <div className="mt-4 bg-white rounded-2xl border border-gray-100 p-4">
-                  <p className="text-xs text-gray-400 mb-1">Variables detected</p>
-                  <p className="text-xl font-bold text-gray-700">
+                <div className="mt-4 bg-white rounded-xl border border-slate-200/80 p-3.5 flex items-center justify-between">
+                  <span className="text-xs font-medium text-[#64748B]">
+                    Variables detected
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#165DFF] border border-blue-100">
                     {(form.body_text.match(/\{\{\d+\}\}/g) || []).length}
-                  </p>
+                  </span>
                 </div>
               )}
             </div>
@@ -809,29 +913,29 @@ const CreateTemplateModal = ({ onClose }) => {
 
         {/* Error */}
         {errorMsg && (
-          <div className="mx-6 mb-0 mt-0 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2 shrink-0">
-            <AlertCircle size={15} className="text-red-500 mt-0.5 shrink-0" />
-            <p className="text-sm text-red-700">{errorMsg}</p>
+          <div className="mx-6 my-2 bg-red-50 border border-red-100 rounded-xl p-3 flex items-start gap-2 shrink-0">
+            <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-red-600">{errorMsg}</p>
           </div>
         )}
 
         {/* Footer */}
-        <div className="flex gap-3 px-6 py-5 border-t border-gray-100 bg-white shrink-0">
+        <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-white shrink-0">
           <button
             onClick={onClose}
             disabled={isCreating}
-            className="flex-1 py-3 rounded-2xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-100 transition disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-xl bg-white border border-[#E5E7EB] text-[#172033] text-xs font-semibold hover:bg-slate-50 transition disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isCreating}
-            className="flex-1 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-xl bg-[#165DFF] hover:bg-[#1247CC] text-white text-xs font-semibold shadow-sm shadow-blue-500/20 transition disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
           >
             {isCreating ? (
               <>
-                <Loader2 size={15} className="animate-spin" />
+                <Loader2 size={14} className="animate-spin" />
                 Submitting…
               </>
             ) : (
@@ -845,12 +949,14 @@ const CreateTemplateModal = ({ onClose }) => {
 };
 
 /* -------------------------------------------------------------------------- */
-/* EDIT TEMPLATE MODAL                                                          */
+/* EDIT TEMPLATE MODAL                                                        */
 /* -------------------------------------------------------------------------- */
 
 const EditTemplateModal = ({ template, onClose }) => {
   const dispatch = useDispatch();
-  const { isUpdatingId, updateSuccess, updateError } = useSelector((s) => s.templates);
+  const { isUpdatingId, updateSuccess, updateError } = useSelector(
+    (s) => s.templates
+  );
 
   const isUpdating = isUpdatingId === template.id;
 
@@ -875,7 +981,10 @@ const EditTemplateModal = ({ template, onClose }) => {
     setLocalError("");
     setForm((prev) => {
       const updated = { ...prev, [field]: value };
-      if (field === "header_type" && !["IMAGE", "VIDEO", "DOCUMENT"].includes(value)) {
+      if (
+        field === "header_type" &&
+        !["IMAGE", "VIDEO", "DOCUMENT"].includes(value)
+      ) {
         setExampleMedia(null);
       }
       return updated;
@@ -917,10 +1026,11 @@ const EditTemplateModal = ({ template, onClose }) => {
 
     const isMedia = ["IMAGE", "VIDEO", "DOCUMENT"].includes(form.header_type);
     if (isMedia && !exampleMedia && template.header_type !== form.header_type) {
-      return setLocalError(`Please choose a sample ${form.header_type.toLowerCase()} file for Meta review.`);
+      return setLocalError(
+        `Please choose a sample ${form.header_type.toLowerCase()} file for Meta review.`
+      );
     }
 
-    // Meta button validation
     if (form.buttons?.length > 0) {
       if (form.buttons.length > 10) {
         return setLocalError("Meta allows a maximum of 10 buttons.");
@@ -933,7 +1043,9 @@ const EditTemplateModal = ({ template, onClose }) => {
           return setLocalError("Please enter a URL for the website button.");
         }
         if (btn.type === "PHONE_NUMBER" && !btn.phone_number?.trim()) {
-          return setLocalError("Please enter a phone number for the call button.");
+          return setLocalError(
+            "Please enter a phone number for the call button."
+          );
         }
       }
     }
@@ -977,79 +1089,88 @@ const EditTemplateModal = ({ template, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+        onClick={onClose}
+      />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 8 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        className="relative z-10 w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className="relative z-10 w-full max-w-3xl bg-white rounded-2xl border border-slate-200/80 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center">
-              <Pencil size={16} className="text-blue-600" />
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+              <Pencil size={15} className="text-[#165DFF]" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900">Edit Template</h2>
-              <p className="text-xs text-gray-400 mt-0.5 font-mono">{template.name}</p>
+              <h2 className="text-sm font-bold text-[#172033]">
+                Edit Template
+              </h2>
+              <p className="text-xs text-[#64748B] mt-0.5 font-mono">
+                {template.name}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge status={template.status} />
-            <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 transition ml-1">
-              <X size={18} className="text-gray-500" />
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl text-[#64748B] hover:text-[#172033] hover:bg-slate-100 transition ml-1 cursor-pointer"
+            >
+              <X size={16} />
             </button>
           </div>
         </div>
 
-        {/* Note about name/category being locked */}
-        <div className="mx-6 mt-4 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2.5 flex items-start gap-2 shrink-0">
-          <Info size={14} className="text-yellow-600 mt-0.5 shrink-0" />
-          <p className="text-xs text-yellow-700">
-            Template name, category, and language cannot be changed after submission.
-            Only body, header, footer, and buttons are editable here.
+        {/* Locked note */}
+        <div className="mx-6 mt-4 bg-amber-50/80 border border-amber-200/80 rounded-xl px-3.5 py-2.5 flex items-start gap-2 shrink-0">
+          <Info size={14} className="text-amber-600 mt-0.5 shrink-0" />
+          <p className="text-xs text-amber-800">
+            Template name, category, and language cannot be changed after
+            submission. Only body, header, footer, and buttons are editable.
           </p>
         </div>
 
-        {/* Body — two-column */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-            {/* Left: editable fields only */}
-            <div className="p-6 space-y-5 overflow-y-auto">
-              {/* Locked fields shown as read-only */}
-              <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+            <div className="p-5 sm:p-6 space-y-4 overflow-y-auto">
+              <div className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                  <label className="block text-[11px] font-semibold text-[#64748B] mb-1 uppercase tracking-wider">
                     Template Name
                   </label>
-                  <div className="px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-600 font-mono">
+                  <div className="px-3.5 py-2 rounded-xl border border-[#E5E7EB] bg-slate-100/70 text-xs text-[#64748B] font-mono">
                     {template.name}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                    <label className="block text-[11px] font-semibold text-[#64748B] mb-1 uppercase tracking-wider">
                       Category
                     </label>
-                    <div className={`px-4 py-2.5 rounded-xl border text-sm font-medium ${getCategoryStyle(template.category).bg} ${getCategoryStyle(template.category).text} ${getCategoryStyle(template.category).border}`}>
+                    <div
+                      className={`px-3.5 py-2 rounded-xl border text-xs font-semibold ${getCategoryStyle(template.category).bg} ${getCategoryStyle(template.category).text} ${getCategoryStyle(template.category).border}`}
+                    >
                       {template.category}
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+                    <label className="block text-[11px] font-semibold text-[#64748B] mb-1 uppercase tracking-wider">
                       Language
                     </label>
-                    <div className="px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-600 uppercase">
+                    <div className="px-3.5 py-2 rounded-xl border border-[#E5E7EB] bg-slate-100/70 text-xs text-[#64748B] uppercase font-medium">
                       {template.language}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Editable fields */}
               <TemplateForm
                 form={form}
                 onChange={handleChange}
@@ -1062,9 +1183,8 @@ const EditTemplateModal = ({ template, onClose }) => {
               />
             </div>
 
-            {/* Right: live preview */}
-            <div className="p-6 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            <div className="p-5 sm:p-6 bg-[#FAFAFC]">
+              <p className="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider mb-3">
                 Live Preview
               </p>
               <WhatsAppPreview template={previewTemplate} />
@@ -1074,29 +1194,29 @@ const EditTemplateModal = ({ template, onClose }) => {
 
         {/* Error */}
         {errorMsg && (
-          <div className="mx-6 mt-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2 shrink-0">
-            <AlertCircle size={15} className="text-red-500 mt-0.5 shrink-0" />
-            <p className="text-sm text-red-700">{errorMsg}</p>
+          <div className="mx-6 my-2 bg-red-50 border border-red-100 rounded-xl p-3 flex items-start gap-2 shrink-0">
+            <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-red-600">{errorMsg}</p>
           </div>
         )}
 
         {/* Footer */}
-        <div className="flex gap-3 px-6 py-5 border-t border-gray-100 bg-white shrink-0">
+        <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-white shrink-0">
           <button
             onClick={onClose}
             disabled={isUpdating}
-            className="flex-1 py-3 rounded-2xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-100 transition disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-xl bg-white border border-[#E5E7EB] text-[#172033] text-xs font-semibold hover:bg-slate-50 transition disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={isUpdating}
-            className="flex-1 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-xl bg-[#165DFF] hover:bg-[#1247CC] text-white text-xs font-semibold shadow-sm shadow-blue-500/20 transition disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
           >
             {isUpdating ? (
               <>
-                <Loader2 size={15} className="animate-spin" />
+                <Loader2 size={14} className="animate-spin" />
                 Saving…
               </>
             ) : (
@@ -1110,67 +1230,81 @@ const EditTemplateModal = ({ template, onClose }) => {
 };
 
 /* -------------------------------------------------------------------------- */
-/* PREVIEW MODAL                                                                */
+/* PREVIEW MODAL                                                              */
 /* -------------------------------------------------------------------------- */
 
 const PreviewModal = ({ template, onClose, onEdit }) => {
   const catStyle = getCategoryStyle(template.category);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 font-sans">
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+        onClick={onClose}
+      />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="relative z-10 w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className="relative z-10 w-full max-w-md bg-white rounded-2xl border border-slate-200/80 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center">
-              <MessageSquare size={18} className="text-green-600" />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+              <MessageSquare size={16} className="text-[#165DFF]" />
             </div>
-            <div>
-              <h2 className="text-base font-bold text-gray-900">{template.name}</h2>
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-[#172033] truncate">
+                {template.name}
+              </h2>
               <div className="flex items-center gap-2 mt-1">
                 <span
-                  className={`px-2 py-1 rounded-full border text-[10px] font-bold uppercase ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}
+                  className={`px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}
                 >
                   {template.category}
                 </span>
-                <span className="text-xs text-gray-400 uppercase">{template.language}</span>
+                <span className="text-[11px] font-medium text-[#64748B] uppercase">
+                  {template.language}
+                </span>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 transition">
-            <X size={18} className="text-gray-500" />
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-[#64748B] hover:text-[#172033] hover:bg-slate-100 transition cursor-pointer"
+          >
+            <X size={16} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="p-6">
+          <div className="p-5">
             <WhatsAppPreview template={template} />
           </div>
 
-          <div className="px-6 pb-6 grid grid-cols-2 gap-3">
-            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-              <p className="text-xs text-gray-400">Status</p>
-              <div className="mt-2">
+          <div className="px-5 pb-5 grid grid-cols-2 gap-3">
+            <div className="bg-[#FAFAFC] rounded-xl p-3.5 border border-slate-200/80">
+              <p className="text-[11px] font-medium text-[#64748B]">Status</p>
+              <div className="mt-1.5">
                 <StatusBadge status={template.status} />
               </div>
             </div>
-            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-              <p className="text-xs text-gray-400">Variables</p>
-              <p className="text-lg font-bold text-gray-700 mt-1">{template.variables_count || 0}</p>
+            <div className="bg-[#FAFAFC] rounded-xl p-3.5 border border-slate-200/80">
+              <p className="text-[11px] font-medium text-[#64748B]">
+                Variables
+              </p>
+              <p className="text-base font-bold text-[#172033] mt-1">
+                {template.variables_count || 0}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50 shrink-0">
+        <div className="flex gap-2.5 px-5 py-4 border-t border-slate-100 bg-white shrink-0">
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-2xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-100 transition"
+            className="flex-1 py-2.5 rounded-xl bg-white border border-[#E5E7EB] text-[#172033] text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
           >
             Close
           </button>
@@ -1180,13 +1314,13 @@ const PreviewModal = ({ template, onClose, onEdit }) => {
                 onClose();
                 onEdit(template);
               }}
-              className="flex-1 py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition"
+              className="flex-1 py-2.5 rounded-xl bg-[#165DFF] hover:bg-[#1247CC] text-white text-xs font-semibold shadow-sm shadow-blue-500/20 transition cursor-pointer"
             >
               Edit Template
             </button>
           ) : (
-            <div className="flex-1 py-3 text-center text-xs text-gray-400 bg-gray-100 rounded-2xl border border-gray-200">
-              🔒 Fixed Meta Preset (Cannot Edit)
+            <div className="flex-1 py-2.5 text-center text-xs text-[#64748B] bg-slate-100 rounded-xl border border-[#E5E7EB]">
+              🔒 Fixed Meta Preset
             </div>
           )}
         </div>
@@ -1196,19 +1330,25 @@ const PreviewModal = ({ template, onClose, onEdit }) => {
 };
 
 /* -------------------------------------------------------------------------- */
-/* TEMPLATE ROW                                                                 */
+/* TEMPLATE ROW                                                               */
 /* -------------------------------------------------------------------------- */
 
-const TableRow = ({ template, idx, onPreview, onEdit, onAnalytics, onSync, onDelete, isDeletingId, isSyncingId }) => {
+const TableRow = ({
+  template,
+  idx,
+  onPreview,
+  onEdit,
+  onAnalytics,
+  onDelete,
+  isDeletingId,
+}) => {
   const isDeleting = isDeletingId === template.id;
-  const isSyncing = isSyncingId === template.id;
   const catStyle = getCategoryStyle(template.category);
 
   const [featureClicks, setFeatureClicks] = useState(() => {
-    return parseInt(localStorage.getItem('template_feature_clicks') || '0', 10);
+    return parseInt(localStorage.getItem("template_feature_clicks") || "0", 10);
   });
 
-  // New feature indicator logic (shows for 7 days from release date)
   const isFeatureNew = (releaseDateString, daysToKeep = 7) => {
     const releaseDate = new Date(releaseDateString);
     const expiryDate = new Date(releaseDate);
@@ -1216,72 +1356,97 @@ const TableRow = ({ template, idx, onPreview, onEdit, onAnalytics, onSync, onDel
     return new Date() < expiryDate;
   };
 
-  const showAnalyticsPing = isFeatureNew("2026-10-09") && idx === 0 && featureClicks < 4;
+  const showAnalyticsPing =
+    isFeatureNew("2026-10-09") && idx === 0 && featureClicks < 4;
 
   const handleAnalyticsClick = () => {
-    const current = parseInt(localStorage.getItem('template_feature_clicks') || '0', 10);
+    const current = parseInt(
+      localStorage.getItem("template_feature_clicks") || "0",
+      10
+    );
     if (current < 4) {
-      localStorage.setItem('template_feature_clicks', (current + 1).toString());
+      localStorage.setItem("template_feature_clicks", (current + 1).toString());
       setFeatureClicks(current + 1);
     }
     onAnalytics(template);
   };
 
   return (
-    <tr className="border-b border-gray-100 hover:bg-gray-50 transition-all">
-      <td className="px-4 py-4 text-xs text-gray-400">{idx + 1}</td>
+    <tr className="hover:bg-blue-50/30 transition-colors">
+      <td className="px-4 py-3.5 text-xs font-medium text-[#94A3B8] tabular-nums">
+        {idx + 1}
+      </td>
 
-      <td className="px-4 py-4">
-        <div>
-          <p className="text-sm font-semibold text-gray-800">{template.name}</p>
-          <p className="text-xs text-gray-400 mt-1">{template.template_id || "No Meta ID"}</p>
+      <td className="px-4 py-3.5 overflow-hidden">
+        <div className="min-w-0">
+          <p
+            className="text-xs font-semibold text-[#172033] truncate"
+            title={template.name}
+          >
+            {template.name}
+          </p>
+          <p
+            className="text-[11px] text-[#94A3B8] mt-0.5 font-mono truncate"
+            title={template.template_id || "No Meta ID"}
+          >
+            {template.template_id || "No Meta ID"}
+          </p>
         </div>
       </td>
 
-      <td className="px-4 py-4">
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
+      <td className="px-4 py-3.5">
+        <span
+          className={`inline-block px-2.5 py-0.5 rounded-md text-[10px] font-semibold uppercase border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}
+        >
           {template.category}
         </span>
       </td>
 
-      <td className="px-4 py-4">
-        <span className="text-sm text-gray-600 uppercase">{template.language}</span>
+      <td className="px-4 py-3.5">
+        <span className="text-xs font-medium text-[#64748B] uppercase">
+          {template.language}
+        </span>
       </td>
 
-      <td className="px-4 py-4">
+      <td className="px-4 py-3.5">
         <StatusBadge status={template.status} />
       </td>
 
-      <td className="px-4 py-4 max-w-[260px]">
-        <p className="text-sm text-gray-500 truncate">{template.body_text || "—"}</p>
+      <td className="px-4 py-3.5 overflow-hidden">
+        <p
+          className="text-xs text-[#64748B] truncate"
+          title={template.body_text || ""}
+        >
+          {template.body_text || "—"}
+        </p>
       </td>
 
-      <td className="px-4 py-4 text-center">
-        <span className="px-2 py-1 bg-gray-100 rounded-full text-xs font-semibold text-gray-700">
+      <td className="px-4 py-3.5 text-center">
+        <span className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-200/70 rounded-md text-[11px] font-semibold text-[#172033] tabular-nums">
           {template.variables_count || 0}
         </span>
       </td>
 
-      <td className="px-4 py-4">
-        <div className="flex items-center gap-2">
+      <td className="px-4 py-3.5">
+        <div className="flex items-center justify-end gap-1">
           <button
             onClick={() => onPreview(template)}
-            className="p-2 rounded-xl hover:bg-green-50 text-gray-500 hover:text-green-600 transition"
+            className="p-1.5 rounded-lg hover:bg-blue-50 text-[#64748B] hover:text-[#165DFF] transition cursor-pointer"
             title="Preview"
           >
-            <Eye size={15} />
+            <Eye size={14} />
           </button>
 
           <button
             onClick={handleAnalyticsClick}
-            className="relative p-2 rounded-xl hover:bg-indigo-50 text-gray-500 hover:text-indigo-600 transition"
+            className="relative p-1.5 rounded-lg hover:bg-indigo-50 text-[#64748B] hover:text-indigo-600 transition cursor-pointer"
             title="Analytics"
           >
-            <BarChart3 size={15} />
+            <BarChart3 size={14} />
             {showAnalyticsPing && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+              <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
               </span>
             )}
           </button>
@@ -1289,21 +1454,24 @@ const TableRow = ({ template, idx, onPreview, onEdit, onAnalytics, onSync, onDel
           {template.category !== "AUTHENTICATION" && (
             <button
               onClick={() => onEdit(template)}
-              className="p-2 rounded-xl hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition"
+              className="p-1.5 rounded-lg hover:bg-blue-50 text-[#64748B] hover:text-[#165DFF] transition cursor-pointer"
               title="Edit"
             >
-              <Pencil size={15} />
+              <Pencil size={14} />
             </button>
           )}
-
 
           <button
             onClick={() => onDelete(template.id)}
             disabled={isDeleting}
-            className="p-2 rounded-xl hover:bg-red-50 text-gray-500 hover:text-red-600 transition disabled:opacity-50"
+            className="p-1.5 rounded-lg hover:bg-red-50 text-[#64748B] hover:text-red-600 transition disabled:opacity-50 cursor-pointer"
             title="Delete"
           >
-            {isDeleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+            {isDeleting ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Trash2 size={14} />
+            )}
           </button>
         </div>
       </td>
@@ -1312,7 +1480,7 @@ const TableRow = ({ template, idx, onPreview, onEdit, onAnalytics, onSync, onDel
 };
 
 /* -------------------------------------------------------------------------- */
-/* MAIN                                                                         */
+/* MAIN TEMPLATES PAGE                                                        */
 /* -------------------------------------------------------------------------- */
 
 const Templates = () => {
@@ -1320,15 +1488,10 @@ const Templates = () => {
 
   const {
     list,
-    count,
     isLoading,
-    isCreating,
-    isUpdatingId,
     isDeletingId,
     isSyncingId,
     isSyncingAll,
-    createSuccess,
-    updateSuccess,
     syncAllResult,
     error,
   } = useSelector((s) => s.templates);
@@ -1338,130 +1501,219 @@ const Templates = () => {
   const [editTemplate, setEditTemplate] = useState(null);
   const [analyticsTemplate, setAnalyticsTemplate] = useState(null);
   const [activeFilter, setActiveFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     dispatch(fetchTemplates());
   }, [dispatch]);
 
-  const filtered =
-    activeFilter === "ALL" ? list : list.filter((t) => t.status === activeFilter);
+  const statusFiltered =
+    activeFilter === "ALL"
+      ? list
+      : list.filter((t) => t.status === activeFilter);
+
+  const filtered = search.trim()
+    ? statusFiltered.filter((t) => {
+        const q = search.toLowerCase();
+        return (
+          (t.name || "").toLowerCase().includes(q) ||
+          (t.body_text || "").toLowerCase().includes(q) ||
+          (t.category || "").toLowerCase().includes(q)
+        );
+      })
+    : statusFiltered;
 
   return (
-    <div className="min-h-screen bg-[#f7f8fc] p-4 lg:p-6 space-y-6">
-
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="min-h-screen w-full bg-[#FAFAFC] p-5 sm:p-6 lg:p-7 space-y-5 font-sans text-[#172033]">
+      {/* ── PAGE HEADER (Exact same size/height as Dashboard, Leads & Prospects, and WhatsApp) ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-[#E5E7EB]/80">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Templates</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage WhatsApp templates</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172033] leading-tight">
+            Message Templates
+          </h1>
+          <p className="text-xs text-[#64748B] mt-1 font-normal">
+            Create, manage, and track your WhatsApp message templates.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Right Toolbar: Status Segmented Tabs + Sync All + New Template */}
+        <div className="flex items-center flex-wrap gap-2.5">
+          {/* Status Segmented Tabs */}
+          <div className="h-9 flex items-center bg-white p-1 rounded-xl border border-[#E5E7EB] shadow-2xs">
+            {FILTER_TABS.map((tab) => {
+              const active = activeFilter === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveFilter(tab.key)}
+                  className={`h-full flex items-center gap-1.5 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    active
+                      ? "bg-[#165DFF] text-white shadow-xs shadow-blue-500/20"
+                      : "text-[#64748B] hover:text-[#172033] hover:bg-slate-50"
+                  }`}
+                >
+                  {tab.dot && (
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        active ? "bg-white" : tab.dot
+                      }`}
+                    />
+                  )}
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Sync All */}
           <button
             onClick={() => dispatch(syncAllTemplates())}
             disabled={isSyncingAll}
-            className="h-11 px-4 rounded-2xl bg-white border border-gray-200 flex items-center gap-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-60"
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-[#E5E7EB] rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
           >
             {isSyncingAll ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={13} className="animate-spin text-[#165DFF]" />
             ) : (
-              <RefreshCw size={16} />
+              <RefreshCw size={13} className="text-[#64748B]" />
             )}
-            Sync All
+            <span>Sync All</span>
           </button>
 
+          {/* New Template */}
           <button
             onClick={() => setShowCreateModal(true)}
-            className="h-11 px-5 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-semibold flex items-center gap-2 transition"
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-[#165DFF] hover:bg-[#1247CC] border border-[#165DFF] text-white rounded-xl shadow-sm shadow-blue-500/20 transition-all cursor-pointer"
           >
-            <Plus size={16} />
-            New Template
+            <Plus size={14} />
+            <span>New Template</span>
           </button>
         </div>
       </div>
 
-      {/* SYNC-ALL RESULT BANNER */}
+      {/* ── SYNC-ALL RESULT BANNER ── */}
       <AnimatePresence>
         {syncAllResult && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center justify-between"
+            className="bg-emerald-50 border border-emerald-200/80 rounded-2xl px-4 py-3 flex items-center justify-between"
           >
-            <div className="flex items-center gap-3">
-              <CheckCircle2 size={18} className="text-green-600" />
-              <p className="text-sm text-green-700">
-                Sync complete — <strong>{syncAllResult.synced_from_meta}</strong> from Meta,{" "}
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+              <p className="text-xs text-emerald-800">
+                Sync complete —{" "}
+                <strong>{syncAllResult.synced_from_meta}</strong> from Meta,{" "}
                 <strong>{syncAllResult.updated_locally}</strong> updated,{" "}
                 <strong>{syncAllResult.created_locally}</strong> new.
               </p>
             </div>
-            <button onClick={() => dispatch(clearSyncAllResult())} className="text-green-400 hover:text-green-600">
-              <X size={16} />
+            <button
+              onClick={() => dispatch(clearSyncAllResult())}
+              className="text-emerald-500 hover:text-emerald-700 cursor-pointer"
+            >
+              <X size={14} />
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* FILTERS */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveFilter(tab)}
-            className={`px-4 py-2 rounded-2xl text-sm font-medium transition ${activeFilter === tab
-              ? "bg-green-600 text-white"
-              : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-              }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* ERROR */}
+      {/* ── ERROR ── */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
-          <AlertCircle size={18} className="text-red-500 mt-0.5" />
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-start gap-3">
+          <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-red-700">Something went wrong</p>
-            <p className="text-sm text-red-600 mt-1">{error}</p>
+            <p className="text-xs font-bold text-red-700">
+              Something went wrong
+            </p>
+            <p className="text-xs text-red-600 mt-0.5">{error}</p>
           </div>
-          <button onClick={() => dispatch(clearError())} className="text-red-400 hover:text-red-600">
-            <X size={16} />
+          <button
+            onClick={() => dispatch(clearError())}
+            className="text-red-400 hover:text-red-600 cursor-pointer"
+          >
+            <X size={15} />
           </button>
         </div>
       )}
 
-      {/* TABLE */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* ── MAIN TABLE CARD (Search bar at top-left matching Leads & WhatsApp) ── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm shadow-blue-500/[0.03] overflow-hidden">
+        {/* Top Search Header inside Card */}
+        <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="relative w-full sm:w-80">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"
+            />
+            <input
+              type="text"
+              placeholder="Search template name or body..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-8 pr-7 py-2 text-xs bg-slate-50/80 focus:bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 text-[#172033] placeholder:text-[#94A3B8] outline-none transition-all"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#172033] cursor-pointer"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-[#64748B]">
+            <span className="font-semibold text-[#172033]">Templates</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-[#165DFF] border border-blue-100 tabular-nums">
+              {filtered.length}
+            </span>
+          </div>
+        </div>
+
         {isLoading ? (
-          <div className="py-24 flex justify-center">
-            <Loader2 size={28} className="animate-spin text-green-600" />
+          <div className="py-20 flex justify-center">
+            <Loader2 size={24} className="animate-spin text-[#165DFF]" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-24 text-center">
-            <FileText size={50} className="mx-auto text-gray-300" />
-            <h3 className="text-lg font-semibold text-gray-700 mt-4">No templates found</h3>
-            <p className="text-sm text-gray-500 mt-1">Create your first template</p>
+          <div className="py-20 text-center px-4">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-center justify-center mx-auto">
+              <FileText size={22} className="text-[#165DFF]/60" />
+            </div>
+            <h3 className="text-sm font-bold text-[#172033] mt-3">
+              No templates found
+            </h3>
+            <p className="text-xs text-[#64748B] mt-1">
+              {search
+                ? "Try adjusting your search query"
+                : "Create your first WhatsApp template to get started"}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
+            <table className="w-full table-fixed min-w-[820px]">
+              <thead className="bg-slate-50/80 border-b border-slate-100">
                 <tr>
-                  {["ID", "Name", "Category", "Language", "Status", "Body", "Vars", "Actions"].map((h) => (
+                  {[
+                    { label: "#", width: "w-[5%]" },
+                    { label: "Name", width: "w-[22%]" },
+                    { label: "Category", width: "w-[13%]" },
+                    { label: "Language", width: "w-[9%]" },
+                    { label: "Status", width: "w-[13%]" },
+                    { label: "Body Preview", width: "w-[22%]" },
+                    { label: "Vars", width: "w-[6%] text-center" },
+                    { label: "Actions", width: "w-[10%] text-right" },
+                  ].map((col) => (
                     <th
-                      key={h}
-                      className={`px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase ${h === "Vars" ? "text-center" : ""}`}
+                      key={col.label}
+                      className={`${col.width} px-4 py-3.5 text-left text-[11px] font-semibold text-[#64748B] uppercase tracking-wider truncate`}
                     >
-                      {h}
+                      {col.label}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {filtered.map((t, i) => (
                   <TableRow
                     key={t.id}
@@ -1482,7 +1734,7 @@ const Templates = () => {
         )}
       </div>
 
-      {/* MODALS */}
+      {/* ── MODALS ── */}
       <AnimatePresence>
         {showCreateModal && (
           <CreateTemplateModal onClose={() => setShowCreateModal(false)} />

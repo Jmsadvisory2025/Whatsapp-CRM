@@ -2,64 +2,98 @@
 // Route: /clients  (inside HomeResolver children in App.jsx)
 // Sidebar: shown only when isTechProvider(email) is true
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
-import { isTechProvider, canViewClients } from "../store/authUtils";
+import { canViewClients } from "../store/authUtils";
 import {
-  Building2, Wifi, WifiOff, Search, RefreshCw,
-  ChevronDown, ChevronUp, Users, Globe, Mail,
-  Phone, Calendar, CheckCircle2, Clock, XCircle,
-  Shield, BadgeCheck, AlertTriangle, Star, Zap, FileText, X, MessageSquare
+  Building2,
+  Wifi,
+  WifiOff,
+  Search,
+  RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  Users,
+  Globe,
+  Phone,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Shield,
+  BadgeCheck,
+  AlertTriangle,
+  Star,
+  Zap,
+  FileText,
+  X,
+  MessageSquare,
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Module-level session cache so navigating back to /clients is instant
+let cachedClientsData = null;
+
 // ─── Static meta ─────────────────────────────────────────────────────────────
 
 const CRM_STATUS = {
-  active:    { label: "Active",    color: "#16a34a", bg: "#dcfce7", icon: CheckCircle2 },
-  pending:   { label: "Pending",   color: "#d97706", bg: "#fef3c7", icon: Clock        },
-  suspended: { label: "Suspended", color: "#dc2626", bg: "#fee2e2", icon: XCircle      },
+  active: { label: "Active", color: "#15803d", bg: "#ecfdf5", border: "#a7f3d0", icon: CheckCircle2 },
+  pending: { label: "Pending", color: "#b45309", bg: "#fffbeb", border: "#fde68a", icon: Clock },
+  suspended: { label: "Suspended", color: "#b91c1c", bg: "#fef2f2", border: "#fecaca", icon: XCircle },
 };
 
 const QUALITY = {
-  GREEN:  { color: "#16a34a", bg: "#dcfce7", label: "High"   },
-  YELLOW: { color: "#d97706", bg: "#fef3c7", label: "Medium" },
-  RED:    { color: "#dc2626", bg: "#fee2e2", label: "Low"    },
+  GREEN: { color: "#15803d", bg: "#ecfdf5", label: "High" },
+  YELLOW: { color: "#b45309", bg: "#fffbeb", label: "Medium" },
+  RED: { color: "#b91c1c", bg: "#fef2f2", label: "Low" },
 };
 
 const REVIEW_STATUS = {
-  APPROVED:  { color: "#16a34a", label: "Approved"  },
-  PENDING:   { color: "#d97706", label: "Under Review" },
-  REJECTED:  { color: "#dc2626", label: "Rejected"  },
+  APPROVED: { color: "#15803d", label: "Approved" },
+  PENDING: { color: "#b45309", label: "Under Review" },
+  REJECTED: { color: "#b91c1c", label: "Rejected" },
 };
 
 const PHONE_STATUS_COLOR = {
-  CONNECTED:  "#16a34a",
-  FLAGGED:    "#d97706",
-  RESTRICTED: "#dc2626",
+  CONNECTED: "#15803d",
+  FLAGGED: "#b45309",
+  RESTRICTED: "#b91c1c",
 };
 
 const ROLE_STYLE = {
-  owner:   { color: "#6d28d9", bg: "#ede9fe" },
+  owner: { color: "#165DFF", bg: "#EFF6FF" },
   manager: { color: "#0369a1", bg: "#e0f2fe" },
-  sales:   { color: "#065f46", bg: "#d1fae5" },
+  sales: { color: "#065f46", bg: "#d1fae5" },
 };
 
-const fmt = (iso) => new Date(iso).toLocaleDateString("en-IN", {
-  day: "2-digit", month: "short", year: "numeric",
-});
+const fmt = (iso) =>
+  iso
+    ? new Date(iso).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
 
 // ─── Small reusable components ────────────────────────────────────────────────
 
 function Chip({ color, bg, icon: Icon, label }) {
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "3px 10px", borderRadius: 99, fontSize: 12, fontWeight: 600,
-      color, background: bg,
-    }}>
-      {Icon && <Icon size={11} strokeWidth={2.5} />}
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        padding: "2px 9px",
+        borderRadius: 99,
+        fontSize: 11,
+        fontWeight: 600,
+        color,
+        background: bg,
+      }}
+    >
+      {Icon && <Icon size={11} strokeWidth={2.3} />}
       {label}
     </span>
   );
@@ -71,44 +105,61 @@ function StatusBadge({ status }) {
 }
 
 function WABABadge({ connected }) {
-  return connected
-    ? <Chip color="#15803d" bg="#dcfce7" icon={Wifi}    label="WABA Connected" />
-    : <Chip color="#6b7280" bg="#f3f4f6" icon={WifiOff} label="Not Connected"  />;
+  return connected ? (
+    <Chip color="#15803d" bg="#ecfdf5" icon={Wifi} label="WABA Connected" />
+  ) : (
+    <Chip color="#64748B" bg="#f1f5f9" icon={WifiOff} label="Not Connected" />
+  );
 }
 
 function QualityBadge({ rating }) {
   if (!rating) return null;
-  const q = QUALITY[rating] || { color: "#6b7280", bg: "#f3f4f6", label: rating };
+  const q = QUALITY[rating] || { color: "#64748B", bg: "#f1f5f9", label: rating };
   return <Chip color={q.color} bg={q.bg} icon={Star} label={`${q.label} Quality`} />;
 }
 
 function MetaStatusBadge({ client }) {
-  const { meta_status, meta_account_review_status, meta_ban_state, meta_phone_status } = client;
+  const { meta_status, meta_account_review_status, meta_ban_state } = client;
 
   if (!meta_status || meta_status === "skipped" || meta_status === "no_waba")
     return null;
   if (meta_status === "error" || meta_status === "no_token")
-    return <Chip color="#dc2626" bg="#fee2e2" icon={AlertTriangle} label="Meta Error" />;
+    return <Chip color="#b91c1c" bg="#fef2f2" icon={AlertTriangle} label="Meta Error" />;
 
-  // Ban state takes priority
   if (meta_ban_state && meta_ban_state !== "NONE") {
-    return <Chip color="#dc2626" bg="#fee2e2" icon={AlertTriangle} label={`Banned: ${meta_ban_state}`} />;
+    return (
+      <Chip
+        color="#b91c1c"
+        bg="#fef2f2"
+        icon={AlertTriangle}
+        label={`Banned: ${meta_ban_state}`}
+      />
+    );
   }
 
   const rs = REVIEW_STATUS[meta_account_review_status];
-  if (rs) return <Chip color={rs.color} bg="#f3f4f6" icon={BadgeCheck} label={rs.label} />;
+  if (rs) return <Chip color={rs.color} bg="#f8fafc" icon={BadgeCheck} label={rs.label} />;
 
-  return <Chip color="#16a34a" bg="#dcfce7" icon={Zap} label="Meta OK" />;
+  return <Chip color="#15803d" bg="#ecfdf5" icon={Zap} label="Meta OK" />;
 }
 
 function RoleBadge({ role }) {
-  const s = ROLE_STYLE[role] || { color: "#374151", bg: "#f3f4f6" };
+  const s = ROLE_STYLE[role] || { color: "#334155", bg: "#f1f5f9" };
   return (
-    <span style={{
-      display: "inline-block", padding: "2px 8px", borderRadius: 6,
-      fontSize: 11, fontWeight: 600, textTransform: "capitalize",
-      color: s.color, background: s.bg,
-    }}>{role}</span>
+    <span
+      style={{
+        display: "inline-block",
+        padding: "2px 8px",
+        borderRadius: 6,
+        fontSize: 11,
+        fontWeight: 600,
+        textTransform: "capitalize",
+        color: s.color,
+        background: s.bg,
+      }}
+    >
+      {role}
+    </span>
   );
 }
 
@@ -116,27 +167,10 @@ function InfoRow({ icon, label, value }) {
   if (!value && value !== 0) return null;
   return (
     <div>
-      <div style={{
-        fontSize: 11, color: "#9ca3af", fontWeight: 600,
-        textTransform: "uppercase", letterSpacing: "0.06em",
-        display: "flex", alignItems: "center", gap: 4, marginBottom: 2,
-      }}>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-[#64748B] flex items-center gap-1 mb-0.5">
         {icon} {label}
       </div>
-      <div style={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>{value}</div>
-    </div>
-  );
-}
-
-function SummaryCard({ label, value, color }) {
-  return (
-    <div style={{
-      flex: "1 1 140px", background: "#fff", border: "1px solid #e5e7eb",
-      borderRadius: 14, padding: "16px 20px",
-      boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-    }}>
-      <div style={{ fontSize: 26, fontWeight: 700, color }}>{value ?? "—"}</div>
-      <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{label}</div>
+      <div className="text-xs font-semibold text-[#172033] break-words">{value}</div>
     </div>
   );
 }
@@ -147,16 +181,19 @@ function MetaRegistrationModal({ clientId, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   useEffect(() => {
     const fetchDocs = async () => {
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await axios.get(`${API_BASE_URL}api/techprovider/clients/${clientId}/meta-registration/`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await axios.get(
+          `${API_BASE_URL}api/techprovider/clients/${clientId}/meta-registration/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setData(res.data);
-      } catch (err) {
+      } catch {
         setError("Documents not found or failed to load.");
       } finally {
         setLoading(false);
@@ -166,30 +203,38 @@ function MetaRegistrationModal({ clientId, onClose }) {
   }, [clientId]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="p-5 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900">
-            <FileText className="h-5 w-5 text-indigo-600" /> Client Meta Registration Details
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 font-sans">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+          <h2 className="text-sm font-bold flex items-center gap-2 text-[#172033]">
+            <FileText className="h-4 w-4 text-[#165DFF]" /> Client Meta Registration Details
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
-            <X size={20} />
+          <button
+            onClick={onClose}
+            className="text-[#64748B] hover:text-[#172033] hover:bg-slate-100 p-1.5 rounded-xl transition-colors cursor-pointer"
+          >
+            <X size={16} />
           </button>
         </div>
-        
-        <div className="p-6 overflow-y-auto bg-gray-50 flex-1">
+
+        <div className="p-5 overflow-y-auto bg-[#FAFAFC] flex-1">
           {loading ? (
-            <div className="flex justify-center p-8"><RefreshCw className="animate-spin text-indigo-600" /></div>
+            <div className="flex justify-center p-10">
+              <RefreshCw size={20} className="animate-spin text-[#165DFF]" />
+            </div>
           ) : error ? (
-            <div className="p-4 bg-red-50 text-red-600 rounded-lg">{error}</div>
+            <div className="p-3.5 bg-red-50 border border-red-200 text-red-600 text-xs font-medium rounded-xl">
+              {error}
+            </div>
           ) : !data ? (
-            <div className="text-gray-500 text-center p-8">No data found.</div>
+            <div className="text-[#64748B] text-xs text-center p-8">No data found.</div>
           ) : (
-            <div className="space-y-6">
-              
-              <div className="bg-white p-5 rounded-lg border shadow-sm">
-                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Business Details</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded-xl border border-slate-200/80">
+                <h3 className="text-xs font-bold text-[#172033] border-b border-slate-100 pb-2 mb-3">
+                  Business Details
+                </h3>
+                <div className="grid grid-cols-2 gap-3.5">
                   <InfoRow label="Legal Name" value={data.legal_business_name} />
                   <InfoRow label="Display Name" value={data.business_display_name} />
                   <InfoRow label="Type" value={data.business_type} />
@@ -202,47 +247,148 @@ function MetaRegistrationModal({ clientId, onClose }) {
                 </div>
               </div>
 
-              <div className="bg-white p-5 rounded-lg border shadow-sm">
-                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Online Presence</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <InfoRow label="Website" value={data.official_website ? <a href={data.official_website} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">{data.official_website}</a> : '-'} />
+              <div className="bg-white p-4 rounded-xl border border-slate-200/80">
+                <h3 className="text-xs font-bold text-[#172033] border-b border-slate-100 pb-2 mb-3">
+                  Online Presence
+                </h3>
+                <div className="grid grid-cols-2 gap-3.5">
+                  <InfoRow
+                    label="Website"
+                    value={
+                      data.official_website ? (
+                        <a
+                          href={data.official_website}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#165DFF] hover:underline"
+                        >
+                          {data.official_website}
+                        </a>
+                      ) : (
+                        "—"
+                      )
+                    }
+                  />
                   <InfoRow label="Domain Email" value={data.domain_linked_email} />
                 </div>
               </div>
 
-              <div className="bg-white p-5 rounded-lg border shadow-sm">
-                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Facebook / Meta Account</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="bg-white p-4 rounded-xl border border-slate-200/80">
+                <h3 className="text-xs font-bold text-[#172033] border-b border-slate-100 pb-2 mb-3">
+                  Facebook / Meta Account
+                </h3>
+                <div className="grid grid-cols-2 gap-3.5">
                   <InfoRow label="Account Name" value={data.meta_facebook_account} />
                   <InfoRow label="Email" value={data.facebook_email} />
-                  <InfoRow label="Password" value={data.facebook_password || '-'} />
+                  <InfoRow label="Password" value={data.facebook_password || "—"} />
                 </div>
               </div>
 
-              <div className="bg-white p-5 rounded-lg border shadow-sm">
-                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Billing & Documents</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <InfoRow label="Intl Card Available" value={data.international_card_available ? 'Yes' : 'No'} />
+              <div className="bg-white p-4 rounded-xl border border-slate-200/80">
+                <h3 className="text-xs font-bold text-[#172033] border-b border-slate-100 pb-2 mb-3">
+                  Billing & Documents
+                </h3>
+                <div className="grid grid-cols-2 gap-3.5">
+                  <InfoRow
+                    label="Intl Card Available"
+                    value={data.international_card_available ? "Yes" : "No"}
+                  />
                   <InfoRow label="Card Number" value={data.international_card_number} />
-                  <InfoRow label="Card Image" value={data.international_card_image ? <a href={`${API_BASE_URL}${data.international_card_image}`} target="_blank" download rel="noreferrer" className="text-indigo-600 hover:underline font-medium">Download / View File</a> : 'Not uploaded'} />
-                  <InfoRow label="Business Logo" value={data.business_logo ? <a href={`${API_BASE_URL}${data.business_logo}`} target="_blank" download rel="noreferrer" className="text-indigo-600 hover:underline font-medium">Download / View File</a> : 'Not uploaded'} />
-                  <InfoRow label="Verification Doc" value={data.verification_document ? <a href={`${API_BASE_URL}${data.verification_document}`} target="_blank" download rel="noreferrer" className="text-indigo-600 hover:underline font-medium">Download / View File</a> : 'Not uploaded'} />
+                  <InfoRow
+                    label="Card Image"
+                    value={
+                      data.international_card_image ? (
+                        <a
+                          href={`${API_BASE_URL}${data.international_card_image}`}
+                          target="_blank"
+                          download
+                          rel="noreferrer"
+                          className="text-[#165DFF] hover:underline font-semibold"
+                        >
+                          Download / View File
+                        </a>
+                      ) : (
+                        "Not uploaded"
+                      )
+                    }
+                  />
+                  <InfoRow
+                    label="Business Logo"
+                    value={
+                      data.business_logo ? (
+                        <a
+                          href={`${API_BASE_URL}${data.business_logo}`}
+                          target="_blank"
+                          download
+                          rel="noreferrer"
+                          className="text-[#165DFF] hover:underline font-semibold"
+                        >
+                          Download / View File
+                        </a>
+                      ) : (
+                        "Not uploaded"
+                      )
+                    }
+                  />
+                  <InfoRow
+                    label="Verification Doc"
+                    value={
+                      data.verification_document ? (
+                        <a
+                          href={`${API_BASE_URL}${data.verification_document}`}
+                          target="_blank"
+                          download
+                          rel="noreferrer"
+                          className="text-[#165DFF] hover:underline font-semibold"
+                        >
+                          Download / View File
+                        </a>
+                      ) : (
+                        "Not uploaded"
+                      )
+                    }
+                  />
                 </div>
               </div>
 
-              <div className="bg-white p-5 rounded-lg border shadow-sm">
-                <h3 className="font-semibold text-gray-800 border-b pb-2 mb-3">Bot Use Case</h3>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap mb-4">{data.bot_use_case_brief || 'Not provided'}</p>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <InfoRow label="Flow Diagram / Document" value={data.bot_use_case_document ? <a href={`${API_BASE_URL}${data.bot_use_case_document}`} target="_blank" download rel="noreferrer" className="text-indigo-600 hover:underline font-medium">Download / View File</a> : 'Not uploaded'} />
+              <div className="bg-white p-4 rounded-xl border border-slate-200/80">
+                <h3 className="text-xs font-bold text-[#172033] border-b border-slate-100 pb-2 mb-3">
+                  Bot Use Case
+                </h3>
+                <p className="text-xs text-[#64748B] whitespace-pre-wrap mb-3">
+                  {data.bot_use_case_brief || "Not provided"}
+                </p>
+                <div className="grid grid-cols-2 gap-3.5">
+                  <InfoRow
+                    label="Flow Diagram / Document"
+                    value={
+                      data.bot_use_case_document ? (
+                        <a
+                          href={`${API_BASE_URL}${data.bot_use_case_document}`}
+                          target="_blank"
+                          download
+                          rel="noreferrer"
+                          className="text-[#165DFF] hover:underline font-semibold"
+                        >
+                          Download / View File
+                        </a>
+                      ) : (
+                        "Not uploaded"
+                      )
+                    }
+                  />
                 </div>
               </div>
-
             </div>
           )}
         </div>
-        <div className="p-4 border-t bg-gray-50 flex justify-end">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium">Close</button>
+        <div className="px-5 py-3 border-t border-slate-100 bg-white flex justify-end">
+          <button
+            onClick={onClose}
+            className="h-8 px-4 bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-[#172033] rounded-xl transition cursor-pointer"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -259,206 +405,272 @@ function ClientRow({ client, onStatusChange }) {
   const handleStatus = async (s) => {
     if (s === client.status || updating) return;
     setUpdating(true);
-    try { await onStatusChange(client.id, s); }
-    finally { setUpdating(false); }
+    try {
+      await onStatusChange(client.id, s);
+    } finally {
+      setUpdating(false);
+    }
   };
 
-  const phoneColor = PHONE_STATUS_COLOR[client.meta_phone_status] || "#374151";
+  const phoneColor = PHONE_STATUS_COLOR[client.meta_phone_status] || "#334155";
 
   return (
-    <div style={{
-      background: "#fff", border: "1px solid #e5e7eb",
-      borderRadius: 14, marginBottom: 12, overflow: "hidden",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
-    }}>
+    <div className="bg-white border border-slate-200/80 rounded-2xl mb-3 overflow-hidden shadow-2xs transition-all">
       {/* ── Header ── */}
       <div
-        onClick={() => setExpanded(p => !p)}
-        style={{
-          display: "flex", alignItems: "center",
-          padding: "14px 20px", gap: 14, cursor: "pointer",
-        }}
+        onClick={() => setExpanded((p) => !p)}
+        className="flex items-center px-5 py-3.5 gap-3.5 cursor-pointer hover:bg-slate-50/70 transition-colors"
       >
         {/* Avatar */}
-        <div style={{
-          width: 42, height: 42, borderRadius: 11, flexShrink: 0,
-          background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "#fff", fontWeight: 700, fontSize: 17,
-        }}>
-          {client.name.charAt(0).toUpperCase()}
+        <div className="w-9 h-9 rounded-xl shrink-0 bg-blue-50 border border-blue-200/70 flex items-center justify-center text-[#165DFF] font-bold text-xs">
+          {(client.name || "C").charAt(0).toUpperCase()}
         </div>
 
         {/* Name + email */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontSize: 14, fontWeight: 600, color: "#111827",
-            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          }}>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-bold text-[#172033] truncate">
             {client.name}
           </div>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>
+          <div className="text-[11px] text-[#64748B] truncate mt-0.5">
             {client.email}
           </div>
         </div>
 
         {/* Badge row */}
-        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="flex gap-1.5 items-center flex-wrap">
           <StatusBadge status={client.status} />
           <WABABadge connected={client.waba_connected} />
           <MetaStatusBadge client={client} />
-          {client.meta_quality_rating && <QualityBadge rating={client.meta_quality_rating} />}
+          {client.meta_quality_rating && (
+            <QualityBadge rating={client.meta_quality_rating} />
+          )}
           {client.meta_phone_status && client.meta_phone_status !== "CONNECTED" && (
             <Chip
-              color={phoneColor} bg="#fef3c7"
+              color={phoneColor}
+              bg="#fffbeb"
               icon={AlertTriangle}
               label={client.meta_phone_status}
             />
           )}
-          <span style={{ fontSize: 12, color: "#9ca3af", display: "flex", alignItems: "center", gap: 4 }}>
-            <Users size={13} /> {client.member_count}
+          <span className="text-xs text-[#64748B] flex items-center gap-1 ml-1">
+            <Users size={12} /> {client.member_count ?? 0}
           </span>
         </div>
 
-        {expanded ? <ChevronUp size={17} color="#9ca3af" /> : <ChevronDown size={17} color="#9ca3af" />}
+        {expanded ? (
+          <ChevronUp size={15} className="text-[#64748B]" />
+        ) : (
+          <ChevronDown size={15} className="text-[#64748B]" />
+        )}
       </div>
 
       {/* ── Expanded ── */}
       {expanded && (
-        <div style={{ borderTop: "1px solid #f3f4f6", padding: "20px 24px", background: "#fafafa" }}>
-
-          {/* ── Meta live info banner ── */}
+        <div className="border-t border-slate-100 px-5 py-4 bg-slate-50/50 space-y-4">
           {client.meta_status === "error" && (
-            <div style={{
-              background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 10,
-              padding: "10px 14px", color: "#dc2626", fontSize: 13, marginBottom: 16,
-              display: "flex", gap: 8, alignItems: "center",
-            }}>
-              <AlertTriangle size={15} />
+            <div className="bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5 text-red-700 text-xs font-medium flex gap-2 items-center">
+              <AlertTriangle size={14} />
               Meta fetch error: {client.meta_error}
             </div>
           )}
 
           {/* ── Info grid ── */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))",
-            gap: "14px 24px", marginBottom: 20,
-          }}>
-            <InfoRow icon={<Building2 size={13}/>}  label="Industry"          value={client.industry} />
-            <InfoRow icon={<Globe size={13}/>}       label="Website"
-              value={client.website
-                ? <a href={client.website} target="_blank" rel="noreferrer" style={{color:"#6366f1"}}>{client.website}</a>
-                : null}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
+            <InfoRow icon={<Building2 size={12} />} label="Industry" value={client.industry} />
+            <InfoRow
+              icon={<Globe size={12} />}
+              label="Website"
+              value={
+                client.website ? (
+                  <a
+                    href={client.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#165DFF] hover:underline"
+                  >
+                    {client.website}
+                  </a>
+                ) : null
+              }
             />
-            <InfoRow icon={<Phone size={13}/>}       label="WABA Phone"        value={client.meta_phone_number || client.phone_number} />
-            <InfoRow icon={<BadgeCheck size={13}/>}  label="Verified Name"     value={client.meta_verified_name} />
-            <InfoRow icon={<Shield size={13}/>}      label="WABA ID"           value={client.waba_id} />
-            <InfoRow icon={<Shield size={13}/>}      label="WABA Name (Meta)"  value={client.meta_waba_name} />
-            <InfoRow icon={<Zap size={13}/>}         label="Account Review"
-              value={client.meta_account_review_status
-                ? (REVIEW_STATUS[client.meta_account_review_status]?.label || client.meta_account_review_status)
-                : null}
+            <InfoRow
+              icon={<Phone size={12} />}
+              label="WABA Phone"
+              value={client.meta_phone_number || client.phone_number}
             />
-            <InfoRow icon={<AlertTriangle size={13}/>} label="Ban State"
-              value={client.meta_ban_state && client.meta_ban_state !== "NONE" ? client.meta_ban_state : null}
+            <InfoRow
+              icon={<BadgeCheck size={12} />}
+              label="Verified Name"
+              value={client.meta_verified_name}
             />
-            <InfoRow icon={<Phone size={13}/>}       label="Phone Status"
-              value={client.meta_phone_status
-                ? <span style={{color: phoneColor, fontWeight:600}}>{client.meta_phone_status}</span>
-                : null}
+            <InfoRow icon={<Shield size={12} />} label="WABA ID" value={client.waba_id} />
+            <InfoRow
+              icon={<Shield size={12} />}
+              label="WABA Name (Meta)"
+              value={client.meta_waba_name}
             />
-            <InfoRow icon={<Star size={13}/>}        label="Quality Rating"
-              value={client.meta_quality_rating
-                ? <span style={{color: QUALITY[client.meta_quality_rating]?.color || "#374151", fontWeight:600}}>
-                    {QUALITY[client.meta_quality_rating]?.label || client.meta_quality_rating}
+            <InfoRow
+              icon={<Zap size={12} />}
+              label="Account Review"
+              value={
+                client.meta_account_review_status
+                  ? REVIEW_STATUS[client.meta_account_review_status]?.label ||
+                    client.meta_account_review_status
+                  : null
+              }
+            />
+            <InfoRow
+              icon={<AlertTriangle size={12} />}
+              label="Ban State"
+              value={
+                client.meta_ban_state && client.meta_ban_state !== "NONE"
+                  ? client.meta_ban_state
+                  : null
+              }
+            />
+            <InfoRow
+              icon={<Phone size={12} />}
+              label="Phone Status"
+              value={
+                client.meta_phone_status ? (
+                  <span style={{ color: phoneColor, fontWeight: 600 }}>
+                    {client.meta_phone_status}
                   </span>
-                : null}
+                ) : null
+              }
             />
-            <InfoRow icon={<Calendar size={13}/>}    label="Onboarded"         value={fmt(client.created_at)} />
+            <InfoRow
+              icon={<Star size={12} />}
+              label="Quality Rating"
+              value={
+                client.meta_quality_rating ? (
+                  <span
+                    style={{
+                      color:
+                        QUALITY[client.meta_quality_rating]?.color || "#334155",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {QUALITY[client.meta_quality_rating]?.label ||
+                      client.meta_quality_rating}
+                  </span>
+                ) : null
+              }
+            />
+            <InfoRow
+              icon={<Calendar size={12} />}
+              label="Onboarded"
+              value={fmt(client.created_at)}
+            />
           </div>
 
           {/* ── Messages Stats Grid ── */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))",
-            gap: "14px 24px", marginBottom: 20,
-            paddingTop: 16, borderTop: "1px dashed #e5e7eb"
-          }}>
-            <InfoRow icon={<MessageSquare size={13}/>} label="Daily Msgs"      value={client.daily_messages ?? 0} />
-            <InfoRow icon={<MessageSquare size={13}/>} label="Weekly Msgs"     value={client.weekly_messages ?? 0} />
-            <InfoRow icon={<MessageSquare size={13}/>} label="Monthly Msgs"    value={client.monthly_messages ?? 0} />
-            <InfoRow icon={<MessageSquare size={13}/>} label="Total Msgs"      value={client.total_messages ?? 0} />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-3 border-t border-dashed border-slate-200">
+            <InfoRow
+              icon={<MessageSquare size={12} />}
+              label="Daily Msgs"
+              value={client.daily_messages ?? 0}
+            />
+            <InfoRow
+              icon={<MessageSquare size={12} />}
+              label="Weekly Msgs"
+              value={client.weekly_messages ?? 0}
+            />
+            <InfoRow
+              icon={<MessageSquare size={12} />}
+              label="Monthly Msgs"
+              value={client.monthly_messages ?? 0}
+            />
+            <InfoRow
+              icon={<MessageSquare size={12} />}
+              label="Total Msgs"
+              value={client.total_messages ?? 0}
+            />
           </div>
 
           {/* ── CRM Status changer & Documents ── */}
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20, flexWrap:"wrap", justifyContent: "space-between" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-              <span style={{ fontSize:13, color:"#6b7280", fontWeight:500 }}>CRM Status:</span>
+          <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-[#64748B] font-semibold">CRM Status:</span>
               {Object.entries(CRM_STATUS).map(([s, m]) => (
-                <button key={s} disabled={updating || client.status === s}
-                  onClick={e => { e.stopPropagation(); handleStatus(s); }}
-                  style={{
-                    padding:"4px 12px", borderRadius:8,
-                    border:`1.5px solid ${client.status === s ? m.color : "#e5e7eb"}`,
-                    background: client.status === s ? m.bg : "#fff",
-                    color: client.status === s ? m.color : "#6b7280",
-                    fontSize:12, fontWeight:600,
-                    cursor: updating || client.status === s ? "not-allowed" : "pointer",
-                    opacity: updating ? 0.6 : 1, transition:"all 0.15s",
+                <button
+                  key={s}
+                  disabled={updating || client.status === s}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStatus(s);
                   }}
-                >{m.label}</button>
+                  style={{
+                    padding: "4px 11px",
+                    borderRadius: 8,
+                    border: `1px solid ${client.status === s ? m.color : "#e2e8f0"}`,
+                    background: client.status === s ? m.bg : "#fff",
+                    color: client.status === s ? m.color : "#64748B",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor:
+                      updating || client.status === s ? "not-allowed" : "pointer",
+                    opacity: updating ? 0.6 : 1,
+                  }}
+                >
+                  {m.label}
+                </button>
               ))}
             </div>
 
-            {/* Documents Button */}
             <button
-              onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-sm font-semibold transition-colors border border-indigo-200"
+              onClick={(e) => {
+                e.stopPropagation();
+                setModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-50 text-[#165DFF] hover:bg-blue-100/80 rounded-xl text-xs font-semibold transition-colors border border-blue-200/70 cursor-pointer"
             >
-              <FileText size={16} />
+              <FileText size={13} />
               View Registration Docs
             </button>
           </div>
 
-          {modalOpen && <MetaRegistrationModal clientId={client.id} onClose={() => setModalOpen(false)} />}
+          {modalOpen && (
+            <MetaRegistrationModal
+              clientId={client.id}
+              onClose={() => setModalOpen(false)}
+            />
+          )}
 
           {/* ── Members ── */}
-          {client.members?.length > 0 && (
+          {client.members?.length > 0 ? (
             <div>
-              <div style={{
-                fontSize:13, fontWeight:600, color:"#374151", marginBottom:10,
-                display:"flex", alignItems:"center", gap:6,
-              }}>
-                <Users size={14}/> Team Members ({client.members.length})
+              <div className="text-xs font-bold text-[#172033] mb-2 flex items-center gap-1.5">
+                <Users size={13} className="text-[#165DFF]" /> Team Members (
+                {client.members.length})
               </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
-                {client.members.map(m => (
-                  <div key={m.id} style={{
-                    display:"flex", alignItems:"center", gap:12,
-                    background:"#fff", border:"1px solid #e5e7eb",
-                    borderRadius:10, padding:"9px 13px",
-                  }}>
-                    <div style={{
-                      width:30, height:30, borderRadius:8, background:"#f3f4f6",
-                      display:"flex", alignItems:"center", justifyContent:"center",
-                      fontWeight:700, fontSize:13, color:"#374151", flexShrink:0,
-                    }}>{m.full_name.charAt(0).toUpperCase()}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:600, color:"#111827" }}>{m.full_name}</div>
-                      <div style={{ fontSize:12, color:"#9ca3af" }}>{m.email}</div>
+              <div className="space-y-1.5">
+                {client.members.map((m) => (
+                  <div
+                    key={m.id}
+                    className="flex items-center gap-3 bg-white border border-slate-200/80 rounded-xl px-3.5 py-2"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-xs text-[#172033] shrink-0">
+                      {(m.full_name || "U").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-[#172033] truncate">
+                        {m.full_name}
+                      </div>
+                      <div className="text-[11px] text-[#64748B] truncate">
+                        {m.email}
+                      </div>
                     </div>
                     <RoleBadge role={m.role} />
-                    <div style={{ fontSize:11, color:"#9ca3af", whiteSpace:"nowrap" }}>
+                    <div className="text-[11px] text-[#64748B] whitespace-nowrap">
                       Joined {fmt(m.joined_at)}
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-          )}
-          {client.members?.length === 0 && (
-            <div style={{ fontSize:13, color:"#9ca3af", fontStyle:"italic" }}>No team members yet.</div>
+          ) : (
+            <div className="text-xs text-[#64748B] italic">No team members yet.</div>
           )}
         </div>
       )}
@@ -469,44 +681,58 @@ function ClientRow({ client, onStatusChange }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function TechProviderClients() {
-  const token     = localStorage.getItem("accessToken");
-  const userEmail = localStorage.getItem("ownerEmail") || localStorage.getItem("orgEmail") || "";
+  const token = localStorage.getItem("accessToken");
+  const userEmail =
+    localStorage.getItem("ownerEmail") || localStorage.getItem("orgEmail") || "";
 
-  const [data,         setData]         = useState(null);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
-  const [search,       setSearch]       = useState("");
+  const [data, setData] = useState(cachedClientsData);
+  const [loading, setLoading] = useState(!cachedClientsData);
+  const [syncingMeta, setSyncingMeta] = useState(false);
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const load = useCallback(async (isBackground = false) => {
-    if (!isBackground) { setLoading(true); setError(null); }
-    try {
-      const params = {};
-      if (statusFilter) params.status = statusFilter;
-      if (search)       params.search = search;
-      if (isBackground) params.meta = '0'; // Skip live Meta fetch on background auto-refresh
-      const res = await axios.get(`${API_BASE_URL}api/techprovider/clients/`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
-      setData(res.data);
-    } catch (e) {
-      if (!isBackground) {
-        setError(e?.response?.data?.detail || e?.response?.data?.message || "Failed to load clients.");
+  // Fast load by default (meta=0 skips slow synchronous Meta Graph API calls per client)
+  const load = useCallback(
+    async ({ withLiveMeta = false, silent = false } = {}) => {
+      if (withLiveMeta) {
+        setSyncingMeta(true);
+      } else if (!silent) {
+        setLoading(true);
       }
-    } finally {
-      if (!isBackground) { setLoading(false); }
-    }
-  }, [token, statusFilter, search]);
+      setError(null);
 
-  useEffect(() => { 
-    load(); 
-    // Auto refresh fast (every 10 seconds) without showing loader
-    const intervalId = setInterval(() => {
-      load(true);
-    }, 10000); 
-    
-    return () => clearInterval(intervalId);
+      try {
+        const params = {};
+        if (!withLiveMeta) {
+          params.meta = "0";
+        }
+        const res = await axios.get(`${API_BASE_URL}api/techprovider/clients/`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params,
+        });
+        cachedClientsData = res.data;
+        setData(res.data);
+      } catch (e) {
+        if (!silent) {
+          setError(
+            e?.response?.data?.detail ||
+              e?.response?.data?.message ||
+              "Failed to load clients."
+          );
+        }
+      } finally {
+        setLoading(false);
+        setSyncingMeta(false);
+      }
+    },
+    [token]
+  );
+
+  useEffect(() => {
+    if (!cachedClientsData) {
+      load({ withLiveMeta: false });
+    }
   }, [load]);
 
   const handleStatusChange = async (clientId, newStatus) => {
@@ -515,14 +741,35 @@ export default function TechProviderClients() {
       { status: newStatus },
       { headers: { Authorization: `Bearer ${token}` } }
     );
-    await load();
+    await load({ withLiveMeta: false, silent: true });
   };
+
+  // Client-side instant filtering (zero server load when typing search or switching status)
+  const filteredClients = useMemo(() => {
+    const list = data?.clients || [];
+    const q = search.trim().toLowerCase();
+    return list.filter((c) => {
+      if (statusFilter && c.status !== statusFilter) return false;
+      if (
+        q &&
+        !(
+          c.name?.toLowerCase().includes(q) ||
+          c.email?.toLowerCase().includes(q) ||
+          c.waba_id?.toLowerCase().includes(q)
+        )
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [data, search, statusFilter]);
 
   if (!canViewClients(userEmail)) {
     return (
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"60vh", color:"#dc2626", gap:12 }}>
-        <XCircle size={48}/><div style={{fontSize:18,fontWeight:600}}>Access Denied</div>
-        <div style={{color:"#6b7280"}}>Tech-provider accounts only.</div>
+      <div className="min-h-screen bg-[#FAFAFC] flex flex-col items-center justify-center text-red-600 gap-2 font-sans">
+        <XCircle size={40} />
+        <div className="text-base font-bold text-[#172033]">Access Denied</div>
+        <div className="text-xs text-[#64748B]">Tech-provider accounts only.</div>
       </div>
     );
   }
@@ -530,95 +777,151 @@ export default function TechProviderClients() {
   const summary = data?.summary || {};
 
   return (
-    <div style={{ padding:"28px 32px", maxWidth:1100, margin:"0 auto" }}>
-
-      {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:22 }}>
+    <div className="min-h-screen w-full bg-[#FAFAFC] p-5 sm:p-6 lg:p-7 space-y-5 font-sans text-[#172033]">
+      {/* ── PAGE HEADER (Matches Dashboard, Leads, WhatsApp, Templates, Campaign, Profile) ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-[#E5E7EB]/80">
         <div>
-          <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-            <Building2 size={20} color="#6366f1"/>
-            <h1 style={{ fontSize:21, fontWeight:700, color:"#111827", margin:0 }}>Client Accounts</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172033] leading-tight">
+            Client Accounts
+          </h1>
+          <p className="text-xs text-[#64748B] mt-1 font-normal">
+            {data?.tech_provider
+              ? `${data.tech_provider} · ${summary.total ?? 0} onboarded client organizations`
+              : "Manage onboarded client accounts and WABA status"}
+          </p>
+        </div>
+
+        {/* Right Toolbar */}
+        <div className="flex items-center flex-wrap gap-2.5">
+          {/* Status Segmented Tabs */}
+          <div className="inline-flex items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/70">
+            {[
+              { key: "", label: "All", count: summary.total ?? 0 },
+              { key: "active", label: "Active", count: summary.active ?? 0 },
+              { key: "pending", label: "Pending", count: summary.pending ?? 0 },
+              { key: "suspended", label: "Suspended", count: summary.suspended ?? 0 },
+            ].map((tabItem) => {
+              const active = statusFilter === tabItem.key;
+              return (
+                <button
+                  key={tabItem.key}
+                  onClick={() => setStatusFilter(tabItem.key)}
+                  className={`h-7 px-3 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    active
+                      ? "bg-[#165DFF] text-white shadow-xs"
+                      : "text-[#64748B] hover:text-[#172033]"
+                  }`}
+                >
+                  <span>{tabItem.label}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                      active
+                        ? "bg-white/20 text-white"
+                        : "bg-white text-[#64748B]"
+                    }`}
+                  >
+                    {tabItem.count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          {data && (
-            <p style={{ fontSize:13, color:"#6b7280", marginTop:3, marginLeft:29 }}>
-              {data.tech_provider} &mdash; {summary.total ?? 0} clients · Live Meta status included
-            </p>
+
+          <button
+            onClick={() => load({ withLiveMeta: false })}
+            disabled={loading || syncingMeta}
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-[#E5E7EB] rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
+          >
+            <RefreshCw
+              size={13}
+              className={
+                loading ? "animate-spin text-[#165DFF]" : "text-[#64748B]"
+              }
+            />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            onClick={() => load({ withLiveMeta: true })}
+            disabled={loading || syncingMeta}
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-[#165DFF] hover:bg-[#1248CC] text-white rounded-xl transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50 cursor-pointer"
+            title="Fetch live quality rating and review status from Meta Graph API"
+          >
+            <Zap
+              size={13}
+              className={syncingMeta ? "animate-pulse" : ""}
+            />
+            <span>{syncingMeta ? "Syncing Meta…" : "Sync Live Meta"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── SEARCH BAR ── */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs flex items-center justify-between flex-wrap gap-3">
+        <div className="relative w-full sm:w-80">
+          <Search
+            size={14}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]"
+          />
+          <input
+            type="text"
+            placeholder="Search client by name, email, or WABA ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-9 pl-9 pr-8 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-xs text-[#172033] placeholder-[#94A3B8] focus:outline-none focus:bg-white focus:border-[#165DFF] focus:ring-3 focus:ring-[#165DFF]/10 transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#172033] cursor-pointer"
+            >
+              <X size={13} />
+            </button>
           )}
         </div>
-        <button onClick={load} disabled={loading} style={{
-          display:"flex", alignItems:"center", gap:6,
-          padding:"8px 15px", borderRadius:10, border:"1px solid #e5e7eb",
-          background:"#fff", color:"#374151", fontSize:13, fontWeight:500,
-          cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1,
-        }}>
-          <RefreshCw size={14} style={{animation: loading ? "spin 1s linear infinite" : "none"}}/>
-          Refresh
-        </button>
+
+        <div className="flex items-center gap-2 text-xs text-[#64748B]">
+          <span className="font-semibold text-[#172033]">Showing</span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-[#165DFF] border border-blue-100 tabular-nums">
+            {filteredClients.length}
+          </span>
+        </div>
       </div>
 
-      {/* Summary cards */}
-      <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:22 }}>
-        <SummaryCard label="Total"     value={summary.total}     color="#6366f1"/>
-        <SummaryCard label="Active"    value={summary.active}    color="#16a34a"/>
-        <SummaryCard label="Pending"   value={summary.pending}   color="#d97706"/>
-        <SummaryCard label="Suspended" value={summary.suspended} color="#dc2626"/>
-      </div>
-
-      {/* Filters */}
-      <div style={{ display:"flex", gap:10, marginBottom:18, flexWrap:"wrap" }}>
-        <div style={{ position:"relative", flex:"1 1 240px" }}>
-          <Search size={14} style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)", color:"#9ca3af" }}/>
-          <input
-            type="text" placeholder="Search by name or email…"
-            value={search} onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && load()}
-            style={{
-              width:"100%", padding:"9px 12px 9px 34px", borderRadius:10,
-              border:"1px solid #e5e7eb", fontSize:13, color:"#111827",
-              outline:"none", boxSizing:"border-box",
-            }}
+      {/* ── CLIENT LIST ── */}
+      {loading ? (
+        <div className="py-20 text-center text-[#64748B]">
+          <RefreshCw
+            size={22}
+            className="animate-spin text-[#165DFF] mx-auto mb-2.5"
           />
+          <div className="text-xs font-medium">Loading client accounts…</div>
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{
-          padding:"9px 14px", borderRadius:10, border:"1px solid #e5e7eb",
-          fontSize:13, color:"#374151", background:"#fff", cursor:"pointer",
-        }}>
-          <option value="">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
-          <option value="suspended">Suspended</option>
-        </select>
-      </div>
-
-      {/* States */}
-      {loading && (
-        <div style={{ textAlign:"center", padding:60, color:"#9ca3af" }}>
-          <RefreshCw size={26} style={{ animation:"spin 1s linear infinite", marginBottom:10 }}/>
-          <div>Loading clients + Meta status…</div>
-        </div>
-      )}
-
-      {!loading && error && (
-        <div style={{ background:"#fee2e2", border:"1px solid #fca5a5", borderRadius:12, padding:"14px 18px", color:"#dc2626", fontSize:14 }}>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3.5 text-red-700 text-xs font-semibold">
           {error}
         </div>
-      )}
-
-      {!loading && !error && !data?.clients?.length && (
-        <div style={{ textAlign:"center", padding:60, color:"#9ca3af", border:"2px dashed #e5e7eb", borderRadius:14 }}>
-          <Building2 size={34} style={{ marginBottom:10, opacity:0.4 }}/>
-          <div style={{ fontSize:15, fontWeight:600 }}>No clients found</div>
-          <div style={{ fontSize:13, marginTop:3 }}>
-            {search || statusFilter ? "Try adjusting your filters." : "No clients onboarded yet."}
+      ) : filteredClients.length === 0 ? (
+        <div className="py-16 text-center bg-white border border-dashed border-slate-200 rounded-2xl">
+          <Building2 size={28} className="mx-auto mb-2 text-[#94A3B8]" />
+          <div className="text-xs font-bold text-[#172033]">No clients found</div>
+          <div className="text-xs text-[#64748B] mt-1">
+            {search || statusFilter
+              ? "Try adjusting your search or filter."
+              : "No clients onboarded yet."}
           </div>
         </div>
+      ) : (
+        <div>
+          {filteredClients.map((c) => (
+            <ClientRow
+              key={c.id}
+              client={c}
+              onStatusChange={handleStatusChange}
+            />
+          ))}
+        </div>
       )}
-
-      {!loading && !error && data?.clients?.map(c => (
-        <ClientRow key={c.id} client={c} onStatusChange={handleStatusChange}/>
-      ))}
-
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }

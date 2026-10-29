@@ -54,7 +54,7 @@ export const sendCampaign = createAsyncThunk(
       const headers = {
         Authorization: `Bearer ${token}`,
       };
-      
+
       if (!isFormData) {
         headers["Content-Type"] = "application/json";
       }
@@ -102,6 +102,7 @@ const campaignSlice = createSlice({
   initialState: {
     approvedTemplates: [],
     campaigns: [],
+    campaignStatsMap: {},
     isFetchingTemplates: false,
     isSending: false,
     isFetchingCampaigns: false,
@@ -113,6 +114,13 @@ const campaignSlice = createSlice({
     clearSendResult(state) {
       state.sendSuccess = null;
       state.sendError = null;
+    },
+    setCampaignStats(state, action) {
+      const { id, stats } = action.payload;
+      state.campaignStatsMap[id] = stats;
+    },
+    clearCampaignStats(state) {
+      state.campaignStatsMap = {};
     },
   },
   extraReducers: (builder) => {
@@ -163,5 +171,6 @@ const campaignSlice = createSlice({
   },
 });
 
-export const { clearSendResult } = campaignSlice.actions;
+export const { clearSendResult, setCampaignStats, clearCampaignStats } =
+  campaignSlice.actions;
 export default campaignSlice.reducer;

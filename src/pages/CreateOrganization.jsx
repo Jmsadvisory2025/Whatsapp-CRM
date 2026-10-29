@@ -33,9 +33,10 @@ import {
   setSignupStep,
   resetSignupStep,
 } from "../store/metaConnectSlice";
+import jmsLogo from "../assets/jms.png";
 
 /* ── ENV ─────────────────────────────────────────────────────────────────── */
-const META_APP_ID    = import.meta.env.VITE_META_APP_ID    || "";
+const META_APP_ID = import.meta.env.VITE_META_APP_ID || "";
 const META_CONFIG_ID = import.meta.env.VITE_META_CONFIG_ID || "";
 
 /* ── FB SDK loader ────────────────────────────────────────────────────────── */
@@ -56,13 +57,12 @@ function loadFbSdk(onReady) {
 
 /* ── Logo ─────────────────────────────────────────────────────────────────── */
 const Logo = () => (
-  <div className="flex items-center gap-2 mb-8">
-    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-      <FaWhatsapp className="text-white text-sm" />
-    </div>
-    <span className="font-extrabold text-gray-900 text-lg tracking-tight">
-      JMS TechNova
-    </span>
+  <div className="flex items-center justify-center mb-2">
+    <img
+      src={jmsLogo}
+      alt="JMS Logo"
+      className="h-20 sm:h-24 w-auto max-w-[220px] object-contain"
+    />
   </div>
 );
 
@@ -96,9 +96,9 @@ export default function ConnectWhatsApp() {
       const data = JSON.parse(event.data);
       if (data.type === "WA_EMBEDDED_SIGNUP" && (data.event === "FINISH" || data.event === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING")) {
         wabaRef.current = {
-          waba_id:         data.data?.waba_id         || "",
+          waba_id: data.data?.waba_id || "",
           phone_number_id: data.data?.phone_number_id || "",
-          business_id:     data.data?.business_id     || "",
+          business_id: data.data?.business_id || "",
         };
       }
     } catch { /* ignore non-JSON */ }
@@ -134,8 +134,8 @@ export default function ConnectWhatsApp() {
         //   .unwrap()
         //   .then(() => navigate("/"))
         dispatch(startEmbeddedSignup({ code, waba_id, phone_number_id, business_id }))
-        .unwrap()
-        .then(() => navigate("/connected-business", { replace: true }))  
+          .unwrap()
+          .then(() => navigate("/connected-business", { replace: true }))
           .catch(() => {
             // metaError Redux state will show the error in UI
           });
@@ -164,31 +164,23 @@ export default function ConnectWhatsApp() {
         transition={{ duration: 0.45 }}
         className="w-full max-w-md"
       >
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 px-8 py-10">
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 px-8 py-9">
           <Logo />
 
-          {/* WhatsApp icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-200">
-              <FaWhatsapp className="text-white text-3xl" />
-            </div>
-          </div>
-
-          <h2 className="text-xl font-extrabold text-gray-900 text-center mb-2">
-            Connect WhatsApp Business
+          <h2 className="text-xl font-extrabold text-gray-900 text-center mb-1.5">
+            Start Your WhatsApp Account Setup
           </h2>
-          <p className="text-gray-500 text-sm text-center mb-7 leading-relaxed">
-            Click the button below to launch Meta's secure Embedded Signup.
-            Log in with Facebook, select your Business Manager and grant permissions.
+          <p className="text-gray-500 text-xs text-center mb-6 leading-relaxed">
+            Connect your business through Meta’s secure Embedded Signup to Register Your Number.
           </p>
 
           {/* Steps */}
           <div className="bg-gray-50 rounded-2xl p-4 mb-7 space-y-3">
             {[
-              { icon: "🔐", text: "Log in with your Facebook account" },
-              { icon: "🏢", text: "Select your Business Manager account" },
-              { icon: "✅", text: "Grant WhatsApp messaging permissions" },
-              { icon: "🚀", text: "Get redirected to your CRM dashboard" },
+              { icon: "🔐", text: "Log in with Your Facebook Account" },
+              { icon: "🏢", text: "Select Your Facebook Business Portfolio" },
+              { icon: "✅", text: "Grant WhatsApp Messaging Permissions" },
+              { icon: "🚀", text: "Get Redirected to CRM Dashboard" },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <span className="text-base">{item.icon}</span>

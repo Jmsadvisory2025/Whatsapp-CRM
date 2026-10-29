@@ -8,35 +8,39 @@ import { fetchMe } from "../../store/authSlice";
 
 const AppLayout = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed]   = useState(false);
-  const location  = useLocation();
-  const navigate  = useNavigate();
-  const dispatch  = useDispatch();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [initialAuthChecked, setInitialAuthChecked] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const { accessToken, has_organization, isMeLoading } = useSelector((s) => s.auth);
+  const { accessToken, waba_connected } = useSelector((s) => s.auth);
+  const wabaConnected =
+    waba_connected ?? localStorage.getItem("wabaConnected") === "true";
 
-  // ── On mount: rehydrate role / org / waba status from backend ────────────
-  // This fixes the "403 after page refresh" issue. The JWT in localStorage
-  // is valid, but Redux lost role/org state on reload. fetchMe restores it.
+  // ── On mount: rehydrate role / org / waba status from backend once ────────
   useEffect(() => {
     if (accessToken) {
       dispatch(fetchMe())
         .unwrap()
         .then((profile) => {
-          // After rehydration: if org not set up yet, send to /setup
           const skipSetup = localStorage.getItem("skip_setup") === "true";
           if (!profile.has_organization && !skipSetup) {
             navigate("/setup", { replace: true });
           }
         })
         .catch(() => {
-          // Token expired or invalid — RequireSignIn guard will redirect
+          // Token expired or invalid — guard will redirect
+        })
+        .finally(() => {
+          setInitialAuthChecked(true);
         });
+    } else {
+      setInitialAuthChecked(true);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // While fetchMe is in flight on first load, render nothing (avoids flicker)
-  if (isMeLoading) {
+  if (!initialAuthChecked) {
     return null;
   }
 
@@ -72,27 +76,51 @@ const AppLayout = () => {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <div className="flex items-center justify-between p-4 bg-surface border-b lg:hidden">
-          <span className="font-bold text-xl text-primary">TechNova CRM</span>
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="text-gray-600 hover:text-gray-900 transition-colors"
-            aria-label="Toggle sidebar"
-          >
-            <Menu size={24} />
-          </button>
-        </div>
+      <div className="flex flex-1 flex-col overflow-hidden bg-[#FAFAFC]">
+        {/* Mobile-only header for sidebar drawer toggle */}
+        <header className="h-14 px-4 bg-white border-b border-[#E5E7EB] flex items-center justify-between z-10 sticky top-0 lg:hidden">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 -ml-2 rounded-lg text-[#64748B] hover:text-[#172033] hover:bg-slate-100 transition-colors"
+              aria-label="Toggle sidebar"
+            >
+              <Menu size={20} />
+            </button>
+            <span className="font-semibold text-sm text-[#172033] capitalize tracking-tight">
+              {location.pathname === "/"
+                ? "Dashboard"
+                : location.pathname === "/leads-prospects"
+                  ? "Customers"
+                  : location.pathname === "/whatsapp"
+                    ? "Inbox"
+                    : location.pathname === "/templates"
+                      ? "Message Templates"
+                      : location.pathname === "/team"
+                        ? "Profile"
+                        : location.pathname.replace("/", "").replace(/-/g, " ")}
+            </span>
+          </div>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          {/* Minimal WhatsApp status dot */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                wabaConnected ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+              }`}
+            />
+            <span>{wabaConnected ? "Active" : "Offline"}</span>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25 }}
             >
               <Outlet />
             </motion.div>

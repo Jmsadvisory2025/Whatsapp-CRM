@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  AreaChart, Area, BarChart, Bar,
+  AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
-  MessageSquare, CheckCheck, Eye, AlertCircle, Layout,
+  MessageSquare, CheckCheck, Eye, AlertCircle,
   Users, TrendingUp, TrendingDown, RefreshCw, Wifi, WifiOff,
   Calendar as CalendarIcon, Activity, Zap, BarChart2, Building2, Info
 } from "lucide-react";
@@ -25,50 +25,61 @@ const fmt = (n) =>
 const pct = (num, den) =>
   den > 0 ? ((num / den) * 100).toFixed(1) + "%" : "—";
 
-/* ─── Color palette ─────────────────────────────────────────── */
+/* ─── Brand Color Palette (referencing SignIn / SignUp) ─────── */
 const C = {
-  blue: "#3b82f6",
-  green: "#22c55e",
-  amber: "#f59e0b",
-  red: "#ef4444",
-  purple: "#8b5cf6",
-  teal: "#14b8a6",
-  slate: "#64748b",
-  indigo: "#6366f1",
+  blue: "#165DFF",      // Primary brand electric blue
+  blueHover: "#1247CC",
+  navy: "#172033",      // Primary heading dark navy
+  slate: "#64748B",     // Secondary text slate
+  muted: "#94A3B8",
+  sky: "#0EA5E9",       // Sky blue (Leads / Dispatcher)
+  cyan: "#38BDF8",
+  whatsapp: "#25D366",  // WhatsApp green
+  emerald: "#10B981",   // Active / Delivered green
+  indigo: "#6366F1",    // Indigo accent
+  purple: "#8B5CF6",    // Purple accent
+  amber: "#F59E0B",     // Amber accent
+  red: "#EF4444",       // Danger red
 };
 
 /* ─── Tooltip Helper ────────────────────────────────────────── */
 const InfoTooltip = ({ text }) => (
   <div className="relative group inline-flex items-center ml-1.5 align-middle">
-    <Info size={14} className="text-gray-400 group-hover:text-gray-600 cursor-help transition-colors" />
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-gray-900 text-white text-[11px] rounded-lg shadow-xl z-20 font-medium leading-relaxed text-center pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+    <Info size={13} className="text-[#94A3B8] group-hover:text-[#165DFF] cursor-help transition-colors" />
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 bg-[#172033] text-white text-[11px] rounded-xl shadow-xl z-20 font-normal leading-relaxed text-center pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
       {text}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#172033]"></div>
     </div>
   </div>
 );
 
-/* ─── Reusable stat card ────────────────────────────────────── */
-const StatCard = ({ icon: Icon, label, value, sub, color, trend, onClick, tooltip }) => (
+/* ─── Reusable SaaS KPI Stat Card ───────────────────────────── */
+const StatCard = ({ icon: Icon, label, value, sub, color, bgTint, borderTint, trend, onClick, tooltip }) => (
   <div
     onClick={onClick}
-    className={`bg-white rounded-xl p-2.5 sm:p-4 lg:p-5 border border-gray-100 flex flex-col justify-between h-full flex-1 min-w-0 shrink ${onClick ? 'cursor-pointer hover:border-blue-200 hover:shadow-md transition-all hover:-translate-y-0.5' : ''}`}
-    style={{ boxShadow: "0 2px 8px -2px rgba(0,0,0,0.05)" }}
+    className={`bg-white rounded-2xl p-3.5 sm:p-4 lg:p-4 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03] flex flex-col justify-between h-full flex-1 min-w-[130px] shrink transition-all duration-200 ${
+      onClick
+        ? "cursor-pointer hover:border-[#165DFF]/35 hover:shadow-md hover:shadow-blue-500/[0.06] hover:-translate-y-0.5"
+        : ""
+    }`}
   >
-    <div className="flex items-start justify-between mb-2 sm:mb-3">
+    <div className="flex items-center justify-between mb-3.5">
       <div
-        className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: `${color}15` }}
+        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border"
+        style={{
+          backgroundColor: bgTint || `${color}12`,
+          borderColor: borderTint || `${color}24`,
+        }}
       >
-        <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color }} />
+        <Icon size={17} style={{ color }} strokeWidth={2.2} />
       </div>
       {trend !== undefined && (
         <span
-          className="text-[9px] lg:text-[11px] font-semibold flex items-center gap-1 px-1.5 py-0.5 lg:px-2 lg:py-1 rounded-md"
+          className="text-[11px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-lg border"
           style={
             trend >= 0
-              ? { background: "#dcfce7", color: "#15803d" }
-              : { background: "#fee2e2", color: "#dc2626" }
+              ? { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }
+              : { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" }
           }
         >
           {trend >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -77,55 +88,67 @@ const StatCard = ({ icon: Icon, label, value, sub, color, trend, onClick, toolti
       )}
     </div>
     <div>
-      <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight truncate">{value}</p>
-      <div className="flex items-center mt-0.5 sm:mt-1">
-        <p className="text-[10px] sm:text-xs lg:text-sm font-medium text-gray-500 truncate">{label}</p>
+      <p className="text-xl sm:text-2xl font-bold text-[#172033] tracking-tight truncate leading-none">
+        {value}
+      </p>
+      <div className="flex items-center mt-2">
+        <p className="text-xs font-medium text-[#64748B] truncate">{label}</p>
         {tooltip && <InfoTooltip text={tooltip} />}
       </div>
-      {sub && <p className="text-[9px] sm:text-[10px] lg:text-xs text-gray-400 mt-0.5 sm:mt-1 truncate">{sub}</p>}
+      {sub && <p className="text-[11px] text-[#94A3B8] mt-1 truncate">{sub}</p>}
     </div>
   </div>
 );
 
-/* ─── Section header ────────────────────────────────────────── */
-const SectionHeader = ({ icon: Icon, title, sub, color }) => (
-  <div className="flex items-center gap-3 mb-5">
-    <div
-      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-      style={{ background: `${color}15` }}
-    >
-      <Icon size={16} style={{ color }} strokeWidth={2.5} />
+/* ─── Section Header ────────────────────────────────────────── */
+const SectionHeader = ({ icon: Icon, title, sub, color, bgTint, borderTint, rightBadge }) => (
+  <div className="flex items-center justify-between gap-3 mb-4">
+    <div className="flex items-center gap-3 min-w-0">
+      <div
+        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 border"
+        style={{
+          backgroundColor: bgTint || `${color}12`,
+          borderColor: borderTint || `${color}24`,
+        }}
+      >
+        <Icon size={15} style={{ color }} strokeWidth={2.2} />
+      </div>
+      <div className="min-w-0">
+        <h3 className="text-sm font-semibold text-[#172033] tracking-tight leading-snug truncate">
+          {title}
+        </h3>
+        {sub && <p className="text-[11px] text-[#64748B] leading-tight mt-0.5 truncate">{sub}</p>}
+      </div>
     </div>
-    <div>
-      <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-      {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
-    </div>
+    {rightBadge && <div className="flex-shrink-0">{rightBadge}</div>}
   </div>
 );
 
-/* ─── Custom tooltip ────────────────────────────────────────── */
+/* ─── Custom Chart Tooltip ──────────────────────────────────── */
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-100 rounded-lg shadow-xl px-4 py-3 text-sm">
-      <p className="font-semibold text-gray-800 mb-2">{label}</p>
+    <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl shadow-lg shadow-blue-500/10 px-3.5 py-2.5 text-xs">
+      <p className="font-semibold text-[#172033] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
       {payload.map((p) => (
-        <div key={p.name} className="flex items-center gap-2 mb-1 last:mb-0">
-          <div className="w-2 h-2 rounded-full" style={{ background: p.color || p.stroke }} />
-          <span className="text-gray-500">{p.name}:</span>
-          <span className="font-bold text-gray-900">{p.value}</span>
+        <div key={p.name} className="flex items-center justify-between gap-3 mb-1 last:mb-0">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ background: p.color || p.stroke }} />
+            <span className="text-[#64748B] font-medium">{p.name}:</span>
+          </div>
+          <span className="font-bold text-[#172033]">{p.value}</span>
         </div>
       ))}
     </div>
   );
 };
 
-/* ─── Empty state ────────────────────────────────────────────── */
+/* ─── Empty Chart State ─────────────────────────────────────── */
 function EmptyChart({ label }) {
   return (
-    <div className="flex flex-col items-center justify-center h-48 text-gray-400 gap-3">
-      <BarChart2 size={32} className="opacity-20" />
-      <p className="text-sm font-medium">{label}</p>
+    <div className="flex flex-col items-center justify-center h-48 text-[#94A3B8] gap-2.5 bg-slate-50/60 rounded-xl border border-dashed border-slate-200/80">
+      <BarChart2 size={24} className="text-[#165DFF]/40" />
+      <p className="text-xs font-medium text-[#64748B]">{label}</p>
     </div>
   );
 }
@@ -142,7 +165,6 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calendarViewDate, setCalendarViewDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     setLoading(true);
@@ -153,7 +175,6 @@ export default function Dashboard() {
         const tk = localStorage.getItem("accessToken");
         const headers = { Authorization: `Bearer ${tk}` };
 
-        // Fetch all 3 endpoints concurrently instead of waiting for one to finish before starting the next
         const pDashboard = fetch(`${API_BASE}api/industry/dashboard/`, { headers })
           .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); });
           
@@ -230,7 +251,6 @@ export default function Dashboard() {
         const tk = token();
         const headers = { Authorization: `Bearer ${tk}` };
 
-        // Fetch both endpoints concurrently
         const pAnalytics = fetch(`${API_BASE}api/analytics/`, { headers })
           .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json(); });
           
@@ -245,16 +265,36 @@ export default function Dashboard() {
         }
 
         let realCustomersByDay = {};
+        const todayLocalYMD = () => {
+          const now = new Date();
+          return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        };
+        const todayStr = todayLocalYMD();
+        let computedNewToday = 0;
+
         if (lpJson) {
           json.rawCustomers = lpJson.results || [];
           (lpJson.results || []).forEach(c => {
             if (c.created_at) {
               const dStr = c.created_at.split('T')[0];
               realCustomersByDay[dStr] = (realCustomersByDay[dStr] || 0) + 1;
+              const cd = new Date(c.created_at);
+              const cLocalStr = `${cd.getFullYear()}-${String(cd.getMonth() + 1).padStart(2, "0")}-${String(cd.getDate()).padStart(2, "0")}`;
+              if (cLocalStr === todayStr || dStr === todayStr) {
+                computedNewToday += 1;
+              }
             }
           });
         }
         json.realCustomersByDay = realCustomersByDay;
+
+        if (!json.summary) json.summary = {};
+        if (json.summary.new_today === undefined) {
+          json.summary.new_today = json.new_today !== undefined ? json.new_today : computedNewToday;
+        }
+        if (json.summary.active_today === undefined && json.active_today !== undefined) {
+          json.summary.active_today = json.active_today;
+        }
 
         setData(json);
       }
@@ -276,12 +316,12 @@ export default function Dashboard() {
   /* ── Not connected / no org ───────────────────────────────── */
   if (data?.status === "not_connected" || data?.status === "no_org") {
     return (
-      <div className="p-6 lg:p-8 flex flex-col items-center justify-center min-h-[60vh] gap-5">
-        <div className="w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center">
-          <WifiOff size={36} className="text-amber-500" />
+      <div className="p-6 lg:p-8 flex flex-col items-center justify-center min-h-[65vh] gap-4 bg-[#FAFAFC] font-sans">
+        <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center shadow-sm">
+          <WifiOff size={28} className="text-amber-500" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900">WhatsApp Not Connected</h2>
-        <p className="text-base text-gray-500 text-center max-w-sm">
+        <h2 className="text-lg font-bold text-[#172033] tracking-tight">WhatsApp Not Connected</h2>
+        <p className="text-xs text-[#64748B] text-center max-w-sm leading-relaxed">
           {data?.status === "no_org"
             ? "No organisation found. Complete setup first to view analytics."
             : "Connect your WABA account to start visualizing your message analytics."}
@@ -293,34 +333,35 @@ export default function Dashboard() {
   /* ── Error state ──────────────────────────────────────────── */
   if (error && !data) {
     return (
-      <div className="p-6 lg:p-8 flex flex-col items-center justify-center min-h-[60vh] gap-5">
-        <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center">
-          <AlertCircle size={36} className="text-red-500" />
+      <div className="p-6 lg:p-8 flex flex-col items-center justify-center min-h-[65vh] gap-4 bg-[#FAFAFC] font-sans">
+        <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center shadow-sm">
+          <AlertCircle size={28} className="text-red-500" />
         </div>
-        <h2 className="text-xl font-bold text-gray-900">Failed to Load</h2>
-        <p className="text-base text-gray-500">{error}</p>
+        <h2 className="text-lg font-bold text-[#172033] tracking-tight">Failed to Load Analytics</h2>
+        <p className="text-xs text-[#64748B]">{error}</p>
         <button
           onClick={fetchAnalytics}
-          className="mt-2 px-6 py-2.5 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
+          className="mt-1 px-4 py-2 bg-[#165DFF] hover:bg-[#1247CC] text-white text-xs font-semibold rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
         >
-          <RefreshCw size={16} />
+          <RefreshCw size={13} />
           Try Again
         </button>
       </div>
     );
   }
 
-  const { totals = {}, daily_stats = [], template_stats = [], waba = {}, summary = {} } = data || {};
+  const { totals = {}, daily_stats = [], waba = {}, summary = {} } = data || {};
 
   /* ── Derived data ─────────────────────────────────────────── */
   const totalDelivered = (totals.delivered || 0) + (totals.read || 0);
   const deliveryRate = pct(totalDelivered, totals.messages);
   const readRate = pct(totals.read, totals.messages);
+  const deliveryPctNum = totals.messages > 0 ? Math.min(100, (totalDelivered / totals.messages) * 100) : 0;
+  const readPctNum = totals.messages > 0 ? Math.min(100, ((totals.read || 0) / totals.messages) * 100) : 0;
 
   // Ensure stats are sorted chronologically (oldest to newest) for left-to-right chart rendering
   const chronologicalStats = [...daily_stats].sort((a, b) => new Date(a.day) - new Date(b.day));
 
-  // Create mock customer data that exactly sums to total_customers if backend data is missing
   const hasRealCustomerData = chronologicalStats.some(d =>
     d.customers !== undefined || d.new_customers !== undefined || d.customer_count !== undefined || d.active_customers !== undefined
   );
@@ -331,28 +372,23 @@ export default function Dashboard() {
     const days = chronologicalStats.length || 7;
     fakeDailyCounts = new Array(days).fill(0);
 
-    // Distribute 1 per day starting from most recent, until we run out
     for (let i = days - 1; i >= 0 && remaining > 0; i--) {
       fakeDailyCounts[i] = 1;
       remaining--;
     }
-    // If there are still remaining customers, put them all on the most recent day
     if (remaining > 0 && days > 0) {
       fakeDailyCounts[days - 1] += remaining;
     }
   }
 
   const chartDailyRaw = chronologicalStats.map((d, index) => {
-    // Real values directly from backend (backend already sends daily independent counts)
     let dailyMsg = d.count || d.messages || 0;
 
-    // For customers, check if we successfully mapped real dates from the API
     let dailyCust = 0;
     if (data.realCustomersByDay && Object.keys(data.realCustomersByDay).length > 0) {
       const dStr = d.day ? d.day.split('T')[0] : "";
       dailyCust = data.realCustomersByDay[dStr] || 0;
     } else {
-      // Fallback if real dates couldn't be fetched
       const realCust = d.customers || d.new_customers || d.customer_count || d.active_customers;
       dailyCust = realCust !== undefined ? realCust : (fakeDailyCounts[index] || 0);
     }
@@ -373,150 +409,197 @@ export default function Dashboard() {
     };
   });
 
-  const templateChart = template_stats.slice(0, 8).map((t) => ({
-    name: t.template_name?.length > 18 ? t.template_name.slice(0, 18) + "…" : t.template_name,
-    fullName: t.template_name,
-    Sent: t.sent,
-  }));
-
   return (
-    <div className="p-6 lg:p-8 space-y-6 lg:space-y-8 bg-[#f8fafc] min-h-screen font-sans">
+    <div className="p-5 sm:p-6 lg:p-7 space-y-5 bg-[#FAFAFC] min-h-screen w-full font-sans text-[#172033]">
 
-      {/* ── Top bar ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-gray-200/60">
+      {/* ── Top Bar ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-[#E5E7EB]/80">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1 font-medium">
-            {waba?.waba_name
-              ? <><span className="text-gray-800">{waba.waba_name}</span> <span className="mx-1 text-gray-300">•</span> {waba.phone_number}</>
-              : "WhatsApp Business Analytics"}
+          <h1 className="text-xl sm:text-2xl font-bold text-[#172033] tracking-tight leading-tight">
+            Dashboard
+          </h1>
+          <p className="text-xs text-[#64748B] mt-1 font-normal flex items-center gap-1.5">
+            Monitor conversations, contacts, and campaign performance.
           </p>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           {waba?.status && (
             <span
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md"
-              style={
+              className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
                 waba.status === "connected"
-                  ? { background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0" }
-                  : { background: "#fef3c7", color: "#b45309", border: "1px solid #fde68a" }
-              }
+                  ? "bg-emerald-50/90 text-emerald-700 border-emerald-200/80"
+                  : "bg-amber-50/90 text-amber-700 border-amber-200/80"
+              }`}
             >
-              {waba.status === "connected" ? <Wifi size={12} /> : <WifiOff size={12} />}
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  waba.status === "connected" ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                }`}
+              />
               <span className="uppercase tracking-wider text-[10px]">{waba.status}</span>
             </span>
           )}
-            {lastUpdated && (
-              <span className="text-xs font-medium text-gray-400">
-                Updated {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            )}
-            
-            <button
-              onClick={fetchAnalytics}
+
+          {lastUpdated && (
+            <span className="hidden sm:inline-block text-[11px] font-normal text-[#94A3B8]">
+              Updated {lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+
+          <button
+            onClick={fetchAnalytics}
             disabled={loading}
-            className="flex items-center gap-2 text-sm font-medium px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm disabled:opacity-50"
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-[#E5E7EB] rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-            Refresh
+            <RefreshCw size={13} className={loading ? "animate-spin text-[#165DFF]" : "text-[#64748B]"} />
+            <span>Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* ── KPI Cards ────────────────────────────────────────── */}
-      <div className="flex flex-row flex-nowrap w-full gap-2 sm:gap-3 lg:gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      {/* ── KPI Stat Cards ──────────────────────────────────── */}
+      <div className="flex flex-row flex-nowrap w-full gap-2.5 sm:gap-3 lg:gap-3.5 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {summary.total_clients !== undefined && isTp && canViewClients(userEmail) && (
           <StatCard
-            icon={Building2} label="Total Clients"
-            value={fmt(summary.total_clients)} color={C.indigo}
-            onClick={() => navigate('/clients')}
+            icon={Building2}
+            label="Total Clients"
+            value={fmt(summary.total_clients)}
+            color={C.blue}
+            bgTint="#EFF6FF"
+            borderTint="#DBEAFE"
+            onClick={() => navigate("/clients")}
             tooltip="Total number of clients associated with your Tech Provider account."
           />
         )}
         {totals.messages !== undefined && (
           <StatCard
-            icon={MessageSquare} label="Total Messages"
-            value={fmt(totals.messages)} color={C.blue}
-            onClick={() => navigate('/whatsapp')}
-            tooltip="Total number of  messages sent from your system."
+            icon={MessageSquare}
+            label="Total Messages"
+            value={fmt(totals.messages)}
+            color={C.blue}
+            bgTint="#EFF6FF"
+            borderTint="#DBEAFE"
+            onClick={() => navigate("/whatsapp")}
+            tooltip="Total number of messages sent from your system."
           />
         )}
         {summary.total_customers !== undefined && (
           <StatCard
-            icon={Users} label="Total Customers"
-            value={fmt(summary.total_customers)} color={C.indigo}
-            onClick={() => navigate('/leads-prospects')}
+            icon={Users}
+            label="Total Customers"
+            value={fmt(summary.total_customers)}
+            color={C.indigo}
+            bgTint="#EEF2FF"
+            borderTint="#E0E7FF"
+            onClick={() => navigate("/leads-prospects")}
             tooltip="Total number of unique customers registered in your system."
           />
         )}
         {summary.active_today !== undefined && (
           <StatCard
-            icon={Activity} label="Active Today"
-            value={fmt(summary.active_today)} color={C.green}
-            onClick={() => navigate('/whatsapp')}
+            icon={Activity}
+            label="Active Today"
+            value={fmt(summary.active_today)}
+            color={C.emerald}
+            bgTint="#ECFDF5"
+            borderTint="#D1FAE5"
+            onClick={() => navigate("/whatsapp")}
             tooltip="Customers who interacted or were updated today."
           />
         )}
         {summary.new_today !== undefined && (
           <StatCard
-            icon={Users} label="New Today"
-            value={fmt(summary.new_today)} color={C.amber}
-            onClick={() => navigate('/leads-prospects')}
+            icon={Users}
+            label="New Today"
+            value={fmt(summary.new_today)}
+            color={C.amber}
+            bgTint="#FFFBEB"
+            borderTint="#FEF3C7"
+            onClick={() => navigate("/leads-prospects")}
             tooltip="New customers added to the system today."
           />
         )}
         {summary.leads !== undefined && (
           <StatCard
-            icon={Users} label="Leads"
-            value={fmt(summary.leads)} color={C.teal}
-            onClick={() => navigate('/leads-prospects')}
+            icon={Users}
+            label="Leads"
+            value={fmt(summary.leads)}
+            color={C.sky}
+            bgTint="#F0F9FF"
+            borderTint="#E0F2FE"
+            onClick={() => navigate("/leads-prospects")}
             tooltip="Total potential customers (Leads) currently in the system."
           />
         )}
         {summary.prospects !== undefined && (
           <StatCard
-            icon={Users} label="Prospects"
-            value={fmt(summary.prospects)} color={C.purple}
-            onClick={() => navigate('/leads-prospects')}
+            icon={Users}
+            label="Prospects"
+            value={fmt(summary.prospects)}
+            color={C.purple}
+            bgTint="#F5F3FF"
+            borderTint="#EDE9FE"
+            onClick={() => navigate("/leads-prospects")}
             tooltip="Total Prospects currently in the system."
           />
         )}
       </div>
 
-      {/* ── Main Content Area ─────────────────────────────────────── */}
-      
-      {/* Row 1: Messages Chart & Calendar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        {/* Messages Over Time (2/3 width) */}
-        <div
-          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col h-full lg:col-span-2"
-          style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
-        >
+      {/* ── Row 1: Messages Chart & Acquisition Calendar ────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Messages Over Time (8 cols on lg) */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03] flex flex-col h-full lg:col-span-8">
           <SectionHeader
-            icon={Activity} title="Messages Over Time"
-            sub="Last 7 days volume" color={C.blue}
+            icon={Activity}
+            title="Messages Over Time"
+            sub="Last 7 days volume"
+            color={C.blue}
+            bgTint="#EFF6FF"
+            borderTint="#DBEAFE"
+            rightBadge={
+              <span className="text-[11px] font-medium text-[#165DFF] bg-blue-50/80 border border-blue-100 px-2.5 py-0.5 rounded-lg">
+                7 Days
+              </span>
+            }
           />
           {chartDailyRaw.length > 0 ? (
-            <div className="mt-4 flex-1">
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={chartDailyRaw} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <div className="mt-2 flex-1 min-h-[250px]">
+              <ResponsiveContainer width="100%" height={255}>
+                <AreaChart data={chartDailyRaw} margin={{ top: 10, right: 12, left: -24, bottom: 0 }}>
                   <defs>
                     <linearGradient id="blueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={C.blue} stopOpacity={0.2} />
+                      <stop offset="5%" stopColor={C.blue} stopOpacity={0.18} />
                       <stop offset="95%" stopColor={C.blue} stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} dx={-10} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: C.blue, strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: "#64748B", fontWeight: 500 }}
+                    tickLine={false}
+                    axisLine={false}
+                    dy={8}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#64748B", fontWeight: 500 }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                    dx={-6}
+                  />
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{ stroke: C.blue, strokeWidth: 1, strokeDasharray: "4 4" }}
+                  />
                   <Area
-                    type="monotone" dataKey="Messages"
-                    stroke={C.blue} strokeWidth={2.5}
+                    type="monotone"
+                    dataKey="Messages"
+                    stroke={C.blue}
+                    strokeWidth={2.2}
                     fill="url(#blueGrad)"
                     dot={{ r: 3, fill: C.blue, strokeWidth: 0 }}
-                    activeDot={{ r: 5, strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: C.blue, stroke: "#FFFFFF", strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -526,20 +609,23 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* ── Acquisition Calendar (1/3 width) ──────── */}
-        <div 
-          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col h-full lg:col-span-1"
-          style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
-        >
-          <SectionHeader icon={CalendarIcon} title="Calendar" sub="Daily counts" color={C.amber} />
-          
+        {/* ── Acquisition Calendar (4 cols on lg) ──────── */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03] flex flex-col h-full lg:col-span-4">
+          <SectionHeader
+            icon={CalendarIcon}
+            title="Calendar"
+            sub="Daily customer additions"
+            color={C.blue}
+            bgTint="#EFF6FF"
+            borderTint="#DBEAFE"
+          />
+
           <style>{`
             .custom-calendar-wrapper {
-               width: 100%;
-               height: 100%;
-               display: flex;
-               flex-direction: column;
-               padding-top: 0.5rem;
+              width: 100%;
+              height: 100%;
+              display: flex;
+              flex-direction: column;
             }
             .custom-calendar-wrapper .react-calendar {
               border: none;
@@ -548,28 +634,33 @@ export default function Dashboard() {
               background: transparent;
             }
             .custom-calendar-wrapper .react-calendar__navigation {
-              margin-bottom: 1.5rem;
+              margin-bottom: 0.85rem;
               display: flex;
               align-items: center;
               justify-content: space-between;
-              padding: 0 4px;
+              padding: 0 2px;
+              height: 34px;
             }
             .custom-calendar-wrapper .react-calendar__navigation button {
-              color: #334155;
+              color: #172033;
               font-weight: 600;
-              border-radius: 50%;
-              width: 36px;
-              height: 36px;
+              border-radius: 10px;
+              width: 30px;
+              height: 30px;
+              min-width: 30px;
               display: flex;
               align-items: center;
               justify-content: center;
               padding: 0;
-              font-size: 1.25rem;
-              transition: all 0.2s ease-in-out;
-              background: #f8fafc;
+              font-size: 1rem;
+              transition: all 0.15s ease-in-out;
+              background: #F8FAFC;
+              border: 1px solid #E5E7EB;
             }
             .custom-calendar-wrapper .react-calendar__navigation button:hover:not(:disabled) {
-              background-color: #f1f5f9;
+              background-color: #EFF6FF;
+              border-color: #BFDBFE;
+              color: #165DFF;
             }
             .custom-calendar-wrapper .react-calendar__navigation__prev2-button,
             .custom-calendar-wrapper .react-calendar__navigation__next2-button {
@@ -577,50 +668,51 @@ export default function Dashboard() {
             }
             .custom-calendar-wrapper .react-calendar__navigation__label {
               font-family: inherit;
-              font-weight: 800 !important;
-              font-size: 1.15rem !important;
+              font-weight: 700 !important;
+              font-size: 0.85rem !important;
               pointer-events: none;
-              color: #0f172a;
+              color: #172033;
               white-space: nowrap;
               flex-grow: 1;
               text-align: center;
               background: transparent !important;
+              border: none !important;
             }
             .custom-calendar-wrapper .react-calendar__month-view__weekdays {
-              font-weight: 700;
+              font-weight: 600;
               text-transform: uppercase;
-              font-size: 0.7rem;
-              letter-spacing: 0.05em;
-              color: #64748b;
-              margin-bottom: 8px;
+              font-size: 0.65rem;
+              letter-spacing: 0.04em;
+              color: #64748B;
+              margin-bottom: 6px;
             }
             .custom-calendar-wrapper .react-calendar__month-view__weekdays__weekday abbr {
               text-decoration: none;
             }
             .custom-calendar-wrapper .react-calendar__month-view__weekdays__weekday:first-child abbr,
             .custom-calendar-wrapper .react-calendar__month-view__weekdays__weekday:last-child abbr {
-              color: #ef4444; /* Red for SUN and SAT */
+              color: #EF4444;
             }
             .custom-calendar-wrapper .react-calendar__month-view__days__day {
               position: relative !important;
               overflow: visible !important;
             }
             .custom-calendar-wrapper .react-calendar__month-view__days__day--neighboringMonth {
-              color: #cbd5e1 !important;
+              color: #CBD5E1 !important;
             }
             .custom-calendar-wrapper .react-calendar__tile {
               position: relative !important;
               overflow: visible !important;
-              padding: 4px;
-              font-weight: 600;
-              color: #475569;
+              padding: 3px;
+              font-weight: 500;
+              color: #172033;
               background: transparent;
-              font-size: 0.9rem;
+              font-size: 0.75rem;
               display: flex;
               flex-direction: column;
               align-items: center;
               border: none !important;
-              height: 48px;
+              height: 38px;
             }
             .custom-calendar-wrapper .react-calendar__tile abbr {
               display: flex;
@@ -629,179 +721,213 @@ export default function Dashboard() {
               width: 100%;
               height: 100%;
               border-radius: 8px;
-              transition: all 0.2s ease;
+              transition: all 0.15s ease;
             }
             .custom-calendar-wrapper .has-data-tile abbr {
-              background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
-              color: #1e3a8a;
-              font-weight: 700;
-              box-shadow: inset 0 0 0 1.5px #bfdbfe;
+              background: #EFF6FF;
+              color: #165DFF;
+              font-weight: 600;
+              box-shadow: inset 0 0 0 1px #BFDBFE;
             }
             .custom-calendar-wrapper .react-calendar__tile:hover abbr {
-              background-color: #f1f5f9;
-              color: #0f172a;
+              background-color: #F1F5F9;
+              color: #172033;
             }
             .custom-calendar-wrapper .react-calendar__tile--now abbr {
-              background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
-              color: #ffffff !important;
-              font-weight: 700 !important;
-              box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3) !important;
+              background: #165DFF !important;
+              color: #FFFFFF !important;
+              font-weight: 600 !important;
+              box-shadow: 0 3px 8px rgba(22, 93, 255, 0.25) !important;
               border: none !important;
             }
             .custom-calendar-wrapper .react-calendar__tile--active {
               background: transparent !important;
             }
           `}</style>
-          
+
           <div className="custom-calendar-wrapper flex-1">
             <Calendar
               onChange={setSelectedDate}
               value={selectedDate}
               onActiveStartDateChange={({ activeStartDate }) => setCalendarViewDate(activeStartDate)}
               calendarType="gregory"
-              className="border-none w-full !font-sans text-sm"
+              className="border-none w-full !font-sans text-xs"
               tileClassName={({ date, view, activeStartDate }) => {
-                if (view !== 'month') return null;
+                if (view !== "month") return null;
                 if (date.getMonth() !== activeStartDate.getMonth()) return null;
                 const getLocalYMD = (d) => {
                   const yy = d.getFullYear();
-                  const mm = String(d.getMonth() + 1).padStart(2, '0');
-                  const dd = String(d.getDate()).padStart(2, '0');
+                  const mm = String(d.getMonth() + 1).padStart(2, "0");
+                  const dd = String(d.getDate()).padStart(2, "0");
                   return `${yy}-${mm}-${dd}`;
                 };
                 const dateStr = getLocalYMD(date);
-                const hasData = data?.rawCustomers?.some(c => c.created_at && getLocalYMD(new Date(c.created_at)) === dateStr);
-                return hasData ? 'has-data-tile' : null;
+                const hasData = data?.rawCustomers?.some(
+                  (c) => c.created_at && getLocalYMD(new Date(c.created_at)) === dateStr
+                );
+                return hasData ? "has-data-tile" : null;
               }}
               tileContent={({ date, view, activeStartDate }) => {
-                if (view !== 'month') return null;
+                if (view !== "month") return null;
                 if (date.getMonth() !== activeStartDate.getMonth()) return null;
-                
+
                 const getLocalYMD = (d) => {
                   const yy = d.getFullYear();
-                  const mm = String(d.getMonth() + 1).padStart(2, '0');
-                  const dd = String(d.getDate()).padStart(2, '0');
+                  const mm = String(d.getMonth() + 1).padStart(2, "0");
+                  const dd = String(d.getDate()).padStart(2, "0");
                   return `${yy}-${mm}-${dd}`;
                 };
                 const dateStr = getLocalYMD(date);
-                const customersOnDate = data?.rawCustomers?.filter(c => {
+                const customersOnDate =
+                  data?.rawCustomers?.filter((c) => {
                     if (!c.created_at) return false;
                     return getLocalYMD(new Date(c.created_at)) === dateStr;
-                }) || [];
-                
+                  }) || [];
+
                 if (customersOnDate.length === 0) return null;
-                
-                const leadsOnDate = customersOnDate.filter(c => {
+
+                const leadsOnDate = customersOnDate.filter((c) => {
                   const s = c.status?.toLowerCase();
                   return s === "lead" || s === "confirmed";
                 }).length;
-                const prospectsOnDate = customersOnDate.filter(c => c.status?.toLowerCase() === "prospect").length;
+                const prospectsOnDate = customersOnDate.filter(
+                  (c) => c.status?.toLowerCase() === "prospect"
+                ).length;
                 const totalOnDate = customersOnDate.length;
 
                 return (
                   <div className="absolute inset-0 group flex justify-center w-full h-full pointer-events-auto">
-                    {/* Badge overlapping top-right of the rounded rectangle */}
-                    <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4 w-[18px] h-[18px] bg-indigo-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-sm z-10">
+                    {/* Badge overlapping top-right */}
+                    <div className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#165DFF] text-white rounded-full flex items-center justify-center text-[9px] font-bold border-[1.5px] border-white shadow-xs z-10">
                       {totalOnDate}
                     </div>
-                    
-                    {/* Tooltip on hover (White theme) */}
-                    <div className="absolute bottom-[110%] left-1/2 -translate-x-1/2 mb-1 w-44 p-3 bg-white/95 backdrop-blur-md border border-gray-200 text-gray-800 rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:-translate-y-2 pointer-events-none">
-                      <p className="font-bold text-[11px] mb-2 border-b border-gray-100 pb-1.5 text-center text-gray-800">
-                        {date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+
+                    {/* Tooltip on hover */}
+                    <div className="absolute bottom-[110%] left-1/2 -translate-x-1/2 mb-1 w-40 p-2.5 bg-white/95 backdrop-blur-md border border-slate-200 text-[#172033] rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:-translate-y-1 pointer-events-none">
+                      <p className="font-semibold text-[11px] mb-1.5 border-b border-slate-100 pb-1 text-center text-[#172033]">
+                        {date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                       </p>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Total Added</span>
-                        <span className="font-bold text-gray-900 text-sm">{totalOnDate}</span>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] text-[#64748B] font-medium">Total Added</span>
+                        <span className="font-bold text-[#172033] text-xs">{totalOnDate}</span>
                       </div>
-                      <div className="flex justify-between items-center mb-1.5">
-                        <span className="text-[10px] uppercase tracking-wider text-teal-600 font-semibold">Leads</span>
-                        <span className="font-bold text-teal-600 text-sm">{leadsOnDate}</span>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] text-[#0EA5E9] font-medium">Leads</span>
+                        <span className="font-bold text-[#0EA5E9] text-xs">{leadsOnDate}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] uppercase tracking-wider text-purple-600 font-semibold">Prospects</span>
-                        <span className="font-bold text-purple-600 text-sm">{prospectsOnDate}</span>
+                        <span className="text-[10px] text-[#8B5CF6] font-medium">Prospects</span>
+                        <span className="font-bold text-[#8B5CF6] text-xs">{prospectsOnDate}</span>
                       </div>
-                      
-                      {/* Arrow pointing down */}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-white/95 filter drop-shadow-[0_2px_2px_rgba(0,0,0,0.05)]"></div>
+
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-white/95"></div>
                     </div>
                   </div>
                 );
               }}
             />
-            
+
             {/* Active days & Total Footer */}
             {(() => {
               const activeYear = calendarViewDate.getFullYear();
               const activeMonth = calendarViewDate.getMonth();
-              
-              const monthlyCustomers = data?.rawCustomers?.filter(c => {
-                if (!c.created_at) return false;
-                const d = new Date(c.created_at);
-                return d.getFullYear() === activeYear && d.getMonth() === activeMonth;
-              }) || [];
-              
+
+              const monthlyCustomers =
+                data?.rawCustomers?.filter((c) => {
+                  if (!c.created_at) return false;
+                  const d = new Date(c.created_at);
+                  return d.getFullYear() === activeYear && d.getMonth() === activeMonth;
+                }) || [];
+
               const monthlyTotalAdded = monthlyCustomers.length;
               const monthlyActiveDays = new Set(
-                monthlyCustomers.map(c => {
+                monthlyCustomers.map((c) => {
                   const d = new Date(c.created_at);
                   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
                 })
               ).size;
 
               return (
-                <div className="flex justify-between items-center text-[11px] text-gray-500 font-medium mt-auto pt-4 border-t border-gray-100">
-                   <span>Active Days: {monthlyActiveDays}</span>
-                   <span>Total Added: {monthlyTotalAdded}</span>
+                <div className="flex justify-between items-center text-[11px] text-[#64748B] font-medium mt-auto pt-3 border-t border-slate-100">
+                  <span>
+                    Active Days: <strong className="text-[#172033] font-semibold">{monthlyActiveDays}</strong>
+                  </span>
+                  <span>
+                    Total Added: <strong className="text-[#172033] font-semibold">{monthlyTotalAdded}</strong>
+                  </span>
                 </div>
               );
             })()}
-            
+
             {/* Legend */}
-            <div className="flex gap-4 mt-4 text-xs font-semibold text-gray-700">
-                <span className="flex items-center gap-2">
-                   <div className="w-3.5 h-3.5 rounded-full bg-indigo-500 shadow-sm"></div> Added
-                </span>
-                <span className="flex items-center gap-2">
-                   <div className="w-3.5 h-3.5 rounded-full bg-orange-500 shadow-sm"></div> Today
-                </span>
+            <div className="flex items-center gap-4 mt-2.5 text-[11px] font-medium text-[#64748B]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-100 border border-[#165DFF]" />
+                Added
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#165DFF]" />
+                Today
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Row 2: Customer & Client Charts */}
-      <div className={`grid grid-cols-1 gap-6 mt-6 ${isTp ? 'lg:grid-cols-2' : ''}`}>
+      {/* ── Row 2: Customers Over Time ──────────────────────── */}
+      <div className="grid grid-cols-1 gap-5">
         {/* Customers Over Time */}
-        <div
-          className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col h-full"
-          style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
-        >
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03] flex flex-col h-full">
           <SectionHeader
-            icon={Users} title="Customers Over Time"
-            sub="Last 7 days customer growth" color={C.indigo}
+            icon={Users}
+            title="Customers Over Time"
+            sub="Last 7 days customer growth"
+            color={C.indigo}
+            bgTint="#EEF2FF"
+            borderTint="#E0E7FF"
+            rightBadge={
+              <span className="text-[11px] font-medium text-indigo-600 bg-indigo-50/80 border border-indigo-100 px-2.5 py-0.5 rounded-lg">
+                Growth
+              </span>
+            }
           />
           {chartDailyRaw.length > 0 ? (
-            <div className="mt-4 flex-1">
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={chartDailyRaw} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <div className="mt-2 flex-1 min-h-[240px]">
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={chartDailyRaw} margin={{ top: 10, right: 12, left: -24, bottom: 0 }}>
                   <defs>
                     <linearGradient id="indigoGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={C.indigo} stopOpacity={0.2} />
+                      <stop offset="5%" stopColor={C.indigo} stopOpacity={0.18} />
                       <stop offset="95%" stopColor={C.indigo} stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} dx={-10} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: C.indigo, strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: "#64748B", fontWeight: 500 }}
+                    tickLine={false}
+                    axisLine={false}
+                    dy={8}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#64748B", fontWeight: 500 }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                    dx={-6}
+                  />
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{ stroke: C.indigo, strokeWidth: 1, strokeDasharray: "4 4" }}
+                  />
                   <Area
-                    type="monotone" dataKey="Customers"
-                    stroke={C.indigo} strokeWidth={2.5}
+                    type="monotone"
+                    dataKey="Customers"
+                    stroke={C.indigo}
+                    strokeWidth={2.2}
                     fill="url(#indigoGrad)"
                     dot={{ r: 3, fill: C.indigo, strokeWidth: 0 }}
-                    activeDot={{ r: 5, strokeWidth: 0 }}
+                    activeDot={{ r: 5, fill: C.indigo, stroke: "#FFFFFF", strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -810,77 +936,86 @@ export default function Dashboard() {
             <EmptyChart label="No customer data yet" />
           )}
         </div>
-
-        {/* Clients Over Time (TP Only) */}
-        {isTp && (
-          <div
-            className="bg-white rounded-xl p-6 border border-gray-100 flex flex-col h-full"
-            style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
-          >
-            <SectionHeader
-              icon={Building2} title="Clients Over Time"
-              sub="Last 7 days client growth" color={C.purple}
-            />
-            {chartDailyRaw.length > 0 ? (
-              <div className="mt-4 flex-1">
-                <ResponsiveContainer width="100%" height={260}>
-                  <AreaChart data={chartDailyRaw} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={C.purple} stopOpacity={0.2} />
-                        <stop offset="95%" stopColor={C.purple} stopOpacity={0.0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} dy={10} />
-                    <YAxis tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} allowDecimals={false} dx={-10} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: C.purple, strokeWidth: 1, strokeDasharray: '4 4' }} />
-                    <Area
-                      type="monotone" dataKey="Clients"
-                      stroke={C.purple} strokeWidth={2.5}
-                      fill="url(#purpleGrad)"
-                      dot={{ r: 3, fill: C.purple, strokeWidth: 0 }}
-                      activeDot={{ r: 5, strokeWidth: 0 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyChart label="No client data yet" />
-            )}
-          </div>
-        )}
       </div>
 
-      {/* ── Delivery Health — renders dynamically if backend provides data ────────────────── */}
+      {/* ── Delivery Health ──────────────────────────────────── */}
       {(totals.delivered > 0 || totals.read > 0) && (
-        <div
-          className="bg-white rounded-xl p-6 border border-gray-100"
-          style={{ boxShadow: "0 2px 10px -3px rgba(0,0,0,0.05)" }}
-        >
+        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03]">
           <SectionHeader
-            icon={Zap} title="Delivery Health" sub="Message delivery funnel" color={C.teal}
+            icon={Zap}
+            title="Delivery Health"
+            sub="Message delivery & engagement funnel"
+            color={C.emerald}
+            bgTint="#ECFDF5"
+            borderTint="#D1FAE5"
           />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
             {[
-              { label: "Delivery Rate", value: deliveryRate, num: totalDelivered, color: C.green, icon: CheckCheck, tooltip: "Percentage of sent messages that successfully reached the customer's phone (Double Tick)." },
-              { label: "Read Rate", value: readRate, num: totals.read, color: C.blue, icon: Eye, tooltip: "Percentage of sent messages that were actually opened and read by the customer (Blue Tick)." },
-            ].map(({ label, value, num, color, icon: Icon, tooltip }) => (
-              <div key={label} className="flex flex-col items-center justify-center p-6 rounded-xl bg-gray-50/50 border border-gray-100 hover:border-gray-200 transition-colors">
-                <div className="flex justify-center mb-3">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm"
-                    style={{ background: `${color}15` }}
-                  >
-                    <Icon size={20} style={{ color }} />
+              {
+                label: "Delivery Rate",
+                value: deliveryRate,
+                pctNum: deliveryPctNum,
+                num: totalDelivered,
+                color: C.emerald,
+                bgTint: "bg-emerald-50/50",
+                borderTint: "border-emerald-100/80",
+                iconBg: "#ECFDF5",
+                iconBorder: "#A7F3D0",
+                barColor: "bg-emerald-500",
+                icon: CheckCheck,
+                tooltip:
+                  "Percentage of sent messages that successfully reached the customer's phone (Double Tick).",
+              },
+              {
+                label: "Read Rate",
+                value: readRate,
+                pctNum: readPctNum,
+                num: totals.read,
+                color: C.blue,
+                bgTint: "bg-blue-50/50",
+                borderTint: "border-blue-100/80",
+                iconBg: "#EFF6FF",
+                iconBorder: "#BFDBFE",
+                barColor: "bg-[#165DFF]",
+                icon: Eye,
+                tooltip:
+                  "Percentage of sent messages that were actually opened and read by the customer (Blue Tick).",
+              },
+            ].map(({ label, value, pctNum, num, color, bgTint, borderTint, iconBg, iconBorder, barColor, icon: Icon, tooltip }) => (
+              <div
+                key={label}
+                className={`flex flex-col justify-between p-4 sm:p-5 rounded-2xl ${bgTint} border ${borderTint} transition-all`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center border shadow-xs flex-shrink-0"
+                      style={{ backgroundColor: iconBg, borderColor: iconBorder }}
+                    >
+                      <Icon size={18} style={{ color }} strokeWidth={2.2} />
+                    </div>
+                    <div>
+                      <div className="flex items-center">
+                        <p className="text-xs font-semibold text-[#172033]">{label}</p>
+                        {tooltip && <InfoTooltip text={tooltip} />}
+                      </div>
+                      <p className="text-[11px] font-normal text-[#64748B] mt-0.5">
+                        {fmt(num)} messages
+                      </p>
+                    </div>
                   </div>
+                  <p className="text-xl sm:text-2xl font-bold tracking-tight" style={{ color }}>
+                    {value}
+                  </p>
                 </div>
-                <p className="text-3xl font-bold tracking-tight" style={{ color }}>{value}</p>
-                <div className="flex items-center justify-center mt-1.5">
-                  <p className="text-sm font-semibold text-gray-600">{label}</p>
-                  {tooltip && <InfoTooltip text={tooltip} />}
+
+                {/* Subtle SaaS Progress Bar */}
+                <div className="w-full h-1.5 bg-white/80 rounded-full overflow-hidden mt-3.5 border border-slate-200/50">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                    style={{ width: `${pctNum}%` }}
+                  />
                 </div>
-                <p className="text-xs font-medium text-gray-400 mt-0.5">{fmt(num)} messages</p>
               </div>
             ))}
           </div>

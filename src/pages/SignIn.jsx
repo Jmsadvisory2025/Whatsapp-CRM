@@ -1,12 +1,11 @@
 // SignIn.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
-import { Mail, ShieldCheck, Key } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Eye, EyeOff } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../store/authSlice';
+import jmsLogo from '../assets/jms.png';
+import SignInSimpleArt from '../components/ui/SignInSimpleArt';
 
 const SignIn = () => {
     const navigate = useNavigate();
@@ -14,17 +13,18 @@ const SignIn = () => {
     const [password, setPassword] = useState('');
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
-    
+    const [showPassword, setShowPassword] = useState(false);
+
     // Reset PIN states
     const [isResetMode, setIsResetMode] = useState(false);
-    const [resetStep, setResetStep] = useState(1); // 1: Email, 2: Code & New PIN
+    const [resetStep, setResetStep] = useState(1);
     const [resetCode, setResetCode] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [resetMessage, setResetMessage] = useState('');
     const [isResetting, setIsResetting] = useState(false);
 
     const dispatch = useDispatch();
-    const { isLoading, error, isAuthenticated } = useSelector((state) => state.auth);
+    const { isLoading, error } = useSelector((state) => state.auth);
 
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -46,7 +46,7 @@ const SignIn = () => {
         }
 
         if (!password.trim()) {
-            setPasswordError('PIN/Password is required');
+            setPasswordError('Password is required');
             isValid = false;
         } else {
             setPasswordError('');
@@ -55,7 +55,7 @@ const SignIn = () => {
         if (!isValid) return;
 
         try {
-            await dispatch(loginUser({ email, password })).unwrap();
+            await dispatch(loginUser({ email: email.trim(), password })).unwrap();
             navigate('/');
         } catch (error) {
             console.error('Login error:', error);
@@ -64,22 +64,14 @@ const SignIn = () => {
 
     const handleEmailChange = (e) => {
         setEmail(e.target.value);
-        if (error) {
-            dispatch(clearError());
-        }
-        if (emailError) {
-            setEmailError('');
-        }
+        if (error) dispatch(clearError());
+        if (emailError) setEmailError('');
     };
 
     const handlePasswordChange = (e) => {
         setPassword(e.target.value);
-        if (error) {
-            dispatch(clearError());
-        }
-        if (passwordError) {
-            setPasswordError('');
-        }
+        if (error) dispatch(clearError());
+        if (passwordError) setPasswordError('');
     };
 
     const handleSendResetCode = async (e) => {
@@ -88,23 +80,25 @@ const SignIn = () => {
             setEmailError('Please enter a valid email address');
             return;
         }
-        
+
         setIsResetting(true);
         setResetMessage('');
-        
+
         try {
             const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
             const url = `${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}api/auth/reset-pin/send-code/`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ email: email.trim() }),
             });
+
             const data = await response.json();
-            
-            if (!response.ok) throw new Error(data.error || 'Failed to send reset code');
-            
-            setResetMessage(data.message);
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to send reset code');
+            }
+
+            setResetMessage('Reset code sent to your email!');
             setResetStep(2);
         } catch (err) {
             setEmailError(err.message);
@@ -115,27 +109,38 @@ const SignIn = () => {
 
     const handleVerifyReset = async (e) => {
         e.preventDefault();
-        if (!resetCode.trim() || !newPassword.trim()) {
-            setPasswordError('Both reset code and new PIN are required');
+        if (!resetCode.trim()) {
+            setPasswordError('Reset code is required');
             return;
         }
-        
+        if (!newPassword.trim()) {
+            setPasswordError('New password is required');
+            return;
+        }
+
         setIsResetting(true);
+        setPasswordError('');
         setResetMessage('');
-        
+
         try {
             const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-            const url = `${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}api/auth/reset-pin/verify-code/`;
+            const url = `${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}api/auth/reset-pin/verify/`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, code: resetCode, new_password: newPassword })
+                body: JSON.stringify({
+                    email: email.trim(),
+                    code: resetCode.trim(),
+                    new_password: newPassword.trim()
+                }),
             });
+
             const data = await response.json();
-            
-            if (!response.ok) throw new Error(data.error || 'Failed to reset PIN');
-            
-            setResetMessage(data.message);
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to reset password');
+            }
+
+            setResetMessage('Password reset successful! You can now login.');
             setTimeout(() => {
                 setIsResetMode(false);
                 setResetStep(1);
@@ -152,237 +157,252 @@ const SignIn = () => {
     };
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="w-full max-w-md"
-            >
-                <div className="bg-surface p-8 md:p-10 rounded-2xl shadow-lg border border-gray-200/80">
-                    <div className="text-center mb-8">
-                        <div className="inline-block bg-primary p-3 rounded-xl mb-4">
-                            {isResetMode ? <Key size={24} color="white" /> : (
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M2 7L12 12L22 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M12 22V12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                            )}
+        <div className="h-screen w-full bg-[#FAFAFC] flex flex-col font-sans overflow-hidden">
+            {/* Top Brand Logo - Clean, without sticky bar border/background */}
+            <div className="w-full px-8 sm:px-14 pt-6 pb-2 shrink-0">
+                <img
+                    src={jmsLogo}
+                    alt="JMS Logo"
+                    className="h-16 sm:h-20 w-auto object-contain cursor-pointer"
+                    onClick={() => navigate("/signin")}
+                />
+            </div>
+
+            {/* Split Screen Content - elevated and centered */}
+            <main className="flex-1 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 items-center px-6 sm:px-12 pb-8 gap-8 lg:gap-14 overflow-hidden -mt-4">
+
+                {/* ── LEFT COLUMN: Clean Minimal Art ── */}
+                <div className="lg:col-span-6 flex flex-col items-center justify-center">
+                    <SignInSimpleArt />
+                </div>
+
+                {/* ── RIGHT COLUMN: NWORX Style Clean Auth Form ── */}
+                <div className="lg:col-span-6 w-full max-w-[440px] mx-auto flex flex-col justify-center">
+                    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xl shadow-blue-500/5">
+
+                        {/* Title Header */}
+                        <div className="mb-5 text-left">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-[#172033] tracking-tight">
+                                {isResetMode ? 'Reset Password' : 'Good to have you back.'}
+                            </h1>
+                            <p className="text-xs sm:text-sm text-[#64748B] mt-1.5 leading-relaxed font-normal">
+                                {isResetMode
+                                    ? 'Recover access to your account securely'
+                                    : 'Your leads, customer conversations, and campaign activity are all ready when you are.'}
+                            </p>
                         </div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-text-primary">{isResetMode ? 'Reset PIN' : 'Sign In'}</h1>
-                        <p className="text-text-secondary mt-2">{isResetMode ? 'Recover access to your account securely' : 'Access your account to manage leads effectively'}</p>
-                    </div>
 
-                    <form onSubmit={handleLogin} className="space-y-6">
+                        {error && (
+                            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-3.5 py-2.5 rounded-xl text-xs">
+                                {error}
+                            </div>
+                        )}
 
-                        {!isResetMode && (
-                            <>
-                                <div>
-                                    <label className="text-sm font-medium text-text-secondary mb-1 block">
-                                        Email Address
-                                    </label>
-                                    <Input
-                                        type="email"
-                                        value={email}
-                                        onChange={handleEmailChange}
-                                        placeholder="Enter your email address"
-                                        required
-                                        disabled={isLoading}
-                                    />
-                                    {emailError && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="text-sm text-red-600 mt-1"
-                                        >
-                                            {emailError}
-                                        </motion.div>
-                                    )}
-                                </div>
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            {!isResetMode ? (
+                                <>
+                                    {/* Email Address Input */}
+                                    <div>
+                                        <label className="text-xs font-medium text-[#172033] mb-1.5 block">
+                                            Email Address
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={handleEmailChange}
+                                                placeholder="name@company.com"
+                                                className={`w-full px-3.5 py-2.5 text-xs bg-white rounded-xl border transition-all outline-none ${emailError ? 'border-red-400 focus:border-red-500' : 'border-[#E5E7EB] focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10'
+                                                    }`}
+                                                required
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                        {emailError && (
+                                            <p className="text-xs text-red-600 mt-1">{emailError}</p>
+                                        )}
+                                    </div>
 
-                                <div>
-                                    <label className="text-sm font-medium text-text-secondary mb-1 block">
-                                        PIN / Password
-                                    </label>
-                                    <Input
-                                        type="password"
-                                        value={password}
-                                        onChange={handlePasswordChange}
-                                        placeholder="Enter your PIN or password"
-                                        required
-                                        disabled={isLoading}
-                                    />
-                                    {passwordError && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="text-sm text-red-600 mt-1"
-                                        >
-                                            {passwordError}
-                                        </motion.div>
-                                    )}
-                                    <div className="flex justify-end mt-2">
-                                        <button 
-                                            type="button" 
+                                    {/* Password */}
+                                    <div>
+                                        <label className="text-xs font-medium text-[#172033] mb-1.5 block">
+                                            Password
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                value={password}
+                                                onChange={handlePasswordChange}
+                                                placeholder="Enter your password"
+                                                className={`w-full pl-3.5 pr-10 py-2.5 text-xs bg-white rounded-xl border transition-all outline-none tracking-normal ${passwordError ? 'border-red-400 focus:border-red-500' : 'border-[#E5E7EB] focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10'
+                                                    }`}
+                                                required
+                                                disabled={isLoading}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                            >
+                                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
+                                        </div>
+                                        {passwordError && (
+                                            <p className="text-xs text-red-600 mt-1">{passwordError}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Remember Me & Forgot Password */}
+                                    <div className="flex items-center justify-between pt-1">
+                                        <label className="flex items-center gap-2 cursor-pointer text-xs text-[#64748B]">
+                                            <input
+                                                type="checkbox"
+                                                defaultChecked
+                                                className="w-4 h-4 rounded text-[#165DFF] border-slate-300 focus:ring-[#165DFF]"
+                                            />
+                                            <span>Keep me signed in</span>
+                                        </label>
+                                        <button
+                                            type="button"
                                             onClick={() => setIsResetMode(true)}
-                                            className="text-sm text-blue-600 hover:underline font-medium"
+                                            className="text-xs text-[#165DFF] hover:underline font-medium cursor-pointer"
                                         >
-                                            Forgot PIN?
+                                            Forgot password?
                                         </button>
                                     </div>
-                                </div>
-                                
-                                <Button 
-                                    type="button"
-                                    onClick={handleLogin}
-                                    disabled={isLoading || !email.trim() || !validateEmail(email) || !password.trim()} 
-                                    className="w-full !py-3 !text-base bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
-                                >
-                                    {isLoading ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                            Signing in...
-                                        </div>
-                                    ) : (
-                                        'Sign In'
+
+                                    {/* Sign In Button */}
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="w-full !mt-3 py-3 px-4 text-xs font-semibold rounded-xl text-white bg-[#165DFF] hover:bg-[#1247CC] active:bg-[#0D38A8] transition-all shadow-md shadow-blue-500/25 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                                    >
+                                        {isLoading ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                <span>Signing in...</span>
+                                            </div>
+                                        ) : (
+                                            <span>Sign In &rarr;</span>
+                                        )}
+                                    </button>
+
+                                    <div className="pt-2 text-center">
+                                        <p className="text-xs text-[#64748B]">
+                                            New to JMS?{" "}
+                                            <span
+                                                onClick={() => navigate("/signup")}
+                                                className="text-[#165DFF] font-medium cursor-pointer hover:underline"
+                                            >
+                                                Create an account
+                                            </span>
+                                        </p>
+                                    </div>
+                                </>
+                            ) : (
+                                /* RESET PIN FLOW */
+                                <>
+                                    {resetStep === 1 && (
+                                        <>
+                                            <div>
+                                                <label className="text-xs font-medium text-[#172033] mb-1.5 block">
+                                                    Email Address
+                                                </label>
+                                                <div className="relative">
+                                                    <Mail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                    <input
+                                                        type="email"
+                                                        value={email}
+                                                        onChange={handleEmailChange}
+                                                        placeholder="Enter registered email"
+                                                        className="w-full pl-10 pr-4 py-2.5 text-sm bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] outline-none"
+                                                        required
+                                                        disabled={isResetting}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={handleSendResetCode}
+                                                disabled={isResetting || !email.trim() || !validateEmail(email)}
+                                                className="w-full py-2.5 px-4 rounded-xl text-sm font-medium text-white bg-[#165DFF] hover:bg-[#1247CC] transition-all shadow-md shadow-blue-500/20 disabled:bg-slate-300 cursor-pointer"
+                                            >
+                                                {isResetting ? "Sending Code..." : "Send Verification Code"}
+                                            </button>
+                                        </>
                                     )}
-                                </Button>
-                            </>
-                        )}
 
-                        {isResetMode && resetStep === 1 && (
-                            <>
-                                <div>
-                                    <label className="text-sm font-medium text-text-secondary mb-1 block">
-                                        Email Address
-                                    </label>
-                                    <Input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
-                                        placeholder="Enter your email address"
-                                        required
-                                        disabled={isResetting}
-                                    />
-                                    {emailError && (
-                                        <motion.div className="text-sm text-red-600 mt-1">{emailError}</motion.div>
+                                    {resetStep === 2 && (
+                                        <>
+                                            <div>
+                                                <label className="text-xs font-medium text-[#172033] mb-1.5 block">
+                                                    6-Digit Code
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={resetCode}
+                                                    onChange={(e) => setResetCode(e.target.value)}
+                                                    placeholder="123456"
+                                                    maxLength={6}
+                                                    className="w-full px-4 py-2.5 text-sm bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] outline-none tracking-widest text-center font-bold"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-medium text-[#172033] mb-1.5 block">
+                                                    New PIN / Password
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    value={newPassword}
+                                                    onChange={(e) => setNewPassword(e.target.value)}
+                                                    placeholder="Enter new PIN"
+                                                    className="w-full px-4 py-2.5 text-sm bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] outline-none"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={handleVerifyReset}
+                                                disabled={isResetting || resetCode.length !== 6 || !newPassword.trim()}
+                                                className="w-full py-2.5 px-4 rounded-xl text-sm font-medium text-white bg-[#165DFF] hover:bg-[#1247CC] transition-all shadow-md shadow-blue-500/20 disabled:bg-slate-300 cursor-pointer"
+                                            >
+                                                {isResetting ? "Updating..." : "Reset PIN"}
+                                            </button>
+                                        </>
                                     )}
+
+                                    <div className="text-center pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setIsResetMode(false); setResetStep(1); setResetMessage(''); setPasswordError(''); setEmailError(''); }}
+                                            className="text-xs text-[#64748B] hover:text-[#172033] font-medium cursor-pointer"
+                                        >
+                                            Back to Sign In
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Notifications / Errors */}
+                            {error && !isResetMode && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl text-xs">
+                                    {error}
                                 </div>
-                                
-                                <Button 
-                                    type="button"
-                                    onClick={handleSendResetCode}
-                                    disabled={isResetting || !email.trim() || !validateEmail(email)} 
-                                    className="w-full !py-3 !text-base bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
-                                >
-                                    {isResetting ? 'Sending code...' : 'Send Reset Code'}
-                                </Button>
-                            </>
-                        )}
+                            )}
 
-                        {isResetMode && resetStep === 2 && (
-                            <>
-                                <div>
-                                    <label className="text-sm font-medium text-text-secondary mb-1 block">
-                                        Reset Code (from Email)
-                                    </label>
-                                    <Input
-                                        type="text"
-                                        value={resetCode}
-                                        onChange={(e) => { setResetCode(e.target.value); setPasswordError(''); }}
-                                        placeholder="6-digit code"
-                                        required
-                                        disabled={isResetting}
-                                    />
+                            {resetMessage && (
+                                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-xs">
+                                    {resetMessage}
                                 </div>
-
-                                <div>
-                                    <label className="text-sm font-medium text-text-secondary mb-1 block">
-                                        New PIN
-                                    </label>
-                                    <Input
-                                        type="password"
-                                        value={newPassword}
-                                        onChange={(e) => { setNewPassword(e.target.value); setPasswordError(''); }}
-                                        placeholder="Enter your new PIN"
-                                        required
-                                        disabled={isResetting}
-                                    />
-                                    {passwordError && (
-                                        <motion.div className="text-sm text-red-600 mt-1">{passwordError}</motion.div>
-                                    )}
-                                </div>
-                                
-                                <Button 
-                                    type="button"
-                                    onClick={handleVerifyReset}
-                                    disabled={isResetting || !resetCode.trim() || !newPassword.trim()} 
-                                    className="w-full !py-3 !text-base bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
-                                >
-                                    {isResetting ? 'Resetting PIN...' : 'Confirm Reset'}
-                                </Button>
-                            </>
-                        )}
-
-                        {resetMessage && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm"
-                            >
-                                {resetMessage}
-                            </motion.div>
-                        )}
-
-                        {isResetMode && (
-                            <div className="text-center mt-2">
-                                <button 
-                                    type="button" 
-                                    onClick={() => { setIsResetMode(false); setResetStep(1); setResetMessage(''); setPasswordError(''); setEmailError(''); }}
-                                    className="text-sm text-gray-500 hover:text-gray-700 font-medium underline"
-                                >
-                                    Back to Login
-                                </button>
-                            </div>
-                        )}
-
-                        {error && !isResetMode && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm"
-                            >
-                                {error}
-                            </motion.div>
-                        )}
-
-                        {!isResetMode && (
-                            <div className="bg-green-50 border border-green-200 text-green-700 text-sm p-4 rounded-lg flex items-center gap-3">
-                                <ShieldCheck size={20} />
-                                <div>
-                                    <h4 className="font-semibold">Secure PIN Login</h4>
-                                    <p>Access your organization data securely.</p>
-                                </div>
-                            </div>
-                        )}
-                    </form>
-                    
-                    {/* <p className="text-xs text-text-secondary text-center mt-8">
-                        By signing in, you agree to our <a href="#" className="text-primary hover:underline">Terms of Service</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>.
-                    </p> */}
-                </div>
-
-                <div className="m-2 bg-surface p-3 rounded-xl shadow-sm border border-gray-200 flex items-start gap-4 max-w-sm mx-auto">
-                    
-                        <ShieldCheck className="text-primary" size={40}/>
-                    
-                    <div className="text-left">
-                        <p className="font-semibold text-text-primary text-sm">Secure Access</p>
-                        <p className="text-text-secondary text-xs mt-1 leading-relaxed">Your data is protected with enterprise-grade security</p>
+                            )}
+                        </form>
                     </div>
                 </div>
-            </motion.div>
+            </main>
         </div>
     );
 };

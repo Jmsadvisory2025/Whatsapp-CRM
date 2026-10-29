@@ -12,32 +12,36 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  SlidersHorizontal,
   Search,
   X,
-  CheckCircle2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ─── Status config ──────────────────────────────────────────────────────── */
 
 const statusConfig = {
-  prospect:  { label: "Prospect",  text: "text-blue-600",    bg: "bg-blue-50",    border: "border-blue-200"   },
-  confirmed: { label: "Lead",      text: "text-amber-600",   bg: "bg-amber-50",   border: "border-amber-200"  },
+  prospect:  { label: "Prospect",  text: "text-[#8B5CF6]", bg: "bg-purple-50", border: "border-purple-200/70" },
+  confirmed: { label: "Lead",      text: "text-[#0EA5E9]", bg: "bg-sky-50",    border: "border-sky-200/70"    },
+  lead:      { label: "Lead",      text: "text-[#0EA5E9]", bg: "bg-sky-50",    border: "border-sky-200/70"    },
 };
 
 const getStatus = (key) =>
-  statusConfig[key] ?? { label: key ?? "Unknown", text: "text-gray-500", bg: "bg-gray-100", border: "border-gray-200" };
+  statusConfig[key?.toLowerCase?.()] ?? {
+    label: key ?? "Unknown",
+    text: "text-[#64748B]",
+    bg: "bg-slate-100",
+    border: "border-slate-200",
+  };
 
 const PALETTES = [
-  { bg: "#dfe5e7", text: "#4a5568" },
-  { bg: "#cfe9ba", text: "#2f6543" },
-  { bg: "#ffd279", text: "#7a5800" },
-  { bg: "#c9e6ff", text: "#1a5f8c" },
-  { bg: "#f4c2c2", text: "#8c2e2e" },
-  { bg: "#d4baff", text: "#5b2c8c" },
+  { bg: "#EFF6FF", text: "#165DFF", border: "#DBEAFE" },
+  { bg: "#ECFDF5", text: "#059669", border: "#D1FAE5" },
+  { bg: "#F5F3FF", text: "#7C3AED", border: "#EDE9FE" },
+  { bg: "#F0F9FF", text: "#0284C7", border: "#E0F2FE" },
+  { bg: "#FFFBEB", text: "#D97706", border: "#FEF3C7" },
+  { bg: "#EEF2FF", text: "#4F46E5", border: "#E0E7FF" },
 ];
-const getPalette = (id) => PALETTES[Number(id) % PALETTES.length];
+const getPalette = (id) => PALETTES[Number(id || 0) % PALETTES.length];
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -64,24 +68,46 @@ const getInitials = (name, phone) => {
   return stripPlus(phone).slice(-2);
 };
 
+const getISTDateKey = (ts) =>
+  new Date(ts).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+
 const formatDate = (dateString) => {
+  if (!dateString) return "";
   const date = new Date(dateString);
   const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m`;
-  if (diffHours < 24) return `${diffHours}h`;
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d`;
-  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+
+  const dateKey = getISTDateKey(date);
+  const todayKey = getISTDateKey(now);
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const yesterdayKey = getISTDateKey(yesterday);
+
+  if (dateKey === todayKey) {
+    return date.toLocaleTimeString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+  if (dateKey === yesterdayKey) return "Yesterday";
+
+  return date.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+  });
 };
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
-const WhatsappSidebar = ({ onSelectCustomer }) => {
+const WhatsappSidebar = ({
+  filters = { number: "", from_date: "", to_date: "", status: "" },
+  hasActiveFilters = false,
+  onClearFilters,
+  onSelectCustomer,
+}) => {
   const dispatch = useDispatch();
   const { user } = useSelector((s) => s.auth || {});
   const isTp = user?.user_type === "tech_provider";
@@ -95,12 +121,7 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
     wabaPhone,
   } = useSelector((s) => s.whatsapp);
 
-  const [showFilters, setShowFilters] = useState(false);
-  const [searchText, setSearchText]   = useState("");
-  const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({
-    number: "", from_date: "", to_date: "", status: "",
-  });
+  const [searchText, setSearchText] = useState("");
 
   // ── Fetch on mount ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -116,14 +137,14 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
         hasAutoSelected.current = true;
         const first = customers[0];
         let convId = first.conversation_id;
-        
+
         if (!convId && isTp && first.phone) {
           try {
             const token = localStorage.getItem("accessToken");
             const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
             const res = await axios.get(`${API_BASE_URL}api/industry/conversations/`, {
               headers: { Authorization: `Bearer ${token}` },
-              params: { phone: first.phone, page_size: 1 }
+              params: { phone: first.phone, page_size: 1 },
             });
             if (res.data && res.data.results && res.data.results.length > 0) {
               convId = res.data.results[0].id;
@@ -132,11 +153,11 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
             console.error("Failed to fetch conversation ID for TP", err);
           }
         }
-        
+
         const updatedCustomer = {
           ...first,
           customer_id: first.customer_id || first.id,
-          conversation_id: convId || first.conversation_id
+          conversation_id: convId || first.conversation_id,
         };
 
         dispatch(setSelectedCustomer(updatedCustomer));
@@ -148,31 +169,16 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
     autoSelect();
   }, [customers, selectedCustomer, dispatch, isTp]);
 
-  const handleApplyFilters = () => {
-    setPage(1);
-    setSearchText(""); // Clear search when filtering
-    dispatch(fetchCustomers({ filters, page: 1 }));
-    setShowFilters(false);
-  };
-
-  const handleClearFilters = () => {
-    setFilters({ number: "", from_date: "", to_date: "", status: "" });
-    setPage(1);
-    setSearchText("");
-    dispatch(fetchCustomers({ page: 1 }));
-    setShowFilters(false);
-  };
-
   const handleSelect = async (customer) => {
     let convId = customer.conversation_id;
-    
+
     if (!convId && isTp && customer.phone) {
       try {
         const token = localStorage.getItem("accessToken");
         const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
         const res = await axios.get(`${API_BASE_URL}api/industry/conversations/`, {
           headers: { Authorization: `Bearer ${token}` },
-          params: { phone: customer.phone, page_size: 1 }
+          params: { phone: customer.phone, page_size: 1 },
         });
         if (res.data && res.data.results && res.data.results.length > 0) {
           convId = res.data.results[0].id;
@@ -185,7 +191,7 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
     const updatedCustomer = {
       ...customer,
       customer_id: customer.customer_id || customer.id,
-      conversation_id: convId || customer.conversation_id
+      conversation_id: convId || customer.conversation_id,
     };
 
     dispatch(setSelectedCustomer(updatedCustomer));
@@ -200,174 +206,61 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
     ? customers.filter((c) => {
         const q = searchText.toLowerCase();
         return (
-          (c.name  || "").toLowerCase().includes(q) ||
+          (c.name || "").toLowerCase().includes(q) ||
           (c.phone || "").toLowerCase().includes(q)
         );
       })
     : customers;
 
-  // ── Check if filters are active ────────────────────────────────────────────
-  const hasActiveFilters = filters.number || filters.from_date || filters.to_date || filters.status;
-
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{ background: "#fff" }}>
-
-      {/* ── Header ── */}
-      <div
-        className="flex-shrink-0 px-4 pt-3 pb-2"
-        style={{ borderBottom: "1px solid #e9edef", background: "#f0f2f5" }}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex flex-col">
-            <span className="text-[15px] font-semibold" style={{ color: "#111b21" }}>
-              Chats
-            </span>
-
-            {/* ── Verified number badge ── */}
-            {wabaPhone && (
-              <span
-                className="flex items-center gap-1 text-[11px] font-medium mt-0.5"
-                style={{ color: "#008069" }}
-                title="WhatsApp Business verified number"
-              >
-                <CheckCircle2 size={11} />
-                +{stripPlus(wabaPhone)}
+    <div className="relative flex flex-col h-full overflow-hidden bg-white font-sans text-[#172033]">
+      {/* ── Clean Sidebar Header (Title + Search Only) ── */}
+      <div className="flex-shrink-0 px-4 pt-3.5 pb-3 border-b border-slate-100 bg-white space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-sm font-bold text-[#172033] tracking-tight leading-tight">
+              Conversations
+            </h2>
+            {pagination?.count > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-[#165DFF] border border-blue-100 tabular-nums">
+                {pagination.count}
               </span>
             )}
           </div>
 
-          <button
-            onClick={() => setShowFilters((v) => !v)}
-            className={`p-2 rounded-full transition-colors relative ${
-              showFilters || hasActiveFilters ? "bg-[#008069] text-white" : "hover:bg-gray-200 text-[#54656f]"
-            }`}
-            title="Filters"
-          >
-            <SlidersHorizontal size={18} />
-            {/* ── Badge showing filters are active ── */}
-            {hasActiveFilters && (
-              <span
-                className="absolute top-1 right-1 w-2 h-2 rounded-full"
-                style={{ background: "#ff6b6b" }}
-              />
-            )}
-          </button>
+          {hasActiveFilters && (
+            <button
+              onClick={onClearFilters}
+              className="text-[11px] font-semibold text-[#165DFF] hover:text-[#1247CC] transition-colors cursor-pointer"
+            >
+              Reset filter
+            </button>
+          )}
+        </div>
+
+        {/* Quick Search Bar */}
+        <div className="relative">
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"
+          />
+          <input
+            type="text"
+            placeholder="Search name or phone..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="w-full pl-8 pr-7 py-2 text-xs bg-slate-50/80 focus:bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 text-[#172033] placeholder:text-[#94A3B8] outline-none transition-all"
+          />
+          {searchText && (
+            <button
+              onClick={() => setSearchText("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#172033] cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
       </div>
-
-      {/* ── Filters panel ── */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden flex-shrink-0"
-          >
-            <div
-              className="px-4 py-3 flex flex-col gap-2.5"
-              style={{ background: "#f7f8fa", borderBottom: "1px solid #e9edef" }}
-            >
-              {/* Number */}
-              <div>
-                <label className="text-[10px] font-semibold mb-1 block" style={{ color: "#667781" }}>
-                  PHONE NUMBER
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 9876543210"
-                  value={filters.number}
-                  onChange={(e) => setFilters({ ...filters, number: e.target.value })}
-                  className="w-full text-xs px-2.5 py-2 rounded-lg focus:outline-none"
-                  style={{ background: "#fff", border: "1px solid #e9edef", color: "#111b21" }}
-                />
-              </div>
-
-              {/* Dates */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-semibold mb-1 block" style={{ color: "#667781" }}>
-                    FROM DATE
-                  </label>
-                  <input
-                    type="date"
-                    value={filters.from_date}
-                    onChange={(e) => setFilters({ ...filters, from_date: e.target.value })}
-                    className="w-full text-xs px-2.5 py-2 rounded-lg focus:outline-none"
-                    style={{ background: "#fff", border: "1px solid #e9edef", color: "#111b21" }}
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-semibold mb-1 block" style={{ color: "#667781" }}>
-                    TO DATE
-                  </label>
-                  <input
-                    type="date"
-                    value={filters.to_date}
-                    onChange={(e) => setFilters({ ...filters, to_date: e.target.value })}
-                    className="w-full text-xs px-2.5 py-2 rounded-lg focus:outline-none"
-                    style={{ background: "#fff", border: "1px solid #e9edef", color: "#111b21" }}
-                  />
-                </div>
-              </div>
-
-              {/* ✅ FIXED: Status dropdown with better styling ── */}
-              <div>
-                <label className="text-[10px] font-semibold mb-1 block" style={{ color: "#667781" }}>
-                  STATUS
-                </label>
-                <div className="relative">
-                  <select
-                    value={filters.status}
-                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                    className="w-full text-xs px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#008069]"
-                    style={{ 
-                      background: "#fff", 
-                      border: "1px solid #e9edef", 
-                      color: "#111b21",
-                      WebkitAppearance: "none",  // ← Remove browser default styling
-                      MozAppearance: "none",
-                      appearance: "none",
-                      paddingRight: "24px",  // Space for dropdown arrow
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667781' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                      backgroundRepeat: "no-repeat",
-                      backgroundPosition: "right 8px center",
-                    }}
-                  >
-                    <option value="">All Statuses</option>
-                    {Object.entries(statusConfig).map(([val, cfg]) => (
-                      <option key={val} value={val}>
-                        {cfg.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={handleClearFilters}
-                  className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                  style={{ background: "#e9edef", color: "#667781" }}
-                >
-                  Clear
-                </button>
-                <button
-                  onClick={handleApplyFilters}
-                  disabled={isLoading}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-50"
-                  style={{ background: "#008069" }}
-                >
-                  <Search size={12} />
-                  Apply Filters
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* ── Error ── */}
       <AnimatePresence>
@@ -378,7 +271,7 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden flex-shrink-0"
           >
-            <div className="mx-3 mt-2 flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-lg">
+            <div className="mx-3 mt-2 flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-xl">
               <AlertCircle size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-red-600">{error}</p>
             </div>
@@ -386,40 +279,26 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
         )}
       </AnimatePresence>
 
-      {/* ── Active filter indicator ── */}
-      {hasActiveFilters && (
-        <div
-          className="px-4 py-2 flex items-center justify-between text-xs"
-          style={{ background: "#e8f5e9", borderBottom: "1px solid #c8e6c9" }}
-        >
-          <span style={{ color: "#2e7d32" }}>
-            🔍 {filters.status && `Status: ${statusConfig[filters.status]?.label || filters.status}`}
-            {filters.number && ` • Phone: ${filters.number}`}
-            {filters.from_date && ` • From: ${filters.from_date}`}
-          </span>
-          <button
-            onClick={handleClearFilters}
-            className="text-[#2e7d32] hover:text-[#1b5e20]"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-
       {/* ── Conversation List ── */}
-      <div className="flex-1 overflow-y-auto" style={{ background: "#fff" }}>
+      <div className="flex-1 overflow-y-auto divide-y divide-slate-100/80 bg-white">
         {isLoading && customers.length === 0 ? (
           <div className="flex items-center justify-center h-32">
-            <Loader2 size={22} className="animate-spin" style={{ color: "#008069" }} />
+            <Loader2 size={20} className="animate-spin text-[#165DFF]" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-2" style={{ color: "#667781" }}>
-            <MessageCircle size={32} className="opacity-20" />
-            <p className="text-xs font-medium">
-              {searchText ? "No results found" : hasActiveFilters ? "No conversations match your filters" : "No conversations yet"}
+          <div className="flex flex-col items-center justify-center h-48 gap-2 text-[#64748B] px-4">
+            <div className="w-11 h-11 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-center justify-center">
+              <MessageCircle size={20} className="text-[#165DFF]/60" />
+            </div>
+            <p className="text-xs font-semibold text-[#172033] mt-1">
+              {searchText
+                ? "No results found"
+                : hasActiveFilters
+                  ? "No conversations match your filters"
+                  : "No conversations yet"}
             </p>
             {!searchText && wabaPhone && !hasActiveFilters && (
-              <p className="text-[10px] text-center px-6" style={{ color: "#aaa" }}>
+              <p className="text-[11px] text-center text-[#94A3B8]">
                 Waiting for messages on +{stripPlus(wabaPhone)}
               </p>
             )}
@@ -427,43 +306,53 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
         ) : (
           <AnimatePresence mode="popLayout">
             {filtered.map((c, i) => {
-              const cId     = c.customer_id || c.id;
-              const active  = selectedCustomer && (selectedCustomer.customer_id || selectedCustomer.id) === cId;
-              const st      = getStatus(c.status);
-              const dname   = getDisplayName(c.name, c.phone);
+              const cId = c.customer_id || c.id;
+              const active =
+                selectedCustomer && (selectedCustomer.customer_id || selectedCustomer.id) === cId;
+              const st = getStatus(c.status);
+              const dname = getDisplayName(c.name, c.phone);
               const phoneOnly = dname.startsWith("+");
-              const pal     = getPalette(cId);
+              const pal = getPalette(cId);
 
               return (
                 <motion.button
                   key={cId}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: Math.min(i * 0.03, 0.2) }}
+                  transition={{ delay: Math.min(i * 0.02, 0.15) }}
                   onClick={() => handleSelect(c)}
-                  className="relative w-full text-left flex items-center gap-3 px-3 py-3 transition-colors duration-100"
-                  style={{ background: active ? "#f0f2f5" : "transparent" }}
-                  onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "#f5f6f6"; }}
-                  onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                  className={`relative w-full text-left flex items-center gap-3 px-3.5 py-3 transition-colors duration-150 cursor-pointer ${
+                    active ? "bg-blue-50/60" : "hover:bg-slate-50/80"
+                  }`}
                 >
                   {/* Avatar */}
                   <div
-                    className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-semibold select-none"
-                    style={{ background: pal.bg, color: pal.text }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-semibold select-none border"
+                    style={{
+                      background: pal.bg,
+                      color: pal.text,
+                      borderColor: pal.border,
+                    }}
                   >
                     {getInitials(c.name, c.phone)}
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <div className="flex items-center justify-between gap-2 mb-1">
                       <span
-                        className={`leading-tight truncate font-medium ${phoneOnly ? "text-xs font-mono" : "text-sm"}`}
-                        style={{ color: active ? "#008069" : "#111b21" }}
+                        className={`leading-tight truncate font-semibold text-xs ${
+                          active ? "text-[#165DFF]" : "text-[#172033]"
+                        }`}
+                        title={dname}
                       >
                         {dname}
                       </span>
-                      <span className="text-[11px] flex-shrink-0 tabular-nums" style={{ color: active ? "#008069" : "#667781" }}>
+                      <span
+                        className={`text-[10px] flex-shrink-0 tabular-nums font-medium ${
+                          active ? "text-[#165DFF]" : "text-[#94A3B8]"
+                        }`}
+                      >
                         {formatDate(c.created_at)}
                       </span>
                     </div>
@@ -471,12 +360,12 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span
-                          className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${st.bg} ${st.text} ${st.border} flex-shrink-0`}
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${st.bg} ${st.text} ${st.border} flex-shrink-0`}
                         >
                           {st.label}
                         </span>
                         {!phoneOnly && (
-                          <span className="text-[11px] truncate font-mono" style={{ color: "#667781" }}>
+                          <span className="text-[11px] truncate text-[#64748B]">
                             +{stripPlus(c.phone)}
                           </span>
                         )}
@@ -486,7 +375,7 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
 
                   {/* Active indicator */}
                   {active && (
-                    <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full" style={{ background: "#008069" }} />
+                    <div className="absolute left-0 top-2.5 bottom-2.5 w-1 rounded-r-full bg-[#165DFF]" />
                   )}
                 </motion.button>
               );
@@ -497,39 +386,35 @@ const WhatsappSidebar = ({ onSelectCustomer }) => {
 
       {/* ── Pagination ── */}
       {pagination.totalPages > 1 && (
-        <div
-          className="px-4 py-2.5 flex items-center justify-between flex-shrink-0"
-          style={{ borderTop: "1px solid #e9edef", background: "#f0f2f5" }}
-        >
+        <div className="px-3.5 py-2.5 flex items-center justify-between flex-shrink-0 border-t border-slate-100 bg-slate-50/60">
           <button
             onClick={() => {
               const p = pagination.currentPage - 1;
-              setPage(p);
               dispatch(fetchCustomers({ filters, page: p }));
             }}
             disabled={pagination.currentPage <= 1 || isLoading}
-            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            style={{ color: "#008069" }}
+            className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] bg-white text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            <ChevronLeft size={14} /> Prev
+            <ChevronLeft size={13} /> Prev
           </button>
 
-          <span className="text-[11px] tabular-nums" style={{ color: "#667781" }}>
-            {((pagination.currentPage - 1) * pagination.pageSize) + 1}–
-            {Math.min(pagination.currentPage * pagination.pageSize, pagination.count)} of {pagination.count?.toLocaleString()}
+          <span className="text-[11px] font-medium text-[#64748B] tabular-nums">
+            {(pagination.currentPage - 1) * pagination.pageSize + 1}–
+            {Math.min(pagination.currentPage * pagination.pageSize, pagination.count)} of{" "}
+            <strong className="text-[#172033] font-semibold">
+              {pagination.count?.toLocaleString()}
+            </strong>
           </span>
 
           <button
             onClick={() => {
               const p = pagination.currentPage + 1;
-              setPage(p);
               dispatch(fetchCustomers({ filters, page: p }));
             }}
             disabled={pagination.currentPage >= pagination.totalPages || isLoading}
-            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            style={{ color: "#008069" }}
+            className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] bg-white text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            Next <ChevronRight size={14} />
+            Next <ChevronRight size={13} />
           </button>
         </div>
       )}

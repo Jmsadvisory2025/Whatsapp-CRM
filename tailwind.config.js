@@ -5,22 +5,37 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#4338ca", // Indigo 700
-          light: "#6366f1", // Indigo 500
-          dark: "#312e81", // Indigo 900
+          DEFAULT: "#165DFF", // Bright Blue
+          hover: "#1247CC",   // Dark Blue
+          navy: "#172033",    // Dark Navy
         },
-        secondary: "#10b981", // Emerald 500
-        background: "#f3f4f6", // Gray 100
-        surface: "#ffffff",
+        cyan: {
+          DEFAULT: "#38BDF8", // Sky Blue
+          light: "#7DD3FC",
+          dark: "#0284C7",
+          subtle: "#F0F9FF",
+        },
+        sidebar: "#FFFFFF",
+        background: "#F5F6F8", // Soft crisp light grey
+        surface: "#FFFFFF",    // Pure White
+        canvas: "#EBF3FC",     // SignIn & SignUp Ambient Tint
+        border: "#E5E7EB",     // Crisp Light Border
         text: {
-          primary: "#1f2937", // Gray 800
-          secondary: "#6b7280", // Gray 500
+          primary: "#172033",   // Dark Navy (Headings & Primary Text)
+          secondary: "#64748B", // Slate Grey (Subtitles & Descriptions)
+          muted: "#94A3B8",
         },
-        danger: "#ef4444", // Red 500
-        warning: "#f59e0b", // Amber 500
+        whatsapp: {
+          DEFAULT: "#25D366", // WhatsApp Green
+          dark: "#128C7E",
+          light: "#DCF8C6",
+          badge: "#25D366",
+        },
+        danger: "#EF4444",
+        warning: "#F59E0B",
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ['"IBM Plex Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
       },
     },
   },

@@ -1,547 +1,211 @@
 // src/pages/Team.jsx
-// Modern Minimal Team + Meta WhatsApp Status UI
+// Profile: Clean Direct Card Grid (No nested outer card) with + Phone Number
 
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-import {
-  useDispatch,
-  useSelector,
-} from "react-redux";
-
+import { useDispatch, useSelector } from "react-redux";
 import {
   Building2,
-  Mail,
-  Globe,
-  User,
   Shield,
   Wifi,
   WifiOff,
   Phone,
-  Search,
-  Plus,
-  AlertCircle,
   RefreshCw,
-  BadgeCheck,
-  Layers3,
+  Mail,
+  Hash,
 } from "lucide-react";
-
 import { FaWhatsapp } from "react-icons/fa6";
-
-import { MdEdit } from "react-icons/md";
-
-import { BiSolidTrashAlt } from "react-icons/bi";
-
-import axios from "axios";
-
-import RoleBadge from "../components/ui/RoleBadge";
-
-import EmptyState from "../components/ui/EmptyState";
-
-import LoaderDemo from "../components/ui/ProfessionalMedicalLoader ";
-
-import {
-  fetchTeamMembers,
-  deleteTeamMember,
-  updateTeamMember,
-} from "../store/teamSlice";
-
 import { fetchWABAStatus } from "../store/metaConnectSlice";
-
-import { toCamelCase } from "../hooks/utils";
-
-/* ─────────────────────────────────────────────
-   API
-───────────────────────────────────────────── */
-
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL,
-  withCredentials: true,
-});
-
-/* ─────────────────────────────────────────────
-   INFO ITEM
-───────────────────────────────────────────── */
-
-const InfoItem = ({
-  icon: Icon,
-  label,
-  value,
-  isEmail,
-  isLink,
-}) => {
-  if (!value) return null;
-
-  return (
-    <div className="flex items-start gap-4">
-
-      <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4 text-gray-500" />
-      </div>
-
-      <div className="min-w-0 pt-0.5">
-
-        <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1.5">
-          {label}
-        </p>
-
-        {isEmail ? (
-          <a
-            href={`mailto:${value}`}
-            className="text-sm text-gray-700 hover:text-blue-600 break-all transition-colors"
-          >
-            {value}
-          </a>
-        ) : isLink ? (
-          <a
-            href={
-              value.startsWith("http")
-                ? value
-                : `https://${value}`
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-gray-700 hover:text-blue-600 break-all transition-colors"
-          >
-            {value.replace(/^https?:\/\//, "")}
-          </a>
-        ) : (
-          <p className="text-sm text-gray-800 break-all">
-            {value}
-          </p>
-        )}
-
-      </div>
-
-    </div>
-  );
-};
-
-/* ─────────────────────────────────────────────
-   MAIN
-───────────────────────────────────────────── */
+import { fetchMe } from "../store/authSlice";
 
 const Team = () => {
-
   const navigate = useNavigate();
-
   const dispatch = useDispatch();
-
-  const { members, isLoading, error } =
-    useSelector((s) => s.team);
 
   const {
     organization,
     org_email,
-    org_website,
-    owner_name,
     owner_email,
-    role,
   } = useSelector((s) => s.auth);
-
-  /* ───────────────────────── */
-
-  const [searchQuery, setSearchQuery] =
-    useState("");
-
-  const [editForm, setEditForm] =
-    useState({
-      full_name: "",
-      new_email: "",
-      role: "",
-    });
 
   const {
     wabaStatus,
     wabaId,
-    wabaName,
     phoneNumber,
     phoneNumberId,
-    isLoadingStatus: metaLoading
+    isLoadingStatus: metaLoading,
   } = useSelector((s) => s.metaConnect);
 
-  /* ───────────────────────── */
+  const loadData = () => {
+    dispatch(fetchWABAStatus());
+    dispatch(fetchMe());
+  };
 
   useEffect(() => {
-
-    dispatch(fetchTeamMembers());
-    dispatch(fetchWABAStatus());
-
+    loadData();
   }, [dispatch]);
 
-  const isWhatsAppConnected = wabaStatus === "connected" || (wabaId && phoneNumberId);
+  const isWhatsAppConnected =
+    wabaStatus === "connected" || Boolean(wabaId && phoneNumberId);
 
-  /* ───────────────────────── */
+  const orgNameVal =
+    organization ||
+    localStorage.getItem("userOrg") ||
+    localStorage.getItem("organization") ||
+    "—";
 
-  const filteredMembers = useMemo(() => {
+  const emailVal =
+    owner_email ||
+    org_email ||
+    localStorage.getItem("ownerEmail") ||
+    localStorage.getItem("orgEmail") ||
+    "—";
 
-    return members.filter((m) => {
+  // Ensure phone number has a "+" prefix
+  const rawPhone = String(phoneNumber || "").trim();
+  const phoneVal = rawPhone
+    ? rawPhone.startsWith("+")
+      ? rawPhone
+      : `+${rawPhone}`
+    : "—";
 
-      const q =
-        searchQuery.toLowerCase();
+  const wabaIdVal = wabaId || "—";
+  const phoneIdVal = phoneNumberId || localStorage.getItem("phoneNumberId") || "—";
 
-      return (
-        m.full_name
-          ?.toLowerCase()
-          .includes(q) ||
-
-        m.email
-          ?.toLowerCase()
-          .includes(q) ||
-
-        m.role
-          ?.toLowerCase()
-          .includes(q)
-      );
-
-    });
-
-  }, [members, searchQuery]);
-
-  /* ───────────────────────── */
-
-  const handleDelete = (id) => {
-
-    if (
-      window.confirm(
-        "Delete this member?"
-      )
-    ) {
-
-      dispatch(
-        deleteTeamMember(id)
-      );
-
-    }
-
-  };
-
-  const handleEditClick = (
-    member
-  ) => {
-
-    setEditMember(member);
-
-    setEditForm({
-      full_name:
-        member.full_name || "",
-      new_email:
-        member.email || "",
-      role:
-        member.role || "",
-    });
-
-  };
-
-  const handleInputChange = (
-    e
-  ) => {
-
-    const { name, value } =
-      e.target;
-
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-  };
-
-  const handleCancel = () => {
-
-    setEditMember(null);
-
-  };
-
-  const handleSaveUpdate =
-    async () => {
-
-      if (!editMember) return;
-
-      await dispatch(
-        updateTeamMember({
-          id: editMember.id,
-          ...editForm,
-        })
-      );
-
-      setEditMember(null);
-
-    };
-
-  /* ───────────────────────── */
-
-  if (isLoading) {
-
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoaderDemo />
-      </div>
-    );
-
-  }
-
-  if (error) {
-
-    return (
-      <div className="p-6">
-
-        <div className="max-w-md mx-auto bg-red-50 border border-red-100 rounded-3xl p-6 text-center">
-
-          <AlertCircle className="mx-auto text-red-500 mb-3" />
-
-          <p className="text-sm text-red-700 font-medium">
-            {error}
-          </p>
-
-        </div>
-
-      </div>
-    );
-
-  }
-
-  /* ───────────────────────── */
+  // Ordered 6 cards: Organization -> Email -> Status -> Phone -> WABA ID -> Phone Number ID
+  const cards = [
+    {
+      icon: Building2,
+      label: "ORGANIZATION",
+      value: orgNameVal,
+    },
+    {
+      icon: Mail,
+      label: "EMAIL",
+      value: emailVal,
+    },
+    {
+      icon: isWhatsAppConnected ? Wifi : WifiOff,
+      label: "STATUS",
+      value: isWhatsAppConnected ? "Connected" : "Disconnected",
+      badge: (
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+            isWhatsAppConnected
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              : "bg-slate-100 text-[#64748B] border border-slate-200"
+          }`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${
+              isWhatsAppConnected ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+            }`}
+          />
+          <span>{isWhatsAppConnected ? "Active" : "Offline"}</span>
+        </span>
+      ),
+    },
+    {
+      icon: Phone,
+      label: "PHONE NUMBER",
+      value: phoneVal,
+      isMono: true,
+    },
+    {
+      icon: Shield,
+      label: "WABA ID",
+      value: wabaIdVal,
+      isMono: true,
+    },
+    {
+      icon: Hash,
+      label: "PHONE NUMBER ID",
+      value: phoneIdVal,
+      isMono: true,
+    },
+  ];
 
   return (
-
-    <div className="min-h-screen bg-[#f7f8fa] p-4 md:p-6 space-y-5">
-
-      {/* HEADER */}
-
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-
+    <div className="min-h-screen w-full bg-[#FAFAFC] p-5 sm:p-6 lg:p-7 space-y-5 font-sans text-[#172033]">
+      {/* ── Page Header ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-[#E5E7EB]/80">
         <div>
-
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172033] leading-tight">
             Profile
           </h1>
-
-          <p className="text-sm text-gray-500 mt-1">
-            Account Information
+          <p className="text-xs text-[#64748B] mt-1 font-normal">
+            View your organization details and connected WhatsApp Business account.
           </p>
-
         </div>
 
-        {/* <button
-          onClick={() =>
-            navigate("/addMember")
-          }
-          className="inline-flex items-center gap-2 bg-gray-900 hover:bg-black text-white text-sm font-medium px-4 py-2.5 rounded-2xl transition-all"
-        >
-
-          <Plus size={15} />
-
-          Add Member
-
-        </button> */}
-
-      </div>
-
-      {/* TOP SECTION: WHATSAPP */}
-
-      <div className="bg-white border border-gray-200/60 rounded-[2rem] p-8 shadow-sm">
-        
-        {/* HEADER */}
-        <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-50">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-[#25D366]/10 border border-[#25D366]/20 shadow-sm flex items-center justify-center shrink-0">
-              <FaWhatsapp className="text-[#25D366] text-2xl" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                Account Information
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100">
-            {isWhatsAppConnected ? (
-              <>
-                <Wifi size={15} className="text-green-500" />
-                <span className="text-sm font-bold text-green-600">Connected</span>
-              </>
-            ) : (
-              <>
-                <WifiOff size={15} className="text-gray-400" />
-                <span className="text-sm font-bold text-gray-500">Not Connected</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* LOADING STATE */}
-        {metaLoading ? (
-          <div className="py-16 flex justify-center">
-            <RefreshCw size={24} className="animate-spin text-gray-400" />
-          </div>
-        ) : isWhatsAppConnected ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-6">
-            <InfoItem icon={Building2} label="WABA Name" value={wabaName} />
-            <InfoItem icon={Shield} label="WABA ID" value={wabaId} />
-            <InfoItem icon={Phone} label="Phone Number" value={phoneNumber} />
-            <InfoItem icon={Phone} label="Phone Number ID" value={phoneNumberId} />
-          </div>
-        ) : (
-           <div className="py-10 flex justify-center">
-              <p className="text-gray-500 text-sm">No WhatsApp Business Account connected.</p>
-           </div>
-        )}
-
-        {/* ACTIONS */}
-        <div className="mt-10 pt-6 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-end gap-4">
+        {/* Action Toolbar */}
+        <div className="flex items-center flex-wrap gap-2.5">
           <button
-            onClick={() => dispatch(fetchWABAStatus())}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-6 py-3 rounded-2xl transition-all shadow-sm"
+            onClick={loadData}
+            disabled={metaLoading}
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-[#E5E7EB] rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
           >
-            <RefreshCw size={14} />
-            Refresh Status
+            <RefreshCw
+              size={13}
+              className={metaLoading ? "animate-spin text-[#165DFF]" : "text-[#64748B]"}
+            />
+            <span>Refresh</span>
           </button>
-          
-          {!metaLoading && (
-            !isWhatsAppConnected ? (
-              <button
-                onClick={() => navigate("/setup")}
-                className="w-full sm:w-auto bg-[#25D366] hover:bg-[#1ebe5d] text-white text-sm font-semibold px-8 py-3 rounded-2xl transition-all shadow-sm"
-              >
-                Connect WhatsApp
-              </button>
-            ) : (
-              <button
-                disabled
-                className="w-full sm:w-auto bg-gray-100 text-gray-400 font-semibold text-sm px-8 py-3 rounded-2xl cursor-not-allowed"
-              >
-                Connected
-              </button>
-            )
-          )}
-        </div>
 
+          {/* Reconnect WhatsApp in Green */}
+          <button
+            onClick={() => navigate("/setup")}
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-4 bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded-xl transition-all shadow-sm shadow-emerald-500/20 cursor-pointer"
+          >
+            <FaWhatsapp className="text-sm" />
+            <span>{isWhatsAppConnected ? "Reconnect WhatsApp" : "Connect WhatsApp"}</span>
+          </button>
+        </div>
       </div>
 
-      {/* TEAM */}
-
-      {/* <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
-
-        <div className="p-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-
-          <div>
-
-            <h2 className="text-sm font-semibold text-gray-900">
-              Team Members
-            </h2>
-
-            <p className="text-xs text-gray-400 mt-1">
-              {filteredMembers.length} members
-            </p>
-
-          </div>
-
-          <div className="relative w-full md:w-72">
-
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) =>
-                setSearchQuery(
-                  e.target.value
-                )
-              }
-              className="w-full pl-9 pr-4 py-2.5 rounded-2xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-4 focus:ring-gray-100"
-            />
-
-          </div>
-
+      {/* ── Direct Clean 3-Column Card Grid (No outer big card wrapper) ── */}
+      {metaLoading ? (
+        <div className="py-20 flex flex-col items-center justify-center bg-white border border-slate-200/80 rounded-2xl">
+          <RefreshCw size={24} className="animate-spin text-[#165DFF] mb-2" />
+          <p className="text-xs text-[#64748B]">Loading details...</p>
         </div>
-
-      </div> */}
-      {/* MEMBERS LIST */}
-
-      {/* <div className="divide-y divide-gray-100">
-
-        {filteredMembers.length > 0 ? (
-
-          filteredMembers.map((member) => (
-
-            <div
-              key={member.id}
-              className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50 transition-all"
-            >
-
-              <div className="flex items-center gap-4">
-
-                <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center">
-
-                  <User className="w-5 h-5 text-gray-600" />
-
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {cards.map((card, idx) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={idx}
+                className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:border-[#165DFF]/40 hover:shadow-sm transition-all flex flex-col justify-between min-h-[125px]"
+              >
+                {/* Card Top: Icon + Badge */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50/70 border border-blue-100/80 flex items-center justify-center text-[#165DFF]">
+                    <Icon size={16} />
+                  </div>
+                  {card.badge}
                 </div>
 
+                {/* Card Bottom: Label + Value */}
                 <div>
-
-                  <h3 className="text-sm font-semibold text-gray-900">
-                    {member.full_name}
-                  </h3>
-
-                  <p className="text-sm text-gray-500">
-                    {member.email}
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748B] mb-1">
+                    {card.label}
                   </p>
-
+                  <p
+                    className={`text-sm font-bold text-[#172033] break-all ${
+                      card.isMono ? "font-mono" : ""
+                    }`}
+                  >
+                    {card.value}
+                  </p>
                 </div>
-
               </div>
-
-              <div className="flex items-center gap-3">
-
-                <RoleBadge role={member.role} />
-
-                <button
-                  onClick={() =>
-                    handleDelete(member.id)
-                  }
-                  className="w-9 h-9 rounded-xl border border-red-100 hover:bg-red-50 flex items-center justify-center transition-all"
-                >
-
-                  <BiSolidTrashAlt className="text-red-500" />
-
-                </button>
-
-              </div>
-
-            </div>
-
-          ))
-
-        ) : (
-
-          <div className="p-10">
-
-            <EmptyState
-              title="No team members found"
-              subtitle="Add members or try another search."
-            />
-
-          </div>
-
-        )}
-
-      </div> */}
+            );
+          })}
+        </div>
+      )}
     </div>
-
   );
-
 };
 
 export default Team;

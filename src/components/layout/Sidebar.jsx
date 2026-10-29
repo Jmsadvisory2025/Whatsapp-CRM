@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -11,30 +11,55 @@ import {
   Megaphone,
   LogOut,
   Building2,
+  ChevronDown,
+  History,
+  PlusCircle,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { FaMeta } from "react-icons/fa6";
-import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../store/authSlice";
 import jmsLogo from "../../assets/jms.png";
 import { isTechProvider, canViewClients } from "../../store/authUtils";
 
-const baseNavItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: TrendingUp, label: "Leads & Prospects", path: "/leads-prospects" },
-  { icon: FaWhatsapp, label: "Whatsapp", path: "/whatsapp" },
-  { icon: FileText, label: "Templates", path: "/templates" },
-  { icon: Megaphone, label: "Campaign", path: "/campaign" },
-  { icon: FaMeta, label: "Meta Documents", path: "/meta-registration" },
-  { icon: Users2, label: "Profile", path: "/team" },
+const baseMainMenuItems = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/", color: "#165DFF" },
+  { icon: TrendingUp, label: "Customers", path: "/leads-prospects", color: "#0EA5E9" },
+  { icon: FaWhatsapp, label: "Inbox", path: "/whatsapp", color: "#25D366" },
+  { icon: FileText, label: "Message Templates", path: "/templates", color: "#F59E0B" },
+  {
+    icon: Megaphone,
+    label: "Campaigns",
+    path: "/campaign",
+    color: "#8B5CF6",
+    subItems: [
+      { label: "Create Campaign", path: "/campaign?tab=new", tabKey: "new", icon: PlusCircle },
+      { label: "Campaign History", path: "/campaign?tab=history", tabKey: "history", icon: History },
+    ],
+  },
 ];
 
-const techProviderItem = { icon: Building2, label: "Clients", path: "/clients" };
+const baseManagementItems = [
+  { icon: FaMeta, label: "Meta Documents", path: "/meta-registration", color: "#0668E1" },
+  { icon: Users2, label: "Profile", path: "/team", color: "#6366F1" },
+];
 
-const Sidebar = ({ onToggle = () => { } }) => {
+const techProviderItem = { icon: Building2, label: "Clients", path: "/clients", color: "#10B981" };
+
+const Sidebar = ({ onToggle = () => {} }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
+
+  const isOnCampaign = location.pathname.startsWith("/campaign");
+  const currentTabParam = new URLSearchParams(location.search).get("tab") || "new";
+  const [campaignMenuOpen, setCampaignMenuOpen] = useState(isOnCampaign);
+
+  useEffect(() => {
+    if (isOnCampaign) {
+      setCampaignMenuOpen(true);
+    }
+  }, [isOnCampaign]);
 
   const reduxOrg = useSelector((s) => s.auth?.organization || s.auth?.org_name || "");
   const orgName = reduxOrg
@@ -48,19 +73,22 @@ const Sidebar = ({ onToggle = () => { } }) => {
     : userEmail.slice(0, 2).toUpperCase();
 
   const userRole = useSelector((s) => s.auth?.role || localStorage.getItem('userRole') || '');
-
   const wabaConnected = useSelector((s) => s.auth?.waba_connected) ?? (localStorage.getItem('wabaConnected') === 'true');
 
-  let baseFiltered = baseNavItems;
-  if (wabaConnected) {
-    baseFiltered = baseFiltered.filter(item => item.label !== 'Meta Documents');
+  // Filter Main Menu
+  let mainMenuItems = baseMainMenuItems;
+  if (userRole.startsWith('client_')) {
+    mainMenuItems = mainMenuItems.filter(item => !['Message Templates', 'Campaigns'].includes(item.label));
   }
 
-  const navItems = isTechProvider(userEmail)
-    ? [...baseFiltered.filter(item => item.label !== 'Meta Documents'), ...(canViewClients(userEmail) ? [techProviderItem] : [])]
-    : userRole.startsWith('client_')
-      ? baseFiltered.filter(item => !['Templates', 'Campaign'].includes(item.label))
-      : baseFiltered;
+  // Filter Management Menu
+  let managementItems = baseManagementItems;
+  if (wabaConnected) {
+    managementItems = managementItems.filter(item => item.label !== 'Meta Documents');
+  }
+  if (isTechProvider(userEmail) && canViewClients(userEmail)) {
+    managementItems = [techProviderItem, ...managementItems];
+  }
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
@@ -75,7 +103,6 @@ const Sidebar = ({ onToggle = () => { } }) => {
     return parseInt(localStorage.getItem('template_feature_clicks') || '0', 10);
   });
 
-  // New feature indicator logic (shows for 7 days from release date)
   const isFeatureNew = (releaseDateString, daysToKeep = 7) => {
     const releaseDate = new Date(releaseDateString);
     const expiryDate = new Date(releaseDate);
@@ -86,7 +113,7 @@ const Sidebar = ({ onToggle = () => { } }) => {
   const showTemplatesNewBadge = isFeatureNew("2026-10-09") && featureClicks < 4;
 
   const handleNavClick = (label) => {
-    if (label === 'Templates') {
+    if (label === 'Message Templates') {
       const current = parseInt(localStorage.getItem('template_feature_clicks') || '0', 10);
       if (current < 4) {
         localStorage.setItem('template_feature_clicks', (current + 1).toString());
@@ -101,256 +128,321 @@ const Sidebar = ({ onToggle = () => { } }) => {
   }, [isCollapsed]);
 
   const handleToggle = () => setIsCollapsed((p) => !p);
+  
   const handleLogout = () => {
     dispatch(logout());
     sessionStorage.clear();
     navigate("/signin", { replace: true });
   };
 
-  /* shared style helper for bottom action rows */
-  const rowStyle = (extra = {}) => ({
-    padding: isCollapsed ? "10px 0" : "10px 12px",
-    justifyContent: isCollapsed ? "center" : "flex-start",
-    gap: isCollapsed ? 0 : "10px",
-    ...extra,
-  });
+  const renderNavList = (items) => (
+    <ul className="space-y-1">
+      {items.map((item, index) => {
+        const Icon = item.icon;
+        const hasSubItems = Array.isArray(item.subItems) && item.subItems.length > 0;
+
+        if (hasSubItems) {
+          return (
+            <li key={item.label} className="relative">
+              <div
+                onClick={() => {
+                  if (isCollapsed) {
+                    navigate(item.path);
+                  } else {
+                    setCampaignMenuOpen((prev) => !prev);
+                    if (!isOnCampaign) {
+                      navigate(item.path);
+                    }
+                  }
+                }}
+                onMouseEnter={() => setHoveredItem(item.label)}
+                onMouseLeave={() => setHoveredItem(null)}
+                className={`
+                  relative flex items-center justify-between rounded-xl transition-all duration-150 cursor-pointer
+                  ${
+                    isOnCampaign
+                      ? "bg-white text-[#172033] font-semibold shadow-sm border border-slate-200/90"
+                      : hoveredItem === item.label
+                        ? "bg-slate-100/70 text-[#172033]"
+                        : "text-[#64748B] hover:text-[#172033]"
+                  }
+                `}
+                style={{
+                  padding: isCollapsed ? "10px 0" : "9px 12px",
+                  justifyContent: isCollapsed ? "center" : "space-between",
+                }}
+                title={isCollapsed ? item.label : undefined}
+              >
+                <div
+                  className="flex items-center"
+                  style={{
+                    gap: isCollapsed ? 0 : "12px",
+                    ...(isCollapsed ? { width: "100%", justifyContent: "center" } : {}),
+                  }}
+                >
+                  <div
+                    className="flex-shrink-0 flex items-center justify-center w-5 h-5 transition-transform duration-150"
+                    style={{
+                      color: item.color || "#165DFF",
+                    }}
+                  >
+                    <Icon size={18} strokeWidth={isOnCampaign ? 2.3 : 1.9} />
+                  </div>
+
+                  {!isCollapsed && (
+                    <span
+                      className={`text-[13px] whitespace-nowrap tracking-normal font-medium ${
+                        isOnCampaign ? "text-[#172033] font-semibold" : "text-[#64748B]"
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  )}
+                </div>
+
+                {!isCollapsed && (
+                  <ChevronDown
+                    size={14}
+                    className={`text-[#94A3B8] transition-transform duration-200 ${
+                      campaignMenuOpen ? "rotate-180 text-[#172033]" : ""
+                    }`}
+                  />
+                )}
+
+                {/* Tooltip for collapsed mode */}
+                {isCollapsed && hoveredItem === item.label && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -4, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-full ml-3 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none z-[100] shadow-lg bg-[#172033] text-white"
+                  >
+                    {item.label}
+                    <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#172033]" />
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Sub-menu items */}
+              <AnimatePresence initial={false}>
+                {!isCollapsed && campaignMenuOpen && (
+                  <motion.ul
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden mt-1 ml-5 pl-3 border-l border-slate-200 space-y-1"
+                  >
+                    {item.subItems.map((sub) => {
+                      const SubIcon = sub.icon;
+                      const isSubActive =
+                        isOnCampaign && currentTabParam === sub.tabKey;
+
+                      return (
+                        <li key={sub.label}>
+                          <button
+                            type="button"
+                            onClick={() => navigate(sub.path)}
+                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs transition-all cursor-pointer ${
+                              isSubActive
+                                ? "bg-blue-50/80 text-[#165DFF] font-semibold"
+                                : "text-[#64748B] hover:text-[#172033] hover:bg-slate-50 font-medium"
+                            }`}
+                          >
+                            {SubIcon && (
+                              <SubIcon
+                                size={14}
+                                className={
+                                  isSubActive ? "text-[#165DFF]" : "text-[#94A3B8]"
+                                }
+                              />
+                            )}
+                            <span className="truncate">{sub.label}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </motion.ul>
+                )}
+              </AnimatePresence>
+            </li>
+          );
+        }
+
+        return (
+          <li key={item.label} className="relative">
+            <NavLink
+              to={item.path}
+              end={item.path === "/"}
+              onClick={() => handleNavClick(item.label)}
+              onMouseEnter={() => setHoveredItem(item.label)}
+              onMouseLeave={() => setHoveredItem(null)}
+              className={({ isActive }) => `
+                relative flex items-center rounded-xl transition-all duration-150 cursor-pointer
+                ${
+                  isActive
+                    ? "bg-white text-[#172033] font-semibold shadow-sm border border-slate-200/90"
+                    : hoveredItem === item.label
+                      ? "bg-slate-100/70 text-[#172033]"
+                      : "text-[#64748B] hover:text-[#172033]"
+                }
+              `}
+              style={{
+                padding: isCollapsed ? "10px 0" : "9px 12px",
+                justifyContent: isCollapsed ? "center" : "flex-start",
+                gap: isCollapsed ? 0 : "12px",
+              }}
+              title={isCollapsed ? item.label : undefined}
+            >
+              {({ isActive }) => (
+                <>
+                  <div
+                    className="flex-shrink-0 flex items-center justify-center w-5 h-5 transition-transform duration-150"
+                    style={{
+                      color: item.color || "#165DFF",
+                      ...(isCollapsed ? { width: "100%", justifyContent: "center" } : {})
+                    }}
+                  >
+                    <Icon size={18} strokeWidth={isActive ? 2.3 : 1.9} />
+                  </div>
+
+                  <AnimatePresence>
+                    {!isCollapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -6 }}
+                        transition={{ duration: 0.18, delay: index * 0.02 }}
+                        className={`text-[13px] whitespace-nowrap tracking-normal font-medium ${
+                          isActive ? "text-[#172033] font-semibold" : "text-[#64748B]"
+                        }`}
+                      >
+                        {item.label}
+                        {item.label === 'Message Templates' && showTemplatesNewBadge && (
+                          <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[9px] font-semibold tracking-wide text-white bg-[#165DFF] rounded-full shadow-xs">
+                            NEW
+                          </span>
+                        )}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Tooltip for collapsed mode */}
+                  {isCollapsed && hoveredItem === item.label && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -4, scale: 0.95 }}
+                      animate={{ opacity: 1, x: 0, scale: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-full ml-3 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none z-[100] shadow-lg bg-[#172033] text-white"
+                    >
+                      {item.label}
+                      <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#172033]" />
+                    </motion.div>
+                  )}
+                </>
+              )}
+            </NavLink>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
     <motion.aside
-      animate={{ width: isCollapsed ? 72 : 256 }}
+      animate={{ width: isCollapsed ? 76 : 230 }}
       transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-      className="relative flex-shrink-0 flex flex-col h-screen overflow-hidden bg-surface border-r border-gray-200 shadow-sm"
+      className="relative flex-shrink-0 flex flex-col h-screen overflow-hidden bg-white text-[#172033] border-r border-[#E5E7EB] shadow-xs z-20 font-sans"
     >
-      {/* ── Logo ── */}
-      <div className="relative z-10 flex items-center h-16 px-4 flex-shrink-0 border-b border-gray-200">
-        <div className="flex items-center gap-3 overflow-hidden min-w-0 w-full">
-          <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0">
-            <img src={jmsLogo} alt="JMS TechNova" className="w-7 h-7 object-contain" />
-          </div>
-          <AnimatePresence>
-            {!isCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                transition={{ duration: 0.2, delay: 0.05 }}
-                className="flex flex-col min-w-0"
-              >
-                <span className="text-base font-bold leading-tight whitespace-nowrap tracking-wide text-text-primary">
-                  JMS TechNova
-                </span>
-                <span className="text-[10px] font-medium tracking-widest uppercase text-text-secondary opacity-50">
-                  CRM Suite
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {/* ── Brand Logo Header ── */}
+      <div className="relative z-10 flex items-center justify-center h-16 px-4 flex-shrink-0 border-b border-[#E5E7EB]/80">
+        <div 
+          className="flex items-center justify-center w-full cursor-pointer" 
+          onClick={() => navigate("/")}
+        >
+          <img
+            src={jmsLogo}
+            alt="JMS Logo"
+            className="h-11 sm:h-12 w-auto object-contain"
+          />
         </div>
       </div>
 
-      {/* ── Nav ── */}
-      <nav className="relative z-10 flex-1 px-2.5 py-4 overflow-y-auto overflow-x-hidden">
-        <AnimatePresence>
-          {!isCollapsed && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="px-3 mb-2 text-[10px] font-semibold tracking-[0.12em] uppercase text-text-secondary opacity-50"
-            >
-              Menu
-            </motion.p>
-          )}
-        </AnimatePresence>
+      {/* ── Nav Links Container ── */}
+      <nav className="relative z-10 flex-1 px-3 py-2.5 overflow-y-auto overflow-x-hidden space-y-2.5">
+        
+        {/* SECTION 1: MAIN NAVIGATION */}
+        <div>
+          {renderNavList(mainMenuItems)}
+        </div>
 
-        <ul className="space-y-0.5">
-          {navItems.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <li key={item.label} className="relative">
-                <NavLink
-                  to={item.path}
-                  end={item.path === "/"}
-                  onClick={() => handleNavClick(item.label)}
-                  onMouseEnter={() => setHoveredItem(item.label)}
-                  onMouseLeave={() => setHoveredItem(null)}
-                  className="relative flex items-center rounded-xl transition-all duration-200 cursor-pointer"
-                  style={({ isActive }) => ({
-                    padding: isCollapsed ? "10px 0" : "10px 12px",
-                    justifyContent: isCollapsed ? "center" : "flex-start",
-                    gap: isCollapsed ? 0 : "10px",
-                    background: isActive
-                      ? "rgba(var(--color-primary-rgb, 99 102 241) / 0.12)"
-                      : hoveredItem === item.label
-                        ? "rgba(0,0,0,0.04)"
-                        : "transparent",
-                  })}
-                  title={isCollapsed ? item.label : undefined}
-                >
-                  {({ isActive }) => (
-                    <>
-                      {isActive && (
-                        <motion.div
-                          layoutId="activeAccent"
-                          className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-primary"
-                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        />
-                      )}
-
-                      <div
-                        className={`flex-shrink-0 flex items-center justify-center w-5 h-5 transition-colors duration-200 ${isActive ? "text-primary"
-                            : hoveredItem === item.label ? "text-text-primary"
-                              : "text-text-secondary"
-                          }`}
-                        style={isCollapsed ? { width: "100%", justifyContent: "center" } : {}}
-                      >
-                        <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
-                      </div>
-
-                      <AnimatePresence>
-                        {!isCollapsed && (
-                          <motion.span
-                            initial={{ opacity: 0, x: -6 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -6 }}
-                            transition={{ duration: 0.18, delay: index * 0.02 }}
-                            className={`text-sm whitespace-nowrap transition-colors duration-200 ${isActive ? "font-semibold text-primary"
-                                : hoveredItem === item.label ? "font-medium text-text-primary"
-                                  : "font-medium text-text-secondary"
-                              }`}
-                          >
-                            {item.label}
-                            {item.label === 'Templates' && showTemplatesNewBadge && (
-                               <span className="ml-2 inline-flex items-center justify-center px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white bg-red-500 rounded-full animate-pulse shadow-sm">
-                                 NEW
-                               </span>
-                            )}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-
-                      {isCollapsed && hoveredItem === item.label && (
-                        <motion.div
-                          initial={{ opacity: 0, x: -4, scale: 0.95 }}
-                          animate={{ opacity: 1, x: 0, scale: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.15 }}
-                          className="absolute left-full ml-3 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none z-[100] shadow-lg"
-                          style={{ background: "#1f2937", color: "#f9fafb", border: "1px solid rgba(0,0,0,0.1)" }}
-                        >
-                          {item.label}
-                          <span
-                            className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent"
-                            style={{ borderRightColor: "#1f2937" }}
-                          />
-                        </motion.div>
-                      )}
-                    </>
-                  )}
-                </NavLink>
-              </li>
-            );
-          })}
-        </ul>
+        {/* SECTION 2: MANAGEMENT & SETTINGS */}
+        {managementItems.length > 0 && (
+          <div className="pt-2 border-t border-slate-100">
+            {renderNavList(managementItems)}
+          </div>
+        )}
       </nav>
 
-      {/* ── Bottom section ── */}
-      <div className="relative z-10 flex-shrink-0 border-t border-gray-200">
-        <div className="px-2.5 py-3 space-y-1">
+      {/* ── Bottom User Profile Section ── */}
+      <div className="relative z-10 flex-shrink-0 border-t border-[#E5E7EB] p-2.5">
+        {!isCollapsed ? (
+          /* Expanded state: avatar + name/email + logout button */
+          <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50 transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center flex-shrink-0 text-xs font-semibold text-[#165DFF]">
+                {initials || "AD"}
+              </div>
 
-          {/* Organisation row — same style as nav items */}
-          <div
-            className="flex items-center rounded-xl bg-gray-50 border border-gray-100 overflow-hidden"
-            style={rowStyle()}
-          >
-            {/* Avatar */}
-            <div
-              className="flex-shrink-0 w-7 h-7 rounded-lg bg-green-600 flex items-center justify-center shadow-sm"
-              style={isCollapsed ? { marginLeft: "auto", marginRight: "auto" } : {}}
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-[#172033] truncate leading-tight">
+                  {orgName || "Admin"}
+                </p>
+                <p className="text-[10px] text-[#64748B] truncate leading-tight mt-0.5">
+                  {userEmail || "admin@jms.com"}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded-lg text-[#64748B] hover:text-[#EF4444] hover:bg-red-50 transition-colors cursor-pointer"
+              title="Log Out"
             >
-              <span className="text-white text-[11px] font-bold leading-none tracking-wide">
-                {initials || "??"}
-              </span>
-            </div>
-
-            {/* Name + label */}
-            <AnimatePresence>
-              {!isCollapsed && (
-                <motion.div
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -6 }}
-                  transition={{ duration: 0.18 }}
-                  className="min-w-0 flex-1"
-                >
-                  <p className="text-[13px] font-semibold text-text-primary truncate leading-tight">
-                    {orgName || "Organisation"}
-                  </p>
-                  <p className="text-[10px] text-text-secondary opacity-55 leading-tight mt-0.5">
-                    Organisation
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              <LogOut size={16} strokeWidth={2} />
+            </button>
           </div>
-
-          {/* Logout */}
-          <motion.button
-            onClick={handleLogout}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.97 }}
-            className="w-full flex items-center rounded-xl transition-all duration-200 hover:bg-red-50 text-red-500 cursor-pointer"
-            style={rowStyle()}
-          >
-            <div className="flex-shrink-0">
-              <LogOut size={18} strokeWidth={2} />
+        ) : (
+          /* Collapsed state: vertically stacked avatar and logout button, completely separated */
+          <div className="flex flex-col items-center gap-2 py-1">
+            <div 
+              className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-xs font-semibold text-[#165DFF] cursor-default"
+              title={`${orgName || "Admin"} (${userEmail || "admin@jms.com"})`}
+            >
+              {initials || "AD"}
             </div>
-            <AnimatePresence>
-              {!isCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -6 }}
-                  transition={{ duration: 0.18 }}
-                  className="text-sm font-semibold whitespace-nowrap"
-                >
-                  Logout
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
 
-          {/* Collapse toggle */}
-          <motion.button
+            <button
+              onClick={handleLogout}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#64748B] hover:text-[#EF4444] hover:bg-red-50 transition-colors cursor-pointer"
+              title="Log Out"
+            >
+              <LogOut size={16} strokeWidth={2} />
+            </button>
+          </div>
+        )}
+
+        {/* Collapse Drawer Button */}
+        <div className={`mt-1 pt-1 border-t border-slate-100 flex ${isCollapsed ? 'justify-center' : 'justify-end'}`}>
+          <button
             onClick={handleToggle}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.97 }}
-            className="w-full flex items-center rounded-xl transition-all duration-200 bg-gray-100 hover:bg-gray-200 border border-gray-200 text-text-secondary cursor-pointer"
-            style={rowStyle({ padding: isCollapsed ? "9px 0" : "9px 12px" })}
-            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <div className="flex-shrink-0 opacity-60">
-              {isCollapsed
-                ? <PanelLeftOpen size={17} strokeWidth={1.8} />
-                : <PanelLeftClose size={17} strokeWidth={1.8} />
-              }
-            </div>
-            <AnimatePresence>
-              {!isCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -6 }}
-                  transition={{ duration: 0.18 }}
-                  className="text-xs font-medium whitespace-nowrap opacity-60"
-                >
-                  Collapse sidebar
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-
+            {isCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
         </div>
       </div>
     </motion.aside>
