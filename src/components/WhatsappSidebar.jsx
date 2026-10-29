@@ -20,9 +20,9 @@ import { motion, AnimatePresence } from "framer-motion";
 /* ─── Status config ──────────────────────────────────────────────────────── */
 
 const statusConfig = {
-  prospect:  { label: "Prospect",  text: "text-[#8B5CF6]", bg: "bg-purple-50", border: "border-purple-200/70" },
-  confirmed: { label: "Lead",      text: "text-[#0EA5E9]", bg: "bg-sky-50",    border: "border-sky-200/70"    },
-  lead:      { label: "Lead",      text: "text-[#0EA5E9]", bg: "bg-sky-50",    border: "border-sky-200/70"    },
+  prospect: { label: "Prospect", text: "text-[#8B5CF6]", bg: "bg-purple-50", border: "border-purple-200/70" },
+  confirmed: { label: "Lead", text: "text-[#0EA5E9]", bg: "bg-sky-50", border: "border-sky-200/70" },
+  lead: { label: "Lead", text: "text-[#0EA5E9]", bg: "bg-sky-50", border: "border-sky-200/70" },
 };
 
 const getStatus = (key) =>
@@ -103,8 +103,9 @@ const formatDate = (dateString) => {
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 const WhatsappSidebar = ({
-  filters = { number: "", from_date: "", to_date: "", status: "" },
+  filters = { search: "", number: "", from_date: "", to_date: "", status: "" },
   hasActiveFilters = false,
+  onSearchChange,
   onClearFilters,
   onSelectCustomer,
 }) => {
@@ -121,53 +122,26 @@ const WhatsappSidebar = ({
     wabaPhone,
   } = useSelector((s) => s.whatsapp);
 
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState(filters?.search || "");
+
+  useEffect(() => {
+    setSearchText(filters?.search || "");
+  }, [filters?.search]);
+
+  // Debounced search trigger to backend
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchText !== (filters?.search || "")) {
+        onSearchChange?.(searchText);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchText, filters?.search, onSearchChange]);
 
   // ── Fetch on mount ─────────────────────────────────────────────────────────
   useEffect(() => {
-    dispatch(fetchCustomers());
+    dispatch(fetchCustomers({ filters, page: 1 }));
   }, [dispatch]);
-
-  const hasAutoSelected = React.useRef(false);
-
-  // ── Auto-select first conversation when list loads ─────────────────────────
-  useEffect(() => {
-    const autoSelect = async () => {
-      if (!selectedCustomer && customers.length > 0 && !hasAutoSelected.current) {
-        hasAutoSelected.current = true;
-        const first = customers[0];
-        let convId = first.conversation_id;
-
-        if (!convId && isTp && first.phone) {
-          try {
-            const token = localStorage.getItem("accessToken");
-            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-            const res = await axios.get(`${API_BASE_URL}api/industry/conversations/`, {
-              headers: { Authorization: `Bearer ${token}` },
-              params: { phone: first.phone, page_size: 1 },
-            });
-            if (res.data && res.data.results && res.data.results.length > 0) {
-              convId = res.data.results[0].id;
-            }
-          } catch (err) {
-            console.error("Failed to fetch conversation ID for TP", err);
-          }
-        }
-
-        const updatedCustomer = {
-          ...first,
-          customer_id: first.customer_id || first.id,
-          conversation_id: convId || first.conversation_id,
-        };
-
-        dispatch(setSelectedCustomer(updatedCustomer));
-        if (convId) {
-          dispatch(fetchConversationMessages(convId));
-        }
-      }
-    };
-    autoSelect();
-  }, [customers, selectedCustomer, dispatch, isTp]);
 
   const handleSelect = async (customer) => {
     let convId = customer.conversation_id;
@@ -201,16 +175,8 @@ const WhatsappSidebar = ({
     onSelectCustomer?.();
   };
 
-  // ── Client-side search ─────────────────────────────────────────────────────
-  const filtered = searchText.trim()
-    ? customers.filter((c) => {
-        const q = searchText.toLowerCase();
-        return (
-          (c.name || "").toLowerCase().includes(q) ||
-          (c.phone || "").toLowerCase().includes(q)
-        );
-      })
-    : customers;
+  // Server handles search across all pages (298+ customers)
+  const filtered = customers;
 
   return (
     <div className="relative flex flex-col h-full overflow-hidden bg-white font-sans text-[#172033]">
@@ -253,7 +219,10 @@ const WhatsappSidebar = ({
           />
           {searchText && (
             <button
-              onClick={() => setSearchText("")}
+              onClick={() => {
+                setSearchText("");
+                onSearchChange?.("");
+              }}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#172033] cursor-pointer"
             >
               <X size={13} />
@@ -321,9 +290,8 @@ const WhatsappSidebar = ({
                   animate={{ opacity: 1 }}
                   transition={{ delay: Math.min(i * 0.02, 0.15) }}
                   onClick={() => handleSelect(c)}
-                  className={`relative w-full text-left flex items-center gap-3 px-3.5 py-3 transition-colors duration-150 cursor-pointer ${
-                    active ? "bg-blue-50/60" : "hover:bg-slate-50/80"
-                  }`}
+                  className={`relative w-full text-left flex items-center gap-3 px-3.5 py-3 transition-colors duration-150 cursor-pointer ${active ? "bg-blue-50/60" : "hover:bg-slate-50/80"
+                    }`}
                 >
                   {/* Avatar */}
                   <div
@@ -341,17 +309,15 @@ const WhatsappSidebar = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span
-                        className={`leading-tight truncate font-semibold text-xs ${
-                          active ? "text-[#165DFF]" : "text-[#172033]"
-                        }`}
+                        className={`leading-tight truncate font-semibold text-xs ${active ? "text-[#165DFF]" : "text-[#172033]"
+                          }`}
                         title={dname}
                       >
                         {dname}
                       </span>
                       <span
-                        className={`text-[10px] flex-shrink-0 tabular-nums font-medium ${
-                          active ? "text-[#165DFF]" : "text-[#94A3B8]"
-                        }`}
+                        className={`text-[10px] flex-shrink-0 tabular-nums font-medium ${active ? "text-[#165DFF]" : "text-[#94A3B8]"
+                          }`}
                       >
                         {formatDate(c.created_at)}
                       </span>

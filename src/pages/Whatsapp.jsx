@@ -31,6 +31,7 @@ const Whatsapp = () => {
   const [showBulkMessage, setShowBulkMessage] = useState(false);
 
   const [filters, setFilters] = useState({
+    search: "",
     number: "",
     from_date: "",
     to_date: "",
@@ -66,15 +67,21 @@ const Whatsapp = () => {
     dispatch(fetchCustomers({ filters: updated, page: 1 }));
   };
 
+  const handleSearchChange = (term) => {
+    const updated = { ...filters, search: term };
+    setFilters(updated);
+    dispatch(fetchCustomers({ filters: updated, page: 1 }));
+  };
+
   const handleClearFilters = () => {
-    const cleared = { number: "", from_date: "", to_date: "", status: "" };
+    const cleared = { search: "", number: "", from_date: "", to_date: "", status: "" };
     setFilters(cleared);
-    dispatch(fetchCustomers({ page: 1 }));
+    dispatch(fetchCustomers({ filters: cleared, page: 1 }));
   };
 
   const hasDateFilter = Boolean(filters.from_date || filters.to_date);
   const hasAnyFilter = Boolean(
-    filters.number || filters.from_date || filters.to_date || filters.status
+    filters.search || filters.number || filters.from_date || filters.to_date || filters.status
   );
 
   if (showBulkMessage) {
@@ -231,6 +238,7 @@ const Whatsapp = () => {
           <WhatsappSidebar
             filters={filters}
             hasActiveFilters={hasAnyFilter}
+            onSearchChange={handleSearchChange}
             onClearFilters={handleClearFilters}
             onSelectCustomer={() => setMobileSidebarOpen(false)}
           />

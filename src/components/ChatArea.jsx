@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Loader2,
   MessageCircle,
+  Check,
   CheckCheck,
   ExternalLink,
   ImageIcon,
@@ -122,6 +123,14 @@ const isWhatsAppUrl = (url) => /wa\.me/i.test(url ?? "");
 const flattenMessages = (messages) => {
   const items = [];
   messages.forEach((row) => {
+    const rawStatus = String(
+      row.status ||
+      row.bot_status ||
+      row.delivery_status ||
+      row.message_status ||
+      ""
+    ).toLowerCase().trim();
+
     if (row.user_msg !== null && row.user_timestamp) {
       items.push({
         id: `${row.id}-user`,
@@ -129,6 +138,7 @@ const flattenMessages = (messages) => {
         side: "user",
         text: row.user_msg,
         ts: row.user_timestamp,
+        status: "read",
       });
     }
     if (row.bot_msg !== null && row.bot_timestamp) {
@@ -138,6 +148,7 @@ const flattenMessages = (messages) => {
         side: "bot",
         text: row.bot_msg,
         ts: row.bot_timestamp,
+        status: rawStatus,
       });
     }
     if (row.bot_msg !== null && !row.bot_timestamp) {
@@ -147,6 +158,7 @@ const flattenMessages = (messages) => {
         side: "bot",
         text: row.bot_msg,
         ts: row.user_timestamp ?? "",
+        status: rawStatus,
       });
     }
   });
@@ -482,7 +494,7 @@ const MessageContent = ({ text, isBot }) => {
 
   if (parts.length > 1) {
     return (
-      <p className="whitespace-pre-wrap text-xs sm:text-[13px] leading-relaxed text-[#172033]">
+      <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-xs sm:text-[13px] leading-relaxed text-[#172033]">
         {parts.map((part, i) =>
           /^https?:\/\//.test(part) ? (
             <a
@@ -490,7 +502,7 @@ const MessageContent = ({ text, isBot }) => {
               href={part}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline underline-offset-2 text-[#165DFF] font-medium"
+              className="underline underline-offset-2 text-[#165DFF] font-medium break-all [overflow-wrap:anywhere]"
             >
               {part}
             </a>
@@ -503,9 +515,48 @@ const MessageContent = ({ text, isBot }) => {
   }
 
   return (
-    <p className="whitespace-pre-wrap text-xs sm:text-[13px] leading-relaxed text-[#172033]">
+    <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-xs sm:text-[13px] leading-relaxed text-[#172033]">
       {formatText(text)}
     </p>
+  );
+};
+
+/* ─── Dynamic WhatsApp Tick Status ──────────────────────────── */
+const renderMessageTick = (status, isOverlay = false) => {
+  const st = String(status || "").toLowerCase().trim();
+
+  // 1. Double Blue Tick: when read by customer
+  if (st === "read") {
+    return (
+      <CheckCheck
+        size={isOverlay ? 12 : 13}
+        strokeWidth={2.2}
+        className={isOverlay ? "text-[#38BDF8]" : "text-[#165DFF]"}
+        title="Read"
+      />
+    );
+  }
+
+  // 2. Double Grey Tick: when delivered to customer phone
+  if (st === "delivered") {
+    return (
+      <CheckCheck
+        size={isOverlay ? 12 : 13}
+        strokeWidth={2}
+        className={isOverlay ? "text-white/80" : "text-[#94A3B8]"}
+        title="Delivered"
+      />
+    );
+  }
+
+  // 3. Single Grey Tick: when sent / pending or default fallback
+  return (
+    <Check
+      size={isOverlay ? 12 : 13}
+      strokeWidth={2.2}
+      className={isOverlay ? "text-white/80" : "text-[#94A3B8]"}
+      title={st === "sent" ? "Sent" : "Sent"}
+    />
   );
 };
 
@@ -770,14 +821,12 @@ const ChatArea = ({ onBack }) => {
                                 <span className="text-[10px] text-white tabular-nums">
                                   {formatTime(item.ts)}
                                 </span>
-                                {isBot && (
-                                  <CheckCheck size={12} className="text-white opacity-90" />
-                                )}
+                                {isBot && renderMessageTick(item.status, true)}
                               </div>
                             </div>
                           ) : (
                             <>
-                              <div className="text-[#172033]">
+                              <div className="text-[#172033] break-words [overflow-wrap:anywhere] min-w-0">
                                 <MessageContent text={item.text} isBot={isBot} />
                               </div>
                               {/* Time + tick */}
@@ -785,13 +834,7 @@ const ChatArea = ({ onBack }) => {
                                 <span className="text-[10px] tabular-nums text-[#64748B]">
                                   {formatTime(item.ts)}
                                 </span>
-                                {isBot && (
-                                  <CheckCheck
-                                    size={13}
-                                    strokeWidth={2.2}
-                                    className="text-[#165DFF]"
-                                  />
-                                )}
+                                {isBot && renderMessageTick(item.status, false)}
                               </div>
                             </>
                           )}

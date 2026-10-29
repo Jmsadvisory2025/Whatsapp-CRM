@@ -1,3 +1,4 @@
+import { isTechProvider } from "./authUtils";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -19,20 +20,38 @@ const fetchCustomers = createAsyncThunk(
     const token = auth.accessToken || localStorage.getItem("accessToken");
     if (!token) throw new Error("No authentication token available");
 
+    const ownerEmail = localStorage.getItem("ownerEmail") || auth?.user?.email || "";
+    const isTp = isTechProvider(ownerEmail);
 
     try {
-      let url =
-        typeof arg === "string"
-          ? arg
-          : arg?.url || `${API_BASE_URL}/api/customer/`;
+      const searchTerm = arg?.filters?.search?.trim() || "";
+      let url = typeof arg === "string" ? arg : arg?.url;
+
+      // When searching, use backend endpoints that actually support global search
+      if (!url) {
+        if (searchTerm) {
+          url = isTp
+            ? `${API_BASE_URL}/api/industry/customers/`
+            : `${API_BASE_URL}/api/leads-prospects/`;
+        } else {
+          url = `${API_BASE_URL}/api/customer/`;
+        }
+      }
 
       // Build query params from filters object
       if (arg !== null && typeof arg === "object" && arg.filters && !arg.url) {
         const queryParams = new URLSearchParams();
-        if (arg.filters.number) queryParams.append("number", arg.filters.number);
-        if (arg.filters.from_date) queryParams.append("from_date", arg.filters.from_date);
-        if (arg.filters.to_date) queryParams.append("to_date", arg.filters.to_date);
-        if (arg.filters.status) queryParams.append("status", arg.filters.status);
+        if (searchTerm) {
+          queryParams.append("search", searchTerm);
+          if (arg.filters.status) {
+            queryParams.append(!isTp ? "tab" : "status", arg.filters.status);
+          }
+        } else {
+          if (arg.filters.number) queryParams.append("number", arg.filters.number);
+          if (arg.filters.from_date) queryParams.append("from_date", arg.filters.from_date);
+          if (arg.filters.to_date) queryParams.append("to_date", arg.filters.to_date);
+          if (arg.filters.status) queryParams.append("status", arg.filters.status);
+        }
         if (arg.page) queryParams.append("page", arg.page);
         if (arg.page_size) queryParams.append("page_size", arg.page_size);
         const qs = queryParams.toString();
@@ -51,14 +70,26 @@ const fetchCustomers = createAsyncThunk(
       if (!response.ok) throw new Error(data.message || "Failed to fetch customers");
 
       const reqPage = (arg && typeof arg === "object" && arg.page) ? arg.page : 1;
+      const rawResults = data.results || [];
+      // Normalize items so conversation_id, customer_id, and dates are completely consistent
+      const normalizedResults = rawResults.map((c) => ({
+        ...c,
+        customer_id: c.customer_id || c.id,
+        conversation_id: c.conversation_id || null,
+        name: c.name || "Unknown",
+        phone: c.phone || "",
+        status: c.status || "prospect",
+        created_at: c.created_at || c.last_seen || c.last_chat || new Date().toISOString(),
+      }));
+
       return {
-        results: data.results || [],
-        count: data.count || 0,
+        results: normalizedResults,
+        count: data.count !== undefined ? data.count : normalizedResults.length,
         next: data.next || null,
         previous: data.previous || null,
         currentPageUrl: url,
         currentPage: data.page || reqPage,
-        pageSize: data.page_size || 20, // using 20 as fallback to match backend
+        pageSize: data.page_size || 20,
         wabaPhone: data.waba_phone || null,
         wabaId: data.waba_id || null,
       };
