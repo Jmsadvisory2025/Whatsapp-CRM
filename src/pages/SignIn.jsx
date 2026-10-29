@@ -388,12 +388,6 @@ const SignIn = () => {
                             )}
 
                             {/* Notifications / Errors */}
-                            {error && !isResetMode && (
-                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl text-xs">
-                                    {error}
-                                </div>
-                            )}
-
                             {resetMessage && (
                                 <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl text-xs">
                                     {resetMessage}
