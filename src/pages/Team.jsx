@@ -72,6 +72,7 @@ const Team = () => {
   const [profileSuccess, setProfileSuccess] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [uploadingPic, setUploadingPic] = useState(false);
+  const [isCoexistence, setIsCoexistence] = useState(false);
 
   const [profileData, setProfileData] = useState({
     about: "",
@@ -108,7 +109,12 @@ const Team = () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to fetch WhatsApp profile");
+        const rawErr = data.error || "";
+        // Meta (#200) Permissions error occurs when the number is in Coexistence mode with WhatsApp Business App
+        if (rawErr.includes("(#200)") || rawErr.toLowerCase().includes("permission")) {
+          setIsCoexistence(true);
+        }
+        throw new Error(rawErr || "Failed to fetch WhatsApp profile");
       }
       if (data.profile) {
         const p = data.profile;
@@ -229,15 +235,16 @@ const Team = () => {
       if (!res.ok) {
         const rawErr = data.error || data.detail || "";
         if (
+          rawErr.includes("(#200)") ||
+          rawErr.toLowerCase().includes("permission") ||
           rawErr.toLowerCase().includes("coexistence") ||
           rawErr.toLowerCase().includes("smb") ||
           rawErr.toLowerCase().includes("app") ||
-          res.status === 403 ||
-          res.status === 400
+          res.status === 403
         ) {
+          setIsCoexistence(true);
           throw new Error(
-            rawErr ||
-              "Your phone number is linked to the WhatsApp Business Mobile App (Coexistence). Please update this profile information directly inside your WhatsApp Business App on your phone."
+            "This WhatsApp number is running in Coexistence Mode (linked with the WhatsApp Business Mobile App). Meta restricts API edits for this number — please update your profile details and picture directly inside the WhatsApp Business App on your phone."
           );
         }
         throw new Error(rawErr || "Failed to update profile");
@@ -485,6 +492,24 @@ const Team = () => {
           </div>
         ) : (
           <form onSubmit={handleSaveProfile} className="p-6 space-y-6">
+            {/* Coexistence Notice Banner */}
+            {isCoexistence && (
+              <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-start gap-3 shadow-xs">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
+                  <Phone size={16} />
+                </div>
+                <div className="text-xs space-y-1">
+                  <h4 className="font-bold text-amber-900 flex items-center gap-1.5">
+                    <span>Coexistence Mode Active (WhatsApp Business Mobile App)</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-200/80 text-amber-800 text-[10px] font-semibold">Managed on Mobile</span>
+                  </h4>
+                  <p className="text-amber-800/90 leading-relaxed font-normal">
+                    This phone number is actively linked with the WhatsApp Business App on your phone. You can view your information here, but to edit your <strong>Profile Picture, Description, Address, or Category</strong>, please update them directly inside your <strong>WhatsApp Business mobile app</strong> (Settings &rarr; Business Profile).
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Notifications */}
             {profileSuccess && (
               <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-xs text-emerald-800 font-medium">
@@ -492,7 +517,7 @@ const Team = () => {
                 <span>WhatsApp Business Profile updated successfully on Meta!</span>
               </div>
             )}
-            {profileError && (
+            {profileError && !isCoexistence && (
               <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2.5 text-xs text-red-800 font-medium">
                 <AlertCircle size={16} className="text-red-500 shrink-0" />
                 <span>{profileError}</span>
@@ -637,7 +662,7 @@ const Team = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={profileSaving}
+                  disabled={profileSaving || isCoexistence}
                   className="px-5 py-2.5 rounded-xl bg-[#165DFF] hover:bg-[#1247CC] text-white text-xs font-semibold shadow-sm shadow-blue-500/20 transition flex items-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   {profileSaving ? (
