@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { sendDirectMessage, fetchConversationMessages, setSelectedCustomer } from "../store/whatsappSlice";
 import { fetchApprovedTemplates } from "../store/campaignSlice";
+import { fetchTemplates } from "../store/templateSlice";
 import {
   Send,
   ArrowLeft,
@@ -141,6 +142,7 @@ const flattenMessages = (messages) => {
         text: row.user_msg,
         ts: row.user_timestamp,
         status: "read",
+        rawRow: row,
       });
     }
     if (row.bot_msg !== null && row.bot_timestamp) {
@@ -151,6 +153,7 @@ const flattenMessages = (messages) => {
         text: row.bot_msg,
         ts: row.bot_timestamp,
         status: rawStatus,
+        rawRow: row,
       });
     }
     if (row.bot_msg !== null && !row.bot_timestamp) {
@@ -161,6 +164,7 @@ const flattenMessages = (messages) => {
         text: row.bot_msg,
         ts: row.user_timestamp ?? "",
         status: rawStatus,
+        rawRow: row,
       });
     }
   });
@@ -184,8 +188,23 @@ const groupByDate = (items) => {
 
 /* ─── Sub-components ───────────────────────────────────────── */
 
-const MessageContent = ({ text, isBot }) => {
+const MessageContent = ({ text, isBot, rawRow }) => {
   const approvedTemplates = useSelector((s) => s.campaign?.approvedTemplates || []);
+  const allTemplates = useSelector((s) => s.templates?.list || []);
+
+  // Merge: allTemplates take precedence for the latest updated text & media
+  const templateList = React.useMemo(() => {
+    const map = new Map();
+    (approvedTemplates || []).forEach((t) => {
+      const key = (t.name || t.template_name || "").toLowerCase();
+      if (key) map.set(key, t);
+    });
+    (allTemplates || []).forEach((t) => {
+      const key = (t.name || t.template_name || "").toLowerCase();
+      if (key) map.set(key, t);
+    });
+    return Array.from(map.values());
+  }, [approvedTemplates, allTemplates]);
 
   if (!text) return null;
   let trimmed = text.trim();
@@ -203,7 +222,7 @@ const MessageContent = ({ text, isBot }) => {
   if (templateMatch) {
     templateName = templateMatch[1].trim();
   } else if (isBot) {
-    const exactMatch = approvedTemplates.find(
+    const exactMatch = templateList.find(
       (t) =>
         (t.name || "").toLowerCase() === trimmed.toLowerCase() ||
         (t.template_name || "").toLowerCase() === trimmed.toLowerCase()
@@ -214,7 +233,7 @@ const MessageContent = ({ text, isBot }) => {
   }
 
   if (templateName) {
-    const template = approvedTemplates.find(
+    const template = templateList.find(
       (t) =>
         (t.name || "").toLowerCase() === templateName.toLowerCase() ||
         (t.template_name || "").toLowerCase() === templateName.toLowerCase()
@@ -222,10 +241,10 @@ const MessageContent = ({ text, isBot }) => {
 
     if (template) {
       const bodyComp = template.components?.find((c) => c.type === "BODY");
-      const bodyText = bodyComp?.text || template.body_text || template.body || "";
+      let bodyText = bodyComp?.text || template.body_text || template.body || "";
 
       const headerComp = template.components?.find((c) => c.type === "HEADER");
-      const headerText = headerComp?.text || template.header_text || template.header || "";
+      let headerText = headerComp?.text || template.header_text || template.header || "";
       const headerType = headerComp?.format || template.header_type || "";
 
       const footerComp = template.components?.find((c) => c.type === "FOOTER");
@@ -233,6 +252,52 @@ const MessageContent = ({ text, isBot }) => {
 
       const buttonsComp = template.components?.find((c) => c.type === "BUTTONS");
       const buttons = buttonsComp?.buttons || template.buttons || [];
+
+      // Extract actual sent variables and media from rawRow if present
+      let sentVariables = {};
+      let actualMediaUrl = null;
+
+      if (rawRow) {
+        if (rawRow.variables) {
+          try {
+            sentVariables = typeof rawRow.variables === "string"
+              ? JSON.parse(rawRow.variables)
+              : rawRow.variables;
+          } catch (e) {
+            sentVariables = rawRow.variables || {};
+          }
+        } else if (rawRow.template_variables) {
+          try {
+            sentVariables = typeof rawRow.template_variables === "string"
+              ? JSON.parse(rawRow.template_variables)
+              : rawRow.template_variables;
+          } catch (e) {
+            sentVariables = rawRow.template_variables || {};
+          }
+        }
+
+        actualMediaUrl =
+          rawRow.media_url ||
+          rawRow.media ||
+          rawRow.file_url ||
+          rawRow.image_url ||
+          rawRow.document_url ||
+          rawRow.header_media_url ||
+          sentVariables?.media_url ||
+          null;
+      }
+
+      // Replace variables {{1}}, {{2}} with actual sent values
+      if (sentVariables && Object.keys(sentVariables).length > 0) {
+        Object.keys(sentVariables).forEach((key) => {
+          const val = String(sentVariables[key] ?? "");
+          if (val && key !== "media_url") {
+            const rgx = new RegExp(`\\{\\{${key}\\}\\}`, "g");
+            bodyText = bodyText.replace(rgx, val);
+            headerText = headerText.replace(rgx, val);
+          }
+        });
+      }
 
       const formatTemplateText = (t) => {
         let formatted = t
@@ -254,7 +319,35 @@ const MessageContent = ({ text, isBot }) => {
             </span>
           </div>
 
-          {["IMAGE", "VIDEO", "DOCUMENT"].includes(headerType) && (
+          {/* Actual Sent Media Header or Placeholder */}
+          {actualMediaUrl ? (
+            <div className="rounded-xl overflow-hidden border border-slate-200/80 bg-slate-100 max-h-48">
+              {headerType === "IMAGE" || isImageUrl(actualMediaUrl) ? (
+                <img
+                  src={actualMediaUrl}
+                  alt="Template Header Media"
+                  className="w-full h-auto max-h-48 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                  onClick={() => window.open(actualMediaUrl, "_blank")}
+                />
+              ) : headerType === "VIDEO" || isVideoUrl(actualMediaUrl) ? (
+                <video
+                  src={actualMediaUrl}
+                  controls
+                  playsInline
+                  className="w-full max-h-48 bg-black"
+                />
+              ) : (
+                <div
+                  onClick={() => window.open(actualMediaUrl, "_blank")}
+                  className="flex items-center gap-2 p-2.5 bg-white hover:bg-slate-50 cursor-pointer text-xs font-semibold text-[#165DFF]"
+                >
+                  <FileText size={18} className="text-red-500" />
+                  <span className="truncate flex-1">View Document</span>
+                  <ExternalLink size={12} className="text-slate-400" />
+                </div>
+              )}
+            </div>
+          ) : ["IMAGE", "VIDEO", "DOCUMENT"].includes(headerType) ? (
             <div className="bg-slate-100 rounded-xl h-24 flex flex-col items-center justify-center border border-slate-200/80 text-[#94A3B8] overflow-hidden">
               {headerType === "IMAGE" && <ImageIcon size={24} />}
               {headerType === "VIDEO" && <Film size={24} />}
@@ -263,7 +356,7 @@ const MessageContent = ({ text, isBot }) => {
                 {headerType} Header
               </span>
             </div>
-          )}
+          ) : null}
 
           {headerText && (
             <div className="font-semibold text-xs text-[#172033]">
@@ -581,6 +674,7 @@ const ChatArea = ({ onBack }) => {
 
   useEffect(() => {
     dispatch(fetchApprovedTemplates());
+    dispatch(fetchTemplates());
   }, [dispatch]);
 
   const { selectedCustomer, messages, isLoadingMessages, messagesError } = useSelector(
@@ -826,7 +920,7 @@ const ChatArea = ({ onBack }) => {
                           {/* Content */}
                           {isImg ? (
                             <div className="relative">
-                              <MessageContent text={item.text} isBot={isBot} />
+                              <MessageContent text={item.text} isBot={isBot} rawRow={item.rawRow} />
                               {/* Time overlay on image */}
                               <div
                                 className="absolute bottom-1.5 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md"
@@ -841,7 +935,7 @@ const ChatArea = ({ onBack }) => {
                           ) : (
                             <>
                               <div className="text-[#172033] break-words [overflow-wrap:anywhere] min-w-0">
-                                <MessageContent text={item.text} isBot={isBot} />
+                                <MessageContent text={item.text} isBot={isBot} rawRow={item.rawRow} />
                               </div>
                               {/* Time + tick */}
                               <div className="flex items-center justify-end gap-1 mt-1">
