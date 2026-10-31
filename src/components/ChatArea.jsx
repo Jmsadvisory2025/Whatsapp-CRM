@@ -17,6 +17,7 @@ import {
   X,
   Film,
   FileText,
+  AlertCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -656,7 +657,18 @@ const renderMessageTick = (status, isOverlay = false) => {
     );
   }
 
-  // 3. Single Grey Tick: when sent / pending or default fallback
+  // 3. Failed status
+  if (st === "failed") {
+    return (
+      <AlertCircle
+        size={isOverlay ? 12 : 13}
+        className="text-red-500"
+        title="Failed to deliver"
+      />
+    );
+  }
+
+  // 4. Single Grey Tick: when sent / pending or default fallback
   return (
     <Check
       size={isOverlay ? 12 : 13}
