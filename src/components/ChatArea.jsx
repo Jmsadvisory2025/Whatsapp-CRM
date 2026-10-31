@@ -14,6 +14,8 @@ import {
   Paperclip,
   PhoneCall,
   X,
+  Film,
+  FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -224,6 +226,7 @@ const MessageContent = ({ text, isBot }) => {
 
       const headerComp = template.components?.find((c) => c.type === "HEADER");
       const headerText = headerComp?.text || template.header_text || template.header || "";
+      const headerType = headerComp?.format || template.header_type || "";
 
       const footerComp = template.components?.find((c) => c.type === "FOOTER");
       const footerText = footerComp?.text || template.footer_text || template.footer || "";
@@ -250,6 +253,17 @@ const MessageContent = ({ text, isBot }) => {
               {templateName}
             </span>
           </div>
+
+          {["IMAGE", "VIDEO", "DOCUMENT"].includes(headerType) && (
+            <div className="bg-slate-100 rounded-xl h-24 flex flex-col items-center justify-center border border-slate-200/80 text-[#94A3B8] overflow-hidden">
+              {headerType === "IMAGE" && <ImageIcon size={24} />}
+              {headerType === "VIDEO" && <Film size={24} />}
+              {headerType === "DOCUMENT" && <FileText size={24} />}
+              <span className="text-[10px] font-semibold mt-1 uppercase text-[#64748B]">
+                {headerType} Header
+              </span>
+            </div>
+          )}
 
           {headerText && (
             <div className="font-semibold text-xs text-[#172033]">

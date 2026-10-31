@@ -185,6 +185,16 @@ const formatWhatsAppText = (text) => {
 };
 
 const WhatsAppPreview = ({ template }) => {
+  const headerComp = template.components?.find((c) => c.type === "HEADER");
+  const headerType = template.header_type || headerComp?.format || "";
+  const headerText = template.header_text || headerComp?.text || "";
+
+  const bodyComp = template.components?.find((c) => c.type === "BODY");
+  const bodyText = template.body_text || bodyComp?.text || template.body || "";
+
+  const footerComp = template.components?.find((c) => c.type === "FOOTER");
+  const footerText = template.footer_text || footerComp?.text || template.footer || "";
+
   return (
     <div
       className="rounded-2xl border border-slate-200/80 bg-[#F8FAFC] overflow-hidden"
@@ -194,17 +204,17 @@ const WhatsAppPreview = ({ template }) => {
       }}
     >
       <div className="p-4 space-y-2">
-        {template.header_type === "TEXT" && template.header_text && (
+        {headerType === "TEXT" && headerText && (
           <div className="bg-white rounded-2xl px-3.5 py-2.5 border border-slate-200/80 shadow-2xs max-w-[90%]">
             <p className="text-xs font-bold text-[#172033]">
-              {formatWhatsAppText(template.header_text)}
+              {formatWhatsAppText(headerText)}
             </p>
           </div>
         )}
 
-        {["IMAGE", "VIDEO", "DOCUMENT"].includes(template.header_type) && (
+        {["IMAGE", "VIDEO", "DOCUMENT"].includes(headerType) && (
           <div className="bg-slate-100 rounded-2xl h-32 flex flex-col items-center justify-center border border-slate-200/80 shadow-2xs max-w-[90%] text-[#94A3B8] overflow-hidden relative">
-            {template.header_type === "IMAGE" &&
+            {headerType === "IMAGE" &&
             template.example_media instanceof File ? (
               <img
                 src={URL.createObjectURL(template.example_media)}
@@ -213,11 +223,11 @@ const WhatsAppPreview = ({ template }) => {
               />
             ) : (
               <>
-                {template.header_type === "IMAGE" && <Image size={28} />}
-                {template.header_type === "VIDEO" && <Film size={28} />}
-                {template.header_type === "DOCUMENT" && <FileText size={28} />}
-                <span className="text-[11px] font-semibold mt-1.5">
-                  {template.header_type}
+                {headerType === "IMAGE" && <Image size={28} />}
+                {headerType === "VIDEO" && <Film size={28} />}
+                {headerType === "DOCUMENT" && <FileText size={28} />}
+                <span className="text-[11px] font-semibold mt-1.5 uppercase">
+                  {headerType} Header
                 </span>
               </>
             )}
@@ -225,17 +235,17 @@ const WhatsAppPreview = ({ template }) => {
         )}
 
         <div className="bg-[#EFF6FF] rounded-2xl rounded-br-sm px-3.5 py-3 border border-blue-200/70 shadow-2xs max-w-[90%]">
-          {template.body_text ? (
+          {bodyText ? (
             <p className="text-xs text-[#172033] whitespace-pre-wrap leading-relaxed">
-              {formatWhatsAppText(template.body_text)}
+              {formatWhatsAppText(bodyText)}
             </p>
           ) : (
             <p className="text-xs text-[#94A3B8] italic">No body text</p>
           )}
 
-          {template.footer_text && (
+          {footerText && (
             <p className="text-[11px] text-[#64748B] mt-2.5 border-t border-blue-200/60 pt-1.5">
-              {formatWhatsAppText(template.footer_text)}
+              {formatWhatsAppText(footerText)}
             </p>
           )}
         </div>
@@ -1074,12 +1084,25 @@ const EditTemplateModal = ({ template, onClose }) => {
 
   const isUpdating = isUpdatingId === template.id;
 
+  const headerComp = template.components?.find((c) => c.type === "HEADER");
+  const initialHeaderType = template.header_type || headerComp?.format || "";
+  const initialHeaderText = template.header_text || headerComp?.text || "";
+
+  const bodyComp = template.components?.find((c) => c.type === "BODY");
+  const initialBodyText = template.body_text || bodyComp?.text || template.body || "";
+
+  const footerComp = template.components?.find((c) => c.type === "FOOTER");
+  const initialFooterText = template.footer_text || footerComp?.text || template.footer || "";
+
+  const buttonsComp = template.components?.find((c) => c.type === "BUTTONS");
+  const initialButtons = template.buttons || buttonsComp?.buttons || [];
+
   const [form, setForm] = useState({
-    header_type: template.header_type || "",
-    header_text: template.header_text || "",
-    body_text: template.body_text || "",
-    footer_text: template.footer_text || "",
-    buttons: template.buttons || [],
+    header_type: initialHeaderType,
+    header_text: initialHeaderText,
+    body_text: initialBodyText,
+    footer_text: initialFooterText,
+    buttons: initialButtons,
   });
   const [exampleMedia, setExampleMedia] = useState(null);
   const [localError, setLocalError] = useState("");
@@ -1545,9 +1568,9 @@ const TableRow = ({
       <td className="px-3 py-3.5 overflow-hidden">
         <p
           className="text-xs text-[#64748B] truncate"
-          title={template.body_text || ""}
+          title={template.body_text || template.components?.find((c) => c.type === "BODY")?.text || ""}
         >
-          {template.body_text || "—"}
+          {template.body_text || template.components?.find((c) => c.type === "BODY")?.text || "—"}
         </p>
       </td>
 
