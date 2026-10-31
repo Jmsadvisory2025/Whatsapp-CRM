@@ -45,8 +45,8 @@ const EnhancedIllustration = () => (
         <stop offset="100%" style={{ stopColor: "#f8fafc", stopOpacity: 1 }} />
       </linearGradient>
       <linearGradient id="shadowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style={{ stopColor: "#0f172a", stopOpacity: 0.08 }} />
-        <stop offset="100%" style={{ stopColor: "#0f172a", stopOpacity: 0 }} />
+        <stop offset="0%" style={{ stopColor: "#172033", stopOpacity: 0.08 }} />
+        <stop offset="100%" style={{ stopColor: "#172033", stopOpacity: 0 }} />
       </linearGradient>
       <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
         <feGaussianBlur in="SourceGraphic" stdDeviation="3" />
@@ -217,7 +217,7 @@ const ErrorPage = ({ status }) => {
     <section
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+        background: "#FAFAFC",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -233,7 +233,7 @@ const ErrorPage = ({ status }) => {
           style={{
             fontSize: "clamp(84px, 18vw, 120px)",
             fontWeight: "900",
-            color: "#0f172a",
+            color: "#172033",
             lineHeight: 0.9,
             letterSpacing: "-3px",
             marginBottom: "8px",
@@ -251,7 +251,7 @@ const ErrorPage = ({ status }) => {
           style={{
             width: "48px",
             height: "3px",
-            background: "linear-gradient(90deg, transparent, #3b82f6, transparent)",
+            background: "linear-gradient(90deg, transparent, #165DFF, transparent)",
             margin: "0 auto 24px",
             borderRadius: "2px",
             opacity: mounted ? 1 : 0,
@@ -277,7 +277,7 @@ const ErrorPage = ({ status }) => {
           style={{
             fontSize: "clamp(20px, 5vw, 28px)",
             fontWeight: "700",
-            color: "#0f172a",
+            color: "#172033",
             margin: "0 0 12px",
             letterSpacing: "-0.3px",
             opacity: mounted ? 1 : 0.7,
@@ -292,7 +292,7 @@ const ErrorPage = ({ status }) => {
         <p
           style={{
             fontSize: "15px",
-            color: "#475569",
+            color: "#64748B",
             margin: "0 0 36px",
             lineHeight: "1.7",
             maxWidth: "420px",
@@ -316,9 +316,9 @@ const ErrorPage = ({ status }) => {
             justifyContent: "center",
             gap: "8px",
             padding: "12px 32px",
-            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+            background: "linear-gradient(135deg, #165DFF 0%, #1247CC 100%)",
             color: "#ffffff",
-            borderRadius: "10px",
+            borderRadius: "12px",
             textDecoration: "none",
             fontSize: "15px",
             fontWeight: "600",
@@ -327,19 +327,19 @@ const ErrorPage = ({ status }) => {
               "all 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease",
             cursor: "pointer",
             border: "none",
-            boxShadow: "0 4px 12px rgba(16, 185, 129, 0.15)",
+            boxShadow: "0 4px 12px rgba(22, 93, 255, 0.15)",
             opacity: mounted ? 1 : 0.6,
             transform: mounted ? "translateY(0)" : "translateY(12px)",
             transitionDelay: "0.25s",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "linear-gradient(135deg, #059669 0%, #047857 100%)";
-            e.currentTarget.style.boxShadow = "0 8px 20px rgba(16, 185, 129, 0.25)";
+            e.currentTarget.style.background = "linear-gradient(135deg, #1247CC 0%, #0D38A8 100%)";
+            e.currentTarget.style.boxShadow = "0 8px 20px rgba(22, 93, 255, 0.25)";
             e.currentTarget.style.transform = "translateY(-2px)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
-            e.currentTarget.style.boxShadow = "0 4px 12px rgba(16, 185, 129, 0.15)";
+            e.currentTarget.style.background = "linear-gradient(135deg, #165DFF 0%, #1247CC 100%)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(22, 93, 255, 0.15)";
             e.currentTarget.style.transform = "translateY(0)";
           }}
           onMouseDown={(e) => {
@@ -349,7 +349,7 @@ const ErrorPage = ({ status }) => {
             e.currentTarget.style.transform = "translateY(-2px)";
           }}
           onFocus={(e) => {
-            e.currentTarget.style.outline = "2px solid #3b82f6";
+            e.currentTarget.style.outline = "2px solid #165DFF";
             e.currentTarget.style.outlineOffset = "2px";
           }}
           onBlur={(e) => {

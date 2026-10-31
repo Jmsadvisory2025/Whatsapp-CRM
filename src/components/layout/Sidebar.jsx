@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -24,8 +24,8 @@ import { isTechProvider, canViewClients } from "../../store/authUtils";
 
 const baseMainMenuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", color: "#165DFF" },
-  { icon: TrendingUp, label: "Customers", path: "/leads-prospects", color: "#0EA5E9" },
-  { icon: FaWhatsapp, label: "Inbox", path: "/whatsapp", color: "#25D366" },
+  { icon: TrendingUp, label: "Customers", path: "/customers", color: "#0EA5E9" },
+  { icon: FaWhatsapp, label: "Inbox", path: "/inbox", color: "#25D366" },
   { icon: FileText, label: "Message Templates", path: "/templates", color: "#F59E0B" },
   {
     icon: Megaphone,
@@ -41,7 +41,7 @@ const baseMainMenuItems = [
 
 const baseManagementItems = [
   { icon: FaMeta, label: "Meta Documents", path: "/meta-registration", color: "#0668E1" },
-  { icon: Users2, label: "Profile", path: "/team", color: "#6366F1" },
+  { icon: Users2, label: "Profile", path: "/profile", color: "#6366F1" },
 ];
 
 const techProviderItem = { icon: Building2, label: "Clients", path: "/clients", color: "#10B981" };
@@ -98,6 +98,22 @@ const Sidebar = ({ onToggle = () => {} }) => {
   });
 
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [activeFlyout, setActiveFlyout] = useState(null);
+  const flyoutCloseTimer = useRef(null);
+
+  const handleFlyoutEnter = (label) => {
+    if (flyoutCloseTimer.current) {
+      clearTimeout(flyoutCloseTimer.current);
+      flyoutCloseTimer.current = null;
+    }
+    setActiveFlyout(label);
+  };
+
+  const handleFlyoutLeave = () => {
+    flyoutCloseTimer.current = setTimeout(() => {
+      setActiveFlyout(null);
+    }, 150);
+  };
 
   const [featureClicks, setFeatureClicks] = useState(() => {
     return parseInt(localStorage.getItem('template_feature_clicks') || '0', 10);
@@ -144,8 +160,21 @@ const Sidebar = ({ onToggle = () => {} }) => {
         const hasSubItems = Array.isArray(item.subItems) && item.subItems.length > 0;
 
         if (hasSubItems) {
+          const isFlyoutOpen = isCollapsed && activeFlyout === item.label;
+
           return (
-            <li key={item.label} className="relative">
+            <li
+              key={item.label}
+              className="relative"
+              onMouseEnter={() => {
+                setHoveredItem(item.label);
+                if (isCollapsed) handleFlyoutEnter(item.label);
+              }}
+              onMouseLeave={() => {
+                setHoveredItem(null);
+                if (isCollapsed) handleFlyoutLeave();
+              }}
+            >
               <div
                 onClick={() => {
                   if (isCollapsed) {
@@ -157,8 +186,6 @@ const Sidebar = ({ onToggle = () => {} }) => {
                     }
                   }
                 }}
-                onMouseEnter={() => setHoveredItem(item.label)}
-                onMouseLeave={() => setHoveredItem(null)}
                 className={`
                   relative flex items-center justify-between rounded-xl transition-all duration-150 cursor-pointer
                   ${
@@ -173,7 +200,6 @@ const Sidebar = ({ onToggle = () => {} }) => {
                   padding: isCollapsed ? "10px 0" : "9px 12px",
                   justifyContent: isCollapsed ? "center" : "space-between",
                 }}
-                title={isCollapsed ? item.label : undefined}
               >
                 <div
                   className="flex items-center"
@@ -210,23 +236,64 @@ const Sidebar = ({ onToggle = () => {} }) => {
                     }`}
                   />
                 )}
-
-                {/* Tooltip for collapsed mode */}
-                {isCollapsed && hoveredItem === item.label && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -4, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute left-full ml-3 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none z-[100] shadow-lg bg-[#172033] text-white"
-                  >
-                    {item.label}
-                    <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#172033]" />
-                  </motion.div>
-                )}
               </div>
 
-              {/* Sub-menu items */}
+              {/* Flyout Popover Menu for Collapsed Sidebar */}
+              <AnimatePresence>
+                {isFlyoutOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -6, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: -6, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    onMouseEnter={() => handleFlyoutEnter(item.label)}
+                    onMouseLeave={handleFlyoutLeave}
+                    className="absolute left-full top-0 ml-2.5 w-48 bg-white border border-slate-200/90 rounded-2xl shadow-xl shadow-slate-900/10 p-2 z-[120] font-sans"
+                  >
+                    <div className="px-2.5 py-1.5 mb-1 border-b border-slate-100 flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#172033] tracking-wide uppercase">
+                        {item.label}
+                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#165DFF]"></span>
+                    </div>
+                    <div className="space-y-1">
+                      {item.subItems.map((sub) => {
+                        const SubIcon = sub.icon;
+                        const isSubActive =
+                          isOnCampaign && currentTabParam === sub.tabKey;
+
+                        return (
+                          <button
+                            key={sub.label}
+                            type="button"
+                            onClick={() => {
+                              navigate(sub.path);
+                              setActiveFlyout(null);
+                            }}
+                            className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs transition-all cursor-pointer ${
+                              isSubActive
+                                ? "bg-blue-50/80 text-[#165DFF] font-semibold"
+                                : "text-[#64748B] hover:text-[#172033] hover:bg-slate-50 font-medium"
+                            }`}
+                          >
+                            {SubIcon && (
+                              <SubIcon
+                                size={14}
+                                className={
+                                  isSubActive ? "text-[#165DFF]" : "text-[#94A3B8]"
+                                }
+                              />
+                            )}
+                            <span className="truncate">{sub.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Sub-menu items for Expanded Sidebar */}
               <AnimatePresence initial={false}>
                 {!isCollapsed && campaignMenuOpen && (
                   <motion.ul
@@ -356,7 +423,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
     <motion.aside
       animate={{ width: isCollapsed ? 76 : 230 }}
       transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-      className="relative flex-shrink-0 flex flex-col h-screen overflow-hidden bg-white text-[#172033] border-r border-[#E5E7EB] shadow-xs z-20 font-sans"
+      className={`relative flex-shrink-0 flex flex-col h-screen bg-white text-[#172033] border-r border-[#E5E7EB] shadow-xs z-30 font-sans ${isCollapsed ? "overflow-visible" : "overflow-hidden"}`}
     >
       {/* ── Brand Logo Header ── */}
       <div className="relative z-10 flex items-center justify-center h-16 px-4 flex-shrink-0 border-b border-[#E5E7EB]/80">
@@ -373,7 +440,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
       </div>
 
       {/* ── Nav Links Container ── */}
-      <nav className="relative z-10 flex-1 px-3 py-2.5 overflow-y-auto overflow-x-hidden space-y-2.5">
+      <nav className={`relative z-10 flex-1 px-3 py-2.5 space-y-2.5 ${isCollapsed ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"}`}>
         
         {/* SECTION 1: MAIN NAVIGATION */}
         <div>

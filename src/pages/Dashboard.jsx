@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   AreaChart, Area,
@@ -42,16 +43,56 @@ const C = {
   red: "#EF4444",       // Danger red
 };
 
-/* ─── Tooltip Helper ────────────────────────────────────────── */
-const InfoTooltip = ({ text }) => (
-  <div className="relative group inline-flex items-center ml-1.5 align-middle">
-    <Info size={13} className="text-[#94A3B8] group-hover:text-[#165DFF] cursor-help transition-colors" />
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 bg-[#172033] text-white text-[11px] rounded-xl shadow-xl z-20 font-normal leading-relaxed text-center pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-      {text}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#172033]"></div>
-    </div>
-  </div>
-);
+/* ─── Premium Portal Floating Tooltip Helper ────────────────── */
+const InfoTooltip = ({ text }) => {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const btnRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom + 8,
+        left: rect.left + rect.width / 2,
+      });
+      setOpen(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setOpen(false);
+  };
+
+  return (
+    <span
+      ref={btnRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex items-center ml-1.5 text-slate-400 hover:text-[#165DFF] cursor-help transition-colors select-none"
+    >
+      <Info size={13} />
+      {open &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              top: `${coords.top}px`,
+              left: `${coords.left}px`,
+              transform: "translate(-50%, 0)",
+              zIndex: 999999,
+            }}
+            className="w-52 p-2.5 bg-[#172033]/95 backdrop-blur-xs text-white text-[11px] leading-relaxed font-normal rounded-xl shadow-2xl border border-slate-700/50 pointer-events-none text-center shadow-slate-900/20"
+          >
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-b-[#172033]/95" />
+            {text}
+          </div>,
+          document.body
+        )}
+    </span>
+  );
+};
 
 /* ─── Reusable SaaS KPI Stat Card ───────────────────────────── */
 const StatCard = ({ icon: Icon, label, value, sub, color, bgTint, borderTint, trend, onClick, tooltip }) => (
@@ -469,7 +510,7 @@ export default function Dashboard() {
             bgTint="#EFF6FF"
             borderTint="#DBEAFE"
             onClick={() => navigate("/clients")}
-            tooltip="Total number of clients associated with your Tech Provider account."
+            tooltip="Total clients associated with your Tech Provider account."
           />
         )}
         {totals.messages !== undefined && (
@@ -480,8 +521,8 @@ export default function Dashboard() {
             color={C.blue}
             bgTint="#EFF6FF"
             borderTint="#DBEAFE"
-            onClick={() => navigate("/whatsapp")}
-            tooltip="Total number of messages sent from your system."
+            onClick={() => navigate("/inbox")}
+            tooltip="Total messages sent across all conversations."
           />
         )}
         {summary.total_customers !== undefined && (
@@ -492,8 +533,8 @@ export default function Dashboard() {
             color={C.indigo}
             bgTint="#EEF2FF"
             borderTint="#E0E7FF"
-            onClick={() => navigate("/leads-prospects")}
-            tooltip="Total number of unique customers registered in your system."
+            onClick={() => navigate("/customers")}
+            tooltip="Total unique customers registered in the CRM."
           />
         )}
         {summary.active_today !== undefined && (
@@ -504,8 +545,8 @@ export default function Dashboard() {
             color={C.emerald}
             bgTint="#ECFDF5"
             borderTint="#D1FAE5"
-            onClick={() => navigate("/whatsapp")}
-            tooltip="Customers who interacted or were updated today."
+            onClick={() => navigate("/inbox")}
+            tooltip="Customers who messaged or had activity today."
           />
         )}
         {summary.new_today !== undefined && (
@@ -516,8 +557,8 @@ export default function Dashboard() {
             color={C.amber}
             bgTint="#FFFBEB"
             borderTint="#FEF3C7"
-            onClick={() => navigate("/leads-prospects")}
-            tooltip="New customers added to the system today."
+            onClick={() => navigate("/customers")}
+            tooltip="New customers added into the system today."
           />
         )}
         {summary.leads !== undefined && (
@@ -528,8 +569,8 @@ export default function Dashboard() {
             color={C.sky}
             bgTint="#F0F9FF"
             borderTint="#E0F2FE"
-            onClick={() => navigate("/leads-prospects")}
-            tooltip="Total potential customers (Leads) currently in the system."
+            onClick={() => navigate("/customers")}
+            tooltip="Potential customers currently marked as Leads."
           />
         )}
         {summary.prospects !== undefined && (
@@ -540,8 +581,8 @@ export default function Dashboard() {
             color={C.purple}
             bgTint="#F5F3FF"
             borderTint="#EDE9FE"
-            onClick={() => navigate("/leads-prospects")}
-            tooltip="Total Prospects currently in the system."
+            onClick={() => navigate("/customers")}
+            tooltip="Customers currently categorized as Prospects."
           />
         )}
       </div>
@@ -998,7 +1039,14 @@ export default function Dashboard() {
                     <div>
                       <div className="flex items-center">
                         <p className="text-xs font-semibold text-[#172033]">{label}</p>
-                        {tooltip && <InfoTooltip text={tooltip} />}
+                        {tooltip && (
+                          <span 
+                            title={tooltip}
+                            className="inline-flex items-center ml-1.5 text-slate-400 hover:text-[#165DFF] cursor-help transition-colors"
+                          >
+                            <Info size={13} />
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] font-normal text-[#64748B] mt-0.5">
                         {fmt(num)} messages

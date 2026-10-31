@@ -103,25 +103,28 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: "leads-prospects",
+          path: "customers",
           element: (
             <Suspense fallback={<LoaderDemo />}>
               <LeadsProspects />
             </Suspense>
           ),
         },
-        // Old routes redirect to leads-prospects
-        { path: "leads", element: <Navigate to="/leads-prospects" replace /> },
-        { path: "prospects", element: <Navigate to="/leads-prospects" replace /> },
+        // Old routes redirect to customers
+        { path: "leads-prospects", element: <Navigate to="/customers" replace /> },
+        { path: "leads", element: <Navigate to="/customers" replace /> },
+        { path: "prospects", element: <Navigate to="/customers" replace /> },
 
         {
-          path: "whatsapp",
+          path: "inbox",
           element: (
             <Suspense fallback={<LoaderDemo />}>
               <Whatsapp />
             </Suspense>
           ),
         },
+        // Old route redirect to inbox
+        { path: "whatsapp", element: <Navigate to="/inbox" replace /> },
         {
           path: "templates",
           element: (
@@ -155,13 +158,15 @@ const router = createBrowserRouter(
           ),
         },
         {
-          path: "team",
+          path: "profile",
           element: (
             <Suspense fallback={<LoaderDemo />}>
               <Team />
             </Suspense>
           ),
         },
+        // Old route redirect to profile
+        { path: "team", element: <Navigate to="/profile" replace /> },
         {
           path: "addMember",
           element: (

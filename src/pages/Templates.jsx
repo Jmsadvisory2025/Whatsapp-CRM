@@ -1503,11 +1503,11 @@ const TableRow = ({
 
   return (
     <tr className="hover:bg-blue-50/30 transition-colors">
-      <td className="px-4 py-3.5 text-xs font-medium text-[#94A3B8] tabular-nums">
+      <td className="px-3 py-3.5 text-xs font-medium text-[#94A3B8] tabular-nums">
         {idx + 1}
       </td>
 
-      <td className="px-4 py-3.5 overflow-hidden">
+      <td className="px-3 py-3.5 overflow-hidden">
         <div className="min-w-0">
           <p
             className="text-xs font-semibold text-[#172033] truncate"
@@ -1524,7 +1524,7 @@ const TableRow = ({
         </div>
       </td>
 
-      <td className="px-4 py-3.5">
+      <td className="px-3 py-3.5">
         <span
           className={`inline-block px-2.5 py-0.5 rounded-md text-[10px] font-semibold uppercase border ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}
         >
@@ -1532,17 +1532,17 @@ const TableRow = ({
         </span>
       </td>
 
-      <td className="px-4 py-3.5">
+      <td className="px-3 py-3.5">
         <span className="text-xs font-medium text-[#64748B] uppercase">
           {template.language}
         </span>
       </td>
 
-      <td className="px-4 py-3.5">
+      <td className="px-3 py-3.5">
         <StatusBadge status={template.status} />
       </td>
 
-      <td className="px-4 py-3.5 overflow-hidden">
+      <td className="px-3 py-3.5 overflow-hidden">
         <p
           className="text-xs text-[#64748B] truncate"
           title={template.body_text || ""}
@@ -1551,14 +1551,14 @@ const TableRow = ({
         </p>
       </td>
 
-      <td className="px-4 py-3.5 text-center">
+      <td className="px-3 py-3.5 text-center">
         <span className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-200/70 rounded-md text-[11px] font-semibold text-[#172033] tabular-nums">
           {template.variables_count || 0}
         </span>
       </td>
 
-      <td className="px-4 py-3.5">
-        <div className="flex items-center justify-end gap-1">
+      <td className="px-3 py-3.5">
+        <div className="flex items-center justify-end gap-1 flex-nowrap">
           <button
             onClick={() => onPreview(template)}
             className="p-1.5 rounded-lg hover:bg-blue-50 text-[#64748B] hover:text-[#165DFF] transition cursor-pointer"
@@ -1821,22 +1821,22 @@ const Templates = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed min-w-[820px]">
+            <table className="w-full table-fixed min-w-[960px]">
               <thead className="bg-slate-50/80 border-b border-slate-100">
                 <tr>
                   {[
-                    { label: "#", width: "w-[5%]" },
-                    { label: "Name", width: "w-[22%]" },
-                    { label: "Category", width: "w-[13%]" },
-                    { label: "Language", width: "w-[9%]" },
-                    { label: "Status", width: "w-[13%]" },
-                    { label: "Body Preview", width: "w-[22%]" },
-                    { label: "Vars", width: "w-[6%] text-center" },
-                    { label: "Actions", width: "w-[10%] text-right" },
+                    { label: "#", width: "w-[4%]" },
+                    { label: "Name", width: "w-[21%]" },
+                    { label: "Category", width: "w-[12%]" },
+                    { label: "Language", width: "w-[8%]" },
+                    { label: "Status", width: "w-[12%]" },
+                    { label: "Body Preview", width: "w-[21%]" },
+                    { label: "Vars", width: "w-[7%] text-center" },
+                    { label: "Actions", width: "w-[15%] text-right" },
                   ].map((col) => (
                     <th
                       key={col.label}
-                      className={`${col.width} px-4 py-3.5 text-left text-[11px] font-semibold text-[#64748B] uppercase tracking-wider truncate`}
+                      className={`${col.width} px-3 py-3.5 text-left text-[11px] font-semibold text-[#64748B] uppercase tracking-wider truncate`}
                     >
                       {col.label}
                     </th>
