@@ -98,7 +98,7 @@ const InfoTooltip = ({ text }) => {
 const StatCard = ({ icon: Icon, label, value, sub, color, bgTint, borderTint, trend, onClick, tooltip }) => (
   <div
     onClick={onClick}
-    className={`bg-white rounded-2xl p-3.5 sm:p-4 lg:p-4 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03] flex flex-col justify-between h-full flex-1 min-w-[130px] shrink transition-all duration-200 ${
+    className={`bg-white rounded-2xl p-3.5 sm:p-4 lg:p-4 border border-slate-300 shadow-sm shadow-blue-500/[0.03] flex flex-col justify-between h-full flex-1 min-w-[130px] shrink transition-all duration-200 ${
       onClick
         ? "cursor-pointer hover:border-[#165DFF]/35 hover:shadow-md hover:shadow-blue-500/[0.06] hover:-translate-y-0.5"
         : ""
@@ -170,7 +170,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl shadow-lg shadow-blue-500/10 px-3.5 py-2.5 text-xs">
-      <p className="font-semibold text-[#172033] mb-1.5 border-b border-slate-100 pb-1">{label}</p>
+      <p className="font-semibold text-[#172033] mb-1.5 border-b border-slate-300 pb-1">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center justify-between gap-3 mb-1 last:mb-0">
           <div className="flex items-center gap-1.5">
@@ -187,7 +187,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 /* ─── Empty Chart State ─────────────────────────────────────── */
 function EmptyChart({ label }) {
   return (
-    <div className="flex flex-col items-center justify-center h-48 text-[#94A3B8] gap-2.5 bg-slate-50/60 rounded-xl border border-dashed border-slate-200/80">
+    <div className="flex flex-col items-center justify-center h-48 text-[#94A3B8] gap-2.5 bg-slate-50/60 rounded-xl border border-dashed border-slate-300">
       <BarChart2 size={24} className="text-[#165DFF]/40" />
       <p className="text-xs font-medium text-[#64748B]">{label}</p>
     </div>
@@ -454,7 +454,7 @@ export default function Dashboard() {
     <div className="p-5 sm:p-6 lg:p-7 space-y-5 bg-[#FAFAFC] min-h-screen w-full font-sans text-[#172033]">
 
       {/* ── Top Bar ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-[#E5E7EB]/80">
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-slate-300/80">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#172033] tracking-tight leading-tight">
             Dashboard
@@ -491,7 +491,7 @@ export default function Dashboard() {
           <button
             onClick={fetchAnalytics}
             disabled={loading}
-            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-[#E5E7EB] rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-slate-300 rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw size={13} className={loading ? "animate-spin text-[#165DFF]" : "text-[#64748B]"} />
             <span>Refresh</span>
@@ -590,7 +590,7 @@ export default function Dashboard() {
       {/* ── Row 1: Messages Chart & Acquisition Calendar ────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Messages Over Time (8 cols on lg) */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03] flex flex-col h-full lg:col-span-8">
+        <div className="bg-white rounded-2xl p-5 border border-slate-300 shadow-sm shadow-blue-500/[0.03] flex flex-col h-full lg:col-span-8">
           <SectionHeader
             icon={Activity}
             title="Messages Over Time"
@@ -652,7 +652,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Acquisition Calendar (4 cols on lg) ──────── */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03] flex flex-col h-full lg:col-span-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-300 shadow-sm shadow-blue-500/[0.03] flex flex-col h-full lg:col-span-4">
           <SectionHeader
             icon={CalendarIcon}
             title="Calendar"
@@ -846,7 +846,7 @@ export default function Dashboard() {
 
                     {/* Tooltip on hover */}
                     <div className="absolute bottom-[110%] left-1/2 -translate-x-1/2 mb-1 w-40 p-2.5 bg-white/95 backdrop-blur-md border border-slate-200 text-[#172033] rounded-xl shadow-xl z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:-translate-y-1 pointer-events-none">
-                      <p className="font-semibold text-[11px] mb-1.5 border-b border-slate-100 pb-1 text-center text-[#172033]">
+                      <p className="font-semibold text-[11px] mb-1.5 border-b border-slate-300 pb-1 text-center text-[#172033]">
                         {date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                       <div className="flex justify-between items-center mb-1">
@@ -890,7 +890,7 @@ export default function Dashboard() {
               ).size;
 
               return (
-                <div className="flex justify-between items-center text-[11px] text-[#64748B] font-medium mt-auto pt-3 border-t border-slate-100">
+                <div className="flex justify-between items-center text-[11px] text-[#64748B] font-medium mt-auto pt-3 border-t border-slate-200">
                   <span>
                     Active Days: <strong className="text-[#172033] font-semibold">{monthlyActiveDays}</strong>
                   </span>
@@ -919,7 +919,7 @@ export default function Dashboard() {
       {/* ── Row 2: Customers Over Time ──────────────────────── */}
       <div className="grid grid-cols-1 gap-5">
         {/* Customers Over Time */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03] flex flex-col h-full">
+        <div className="bg-white rounded-2xl p-5 border border-slate-300 shadow-sm shadow-blue-500/[0.03] flex flex-col h-full">
           <SectionHeader
             icon={Users}
             title="Customers Over Time"
@@ -982,7 +982,7 @@ export default function Dashboard() {
 
       {/* ── Delivery Health ──────────────────────────────────── */}
       {(totals.delivered > 0 || totals.read > 0) && (
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm shadow-blue-500/[0.03]">
+        <div className="bg-white rounded-2xl p-5 border border-slate-300 shadow-sm shadow-blue-500/[0.03]">
           <SectionHeader
             icon={Zap}
             title="Delivery Health"
@@ -1059,7 +1059,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Subtle SaaS Progress Bar */}
-                <div className="w-full h-1.5 bg-white/80 rounded-full overflow-hidden mt-3.5 border border-slate-200/50">
+                <div className="w-full h-1.5 bg-white/80 rounded-full overflow-hidden mt-3.5 border border-slate-200">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${barColor}`}
                     style={{ width: `${pctNum}%` }}

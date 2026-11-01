@@ -215,7 +215,7 @@ const WhatsAppPreview = ({ template }) => {
         {["IMAGE", "VIDEO", "DOCUMENT"].includes(headerType) && (
           <div className="bg-slate-100 rounded-2xl h-32 flex flex-col items-center justify-center border border-slate-200/80 shadow-2xs max-w-[90%] text-[#94A3B8] overflow-hidden relative">
             {headerType === "IMAGE" &&
-            template.example_media instanceof File ? (
+              template.example_media instanceof File ? (
               <img
                 src={URL.createObjectURL(template.example_media)}
                 className="w-full h-full object-cover"
@@ -478,23 +478,21 @@ const TemplateForm = ({
                   onKeyDown={(e) => handleFormatBold(e, "header_text")}
                   disabled={disabled}
                   placeholder="Header text…"
-                  className={`${inputCls} ${
-                    (form.header_text || "").length > 60
+                  className={`${inputCls} ${(form.header_text || "").length > 60
                       ? "border-red-500 focus:border-red-500 bg-red-50/20"
                       : ""
-                  }`}
+                    }`}
                 />
               </div>
               <div className="flex items-center justify-between mt-1 text-[10px]">
                 <span className="text-[#94A3B8]">Press Ctrl+B to bold selected text.</span>
                 <span
-                  className={`font-semibold ${
-                    (form.header_text || "").length > 60
+                  className={`font-semibold ${(form.header_text || "").length > 60
                       ? "text-red-500 font-bold"
                       : (form.header_text || "").length >= 50
-                      ? "text-amber-500"
-                      : "text-[#94A3B8]"
-                  }`}
+                        ? "text-amber-500"
+                        : "text-[#94A3B8]"
+                    }`}
                 >
                   {(form.header_text || "").length}/60
                 </span>
@@ -543,13 +541,12 @@ const TemplateForm = ({
           <div className="flex items-center gap-2">
             {!isAuth && (
               <span
-                className={`text-[10px] font-semibold ${
-                  (form.body_text || "").length > 1024
+                className={`text-[10px] font-semibold ${(form.body_text || "").length > 1024
                     ? "text-red-500 font-bold"
                     : (form.body_text || "").length >= 950
-                    ? "text-amber-500"
-                    : "text-[#94A3B8]"
-                }`}
+                      ? "text-amber-500"
+                      : "text-[#94A3B8]"
+                  }`}
               >
                 {(form.body_text || "").length}/1024
               </span>
@@ -573,13 +570,11 @@ const TemplateForm = ({
           readOnly={isAuth}
           rows={4}
           placeholder="Hi {{1}}, your order {{2}} has been confirmed!"
-          className={`${inputCls} resize-none ${
-            isAuth ? "bg-slate-100 text-[#64748B] cursor-not-allowed select-none" : ""
-          } ${
-            !isAuth && (form.body_text || "").length > 1024
+          className={`${inputCls} resize-none ${isAuth ? "bg-slate-100 text-[#64748B] cursor-not-allowed select-none" : ""
+            } ${!isAuth && (form.body_text || "").length > 1024
               ? "border-red-500 focus:border-red-500 bg-red-50/20"
               : ""
-          }`}
+            }`}
         />
         {(form.body_text || "").length > 1024 && !isAuth && (
           <p className="text-[11px] font-medium text-red-500 mt-1">
@@ -620,13 +615,12 @@ const TemplateForm = ({
               Footer (Optional)
             </label>
             <span
-              className={`text-[10px] font-semibold ${
-                (form.footer_text || "").length > 60
+              className={`text-[10px] font-semibold ${(form.footer_text || "").length > 60
                   ? "text-red-500 font-bold"
                   : (form.footer_text || "").length >= 50
-                  ? "text-amber-500"
-                  : "text-[#94A3B8]"
-              }`}
+                    ? "text-amber-500"
+                    : "text-[#94A3B8]"
+                }`}
             >
               {(form.footer_text || "").length}/60
             </span>
@@ -637,11 +631,10 @@ const TemplateForm = ({
             onChange={(e) => onChange("footer_text", e.target.value)}
             disabled={disabled}
             placeholder="Reply STOP to unsubscribe"
-            className={`${inputCls} ${
-              (form.footer_text || "").length > 60
+            className={`${inputCls} ${(form.footer_text || "").length > 60
                 ? "border-red-500 focus:border-red-500 bg-red-50/20"
                 : ""
-            }`}
+              }`}
           />
           {(form.footer_text || "").length > 60 && (
             <p className="text-[11px] font-medium text-red-500 mt-1">
@@ -759,20 +752,18 @@ const TemplateForm = ({
                               ? "Button text (max 40 chars)"
                               : "Button text (e.g. Visit Us)"
                           }
-                          className={`w-full px-3 py-1.5 rounded-lg border text-xs bg-white text-[#172033] focus:outline-none ${
-                            btn.type === "QUICK_REPLY" && (btn.text || "").length > 40
+                          className={`w-full px-3 py-1.5 rounded-lg border text-xs bg-white text-[#172033] focus:outline-none ${btn.type === "QUICK_REPLY" && (btn.text || "").length > 40
                               ? "border-red-500 focus:border-red-500 bg-red-50/20"
                               : "border-[#E5E7EB] focus:border-[#165DFF]"
-                          }`}
+                            }`}
                         />
                         {btn.type === "QUICK_REPLY" && (
                           <div className="flex items-center justify-between mt-1 text-[10px]">
                             <span
-                              className={`font-semibold ${
-                                (btn.text || "").length > 40
+                              className={`font-semibold ${(btn.text || "").length > 40
                                   ? "text-red-500 font-bold"
                                   : "text-[#94A3B8]"
-                              }`}
+                                }`}
                             >
                               {(btn.text || "").length}/40
                             </span>
@@ -1667,13 +1658,13 @@ const Templates = () => {
 
   const filtered = search.trim()
     ? statusFiltered.filter((t) => {
-        const q = search.toLowerCase();
-        return (
-          (t.name || "").toLowerCase().includes(q) ||
-          (t.body_text || "").toLowerCase().includes(q) ||
-          (t.category || "").toLowerCase().includes(q)
-        );
-      })
+      const q = search.toLowerCase();
+      return (
+        (t.name || "").toLowerCase().includes(q) ||
+        (t.body_text || "").toLowerCase().includes(q) ||
+        (t.category || "").toLowerCase().includes(q)
+      );
+    })
     : statusFiltered;
 
   return (
@@ -1699,17 +1690,15 @@ const Templates = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveFilter(tab.key)}
-                  className={`h-full flex items-center gap-1.5 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    active
+                  className={`h-full flex items-center gap-1.5 px-3 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${active
                       ? "bg-[#165DFF] text-white shadow-xs shadow-blue-500/20"
                       : "text-[#64748B] hover:text-[#172033] hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   {tab.dot && (
                     <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        active ? "bg-white" : tab.dot
-                      }`}
+                      className={`w-1.5 h-1.5 rounded-full ${active ? "bg-white" : tab.dot
+                        }`}
                     />
                   )}
                   {tab.label}
@@ -1848,7 +1837,7 @@ const Templates = () => {
               <thead className="bg-slate-50/80 border-b border-slate-100">
                 <tr>
                   {[
-                    { label: "#", width: "w-[4%]" },
+                    { label: "ID", width: "w-[4%]" },
                     { label: "Name", width: "w-[21%]" },
                     { label: "Category", width: "w-[12%]" },
                     { label: "Language", width: "w-[8%]" },

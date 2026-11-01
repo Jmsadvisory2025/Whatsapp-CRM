@@ -280,7 +280,7 @@ const LeadsProspects = () => {
       {/* HEADER (Matching WhatsApp Page Header)                                 */}
       {/* ---------------------------------------------------------------------- */}
 
-      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-[#E5E7EB]/80">
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-slate-300/80">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172033] leading-tight">
             Customers
@@ -292,7 +292,7 @@ const LeadsProspects = () => {
 
         {/* Right Toolbar: All / Leads / Prospects Segmented Tabs + Export + Refresh */}
         <div className="flex items-center flex-wrap gap-2.5">
-          <div className="h-9 flex items-center bg-white p-1 rounded-xl border border-[#E5E7EB] shadow-2xs">
+          <div className="h-9 flex items-center bg-white p-1 rounded-xl border border-slate-300 shadow-2xs">
             {[
               { key: "all", label: `All (${globalCounts.all})` },
               { key: "lead", label: `Leads (${globalCounts.lead})`, dot: "bg-[#0EA5E9]" },
@@ -328,7 +328,7 @@ const LeadsProspects = () => {
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className="h-9 flex items-center justify-center gap-1.5 px-3.5 bg-white border border-[#E5E7EB] rounded-xl text-xs font-semibold text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs whitespace-nowrap cursor-pointer"
+            className="h-9 flex items-center justify-center gap-1.5 px-3.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-2xs whitespace-nowrap cursor-pointer"
             title="Export to CSV"
           >
             {isExporting ? (
@@ -342,7 +342,7 @@ const LeadsProspects = () => {
           <button
             onClick={fetchData}
             disabled={loading}
-            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-[#E5E7EB] rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-slate-300 rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <RefreshCw
               size={13}
@@ -361,10 +361,10 @@ const LeadsProspects = () => {
       {/* TABLE CARD (Search bar at top-left matching WhatsApp Sidebar)          */}
       {/* ---------------------------------------------------------------------- */}
 
-      <Card className="bg-white border border-slate-200/80 rounded-2xl shadow-sm shadow-blue-500/[0.03] overflow-hidden">
+      <Card className="bg-white border border-slate-300 rounded-2xl shadow-sm shadow-blue-500/[0.03] overflow-hidden">
 
         {/* Top Search Header inside Card (same left position as WhatsApp) */}
-        <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="px-4 sm:px-5 py-3.5 border-b border-slate-300 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="relative w-full sm:w-80">
             <Search
               size={14}
@@ -378,7 +378,7 @@ const LeadsProspects = () => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-8 pr-7 py-2 text-xs bg-slate-50/80 focus:bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 text-[#172033] placeholder:text-[#94A3B8] outline-none transition-all"
+              className="w-full pl-8 pr-7 py-2 text-xs bg-slate-50/80 focus:bg-white rounded-xl border border-slate-300 focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 text-[#172033] placeholder:text-[#94A3B8] outline-none transition-all"
             />
             {search && (
               <button
@@ -407,7 +407,7 @@ const LeadsProspects = () => {
 
         <div className="hidden xl:block overflow-x-auto">
           <table className="w-full table-fixed">
-            <thead className="bg-slate-50/80 border-b border-slate-100">
+            <thead className="bg-slate-50/80 border-b border-slate-300">
               <tr>
                 {(isTp
                   ? [
@@ -435,7 +435,7 @@ const LeadsProspects = () => {
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-200">
               {displayData.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="py-16 text-center">
@@ -608,7 +608,7 @@ const LeadsProspects = () => {
             displayData.map((item) => (
               <div
                 key={item.id}
-                className="border border-slate-200/80 rounded-2xl p-4 transition-all cursor-default hover:border-[#165DFF]/30 bg-white"
+                className="border border-slate-300 rounded-2xl p-4 transition-all cursor-default hover:border-[#165DFF]/30 bg-white"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -645,7 +645,7 @@ const LeadsProspects = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-3.5 pt-3 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-4 mt-3.5 pt-3 border-t border-slate-200">
                   <div className="min-w-0">
                     <p className="text-[11px] text-[#94A3B8]">
                       Stage
@@ -685,7 +685,7 @@ const LeadsProspects = () => {
         {/* ------------------------------------------------------------------ */}
 
         {count > 20 && (
-          <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/60 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="px-5 py-3.5 border-t border-slate-200 bg-slate-50/60 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <p className="text-xs text-[#64748B]">
               Showing{" "}
               <span className="font-semibold text-[#172033]">
@@ -705,20 +705,20 @@ const LeadsProspects = () => {
               <button
                 onClick={() => setPage(page - 1)}
                 disabled={page === 1}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-medium text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 <ChevronLeft size={14} />
                 Previous
               </button>
 
-              <div className="px-3 py-1.5 rounded-xl bg-white border border-[#E5E7EB] text-xs font-semibold text-[#172033]">
+              <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs font-semibold text-[#172033]">
                 {page} / {totalPages}
               </div>
 
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page * 20 >= count}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-xs font-medium text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
               >
                 Next
                 <ChevronRight size={14} />
@@ -731,7 +731,7 @@ const LeadsProspects = () => {
 
       {isChatModalOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/20 backdrop-blur-md p-4 transition-all duration-300">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200/80 w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-300 w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
             <div className="flex-1 relative overflow-hidden flex bg-[#FAFAFC]">
               <ChatArea onBack={() => setIsChatModalOpen(false)} />
             </div>

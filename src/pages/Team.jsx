@@ -338,7 +338,7 @@ const Team = () => {
   return (
     <div className="p-5 sm:p-6 lg:p-7 space-y-5 bg-[#FAFAFC] min-h-screen w-full font-sans text-[#172033]">
       {/* ── Page Header (Exact match with Dashboard, Customers, Templates & Campaigns) ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-[#E5E7EB]/80">
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-slate-300/80">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172033] leading-tight">
             Profile
@@ -353,7 +353,7 @@ const Team = () => {
           <button
             onClick={loadData}
             disabled={metaLoading || profileLoading}
-            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-[#E5E7EB] rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-slate-300 rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw
               size={13}
@@ -373,9 +373,9 @@ const Team = () => {
       </div>
 
       {/* ── Single Unified Card: Account & WhatsApp Business Profile ── */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-xs overflow-hidden">
+      <div className="bg-white border border-slate-300 rounded-2xl shadow-xs overflow-hidden">
         {/* Unified Card Header: Profile DP, Org Name & Meta Connection Status */}
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between flex-wrap gap-4 bg-slate-50/40">
+        <div className="p-6 border-b border-slate-300 flex items-center justify-between flex-wrap gap-4 bg-slate-50/40">
           <div className="flex items-center gap-4">
             <div className="relative group shrink-0">
               {/* WhatsApp Circular Avatar with Ring Preview */}
@@ -645,7 +645,7 @@ const Team = () => {
             </div>
 
             {/* Form Footer Action */}
-            <div className="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
+            <div className="pt-4 border-t border-slate-200 flex items-center justify-between flex-wrap gap-3">
               <span className="text-[11px] text-[#64748B] flex items-center gap-1.5">
                 <FaWhatsapp className="text-emerald-500 text-sm" />
                 <span>Changes save instantly to official Meta WhatsApp servers.</span>

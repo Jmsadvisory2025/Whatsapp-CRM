@@ -246,7 +246,7 @@ function TemplateCard({ template, selected, onSelect }) {
       className={`rounded-xl border cursor-pointer transition-all duration-150 overflow-hidden ${
         selected
           ? "border-[#165DFF] bg-blue-50/50 shadow-xs shadow-blue-500/10"
-          : "border-[#E5E7EB] bg-white hover:border-[#165DFF]/40 hover:bg-slate-50/60"
+          : "border-slate-300 bg-white hover:border-[#165DFF]/40 hover:bg-slate-50/60"
       }`}
     >
       <div className="p-3.5">
@@ -302,7 +302,7 @@ function TemplateCard({ template, selected, onSelect }) {
         </div>
 
         {expanded && (
-          <div className="mt-3 rounded-xl bg-[#F8FAFC] border border-slate-200/80 p-3.5">
+          <div className="mt-3 rounded-xl bg-[#F8FAFC] border border-slate-300 p-3.5">
             {template.header_type === "TEXT" && headerText && (
               <div className="text-xs font-bold text-[#172033] mb-1.5">
                 {renderWhatsAppFormattedText(headerText)}
@@ -310,7 +310,7 @@ function TemplateCard({ template, selected, onSelect }) {
             )}
 
             {["IMAGE", "VIDEO", "DOCUMENT"].includes(template.header_type) && (
-              <div className="bg-slate-100 rounded-xl h-20 mb-2.5 flex flex-col items-center justify-center text-[#94A3B8] border border-slate-200/70">
+              <div className="bg-slate-100 rounded-xl h-20 mb-2.5 flex flex-col items-center justify-center text-[#94A3B8] border border-slate-300">
                 {template.header_type === "IMAGE" && <Image size={20} />}
                 {template.header_type === "VIDEO" && <Film size={20} />}
                 {template.header_type === "DOCUMENT" && <FileText size={20} />}
@@ -325,13 +325,13 @@ function TemplateCard({ template, selected, onSelect }) {
             </div>
 
             {footerText && (
-              <div className="mt-2.5 text-[11px] text-[#64748B] border-t border-slate-200/80 pt-2">
+              <div className="mt-2.5 text-[11px] text-[#64748B] border-t border-slate-300 pt-2">
                 {footerText}
               </div>
             )}
 
             {Array.isArray(template.buttons) && template.buttons.length > 0 && (
-              <div className="mt-2.5 pt-2 border-t border-slate-200/80 space-y-1.5">
+              <div className="mt-2.5 pt-2 border-t border-slate-300 space-y-1.5">
                 {template.buttons.map((btn, i) => (
                   <div
                     key={i}
@@ -860,7 +860,7 @@ const Campaign = () => {
     if (mediaFile && mediaPreviewUrl) {
       if (selectedTemplate.header_type === "IMAGE") {
         return (
-          <div className="mb-2.5 overflow-hidden rounded-xl border border-slate-200/80 bg-slate-100">
+          <div className="mb-2.5 overflow-hidden rounded-xl border border-slate-300 bg-slate-100">
             <img
               src={mediaPreviewUrl}
               alt="Media header preview"
@@ -871,7 +871,7 @@ const Campaign = () => {
       }
       if (selectedTemplate.header_type === "VIDEO") {
         return (
-          <div className="mb-2.5 overflow-hidden rounded-xl border border-slate-200/80 bg-black">
+          <div className="mb-2.5 overflow-hidden rounded-xl border border-slate-300 bg-black">
             <video
               src={mediaPreviewUrl}
               controls
@@ -1129,7 +1129,7 @@ const Campaign = () => {
       }`}
     >
       {/* ── PAGE HEADER (Exact same size/alignment as Dashboard, Leads, WhatsApp & Templates) ── */}
-      <div className="shrink-0 flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-[#E5E7EB]/80">
+      <div className="shrink-0 flex items-center justify-between flex-wrap gap-3 pb-3.5 min-h-[56px] border-b border-slate-300/80">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172033] leading-tight">
             {tab === "history" ? "Campaign History" : "Create Campaign"}
@@ -1154,7 +1154,7 @@ const Campaign = () => {
               }
             }}
             disabled={isFetchingCampaigns || isFetchingTemplates}
-            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-[#E5E7EB] rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
+            className="h-9 flex items-center gap-1.5 text-xs font-semibold px-3.5 bg-white border border-slate-300 rounded-xl text-[#172033] hover:border-[#165DFF]/40 hover:text-[#165DFF] hover:bg-blue-50/30 transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw
               size={13}
@@ -1236,7 +1236,7 @@ const Campaign = () => {
       {tab === "new" && (
         <div className="flex-1 min-h-0 flex flex-col gap-4">
           {/* STEPPER PROGRESS BAR + INLINE ACTION CONTROLS */}
-          <div className="shrink-0 bg-white border border-slate-200/80 rounded-2xl p-2.5 shadow-sm shadow-blue-500/[0.03] flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
+          <div className="shrink-0 bg-white border border-slate-300 rounded-2xl p-2.5 shadow-sm shadow-blue-500/[0.03] flex flex-col xl:flex-row xl:items-center justify-between gap-2.5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 flex-1">
               {[
                 {
@@ -1332,7 +1332,7 @@ const Campaign = () => {
                   <button
                     type="button"
                     onClick={() => setCurrentStep(1)}
-                    className="h-9 px-3.5 rounded-xl border border-[#E5E7EB] text-[#172033] hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap"
+                    className="h-9 px-3.5 rounded-xl border border-slate-300 text-[#172033] hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap"
                   >
                     <ArrowLeft size={13} />
                     <span>Back</span>
@@ -1354,7 +1354,7 @@ const Campaign = () => {
                   <button
                     type="button"
                     onClick={() => setCurrentStep(2)}
-                    className="h-9 px-3.5 rounded-xl border border-[#E5E7EB] text-[#172033] hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap"
+                    className="h-9 px-3.5 rounded-xl border border-slate-300 text-[#172033] hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer whitespace-nowrap"
                   >
                     <ArrowLeft size={13} />
                     <span>Back</span>
@@ -1362,7 +1362,7 @@ const Campaign = () => {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="h-9 px-3 rounded-xl border border-[#E5E7EB] text-[#64748B] hover:text-[#172033] hover:bg-slate-50 text-xs font-semibold transition cursor-pointer whitespace-nowrap"
+                    className="h-9 px-3 rounded-xl border border-slate-300 text-[#64748B] hover:text-[#172033] hover:bg-slate-50 text-xs font-semibold transition cursor-pointer whitespace-nowrap"
                   >
                     Reset
                   </button>
@@ -1396,7 +1396,7 @@ const Campaign = () => {
             <div className="flex-1 min-h-0 flex flex-col gap-4">
               <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch overflow-y-auto lg:overflow-hidden">
                 {/* CAMPAIGN NAME */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm shadow-blue-500/[0.03] flex flex-col justify-between overflow-y-auto">
+                <div className="bg-white border border-slate-300 rounded-2xl p-5 shadow-sm shadow-blue-500/[0.03] flex flex-col justify-between overflow-y-auto">
                   <div>
                     <div className="flex items-center justify-between mb-3.5">
                       <div>
@@ -1438,7 +1438,7 @@ const Campaign = () => {
                       value={campaignName}
                       onChange={(e) => setCampaignName(e.target.value)}
                       placeholder="e.g. Diwali Mega Offer Campaign..."
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E7EB] bg-slate-50/70 focus:bg-white focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 outline-none transition-all text-xs text-[#172033] placeholder:text-[#94A3B8]"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50/70 focus:bg-white focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 outline-none transition-all text-xs text-[#172033] placeholder:text-[#94A3B8]"
                     />
 
                     <p className="text-[11px] text-[#94A3B8] mt-2 leading-relaxed">
@@ -1462,7 +1462,7 @@ const Campaign = () => {
                 </div>
 
                 {/* UPLOAD CONTACTS */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm shadow-blue-500/[0.03] flex flex-col justify-between overflow-y-auto">
+                <div className="bg-white border border-slate-300 rounded-2xl p-5 shadow-sm shadow-blue-500/[0.03] flex flex-col justify-between overflow-y-auto">
                   <div>
                     <div className="flex items-center justify-between mb-3.5 gap-2">
                       <div>
@@ -1510,7 +1510,7 @@ const Campaign = () => {
                       className={`border-2 border-dashed rounded-2xl transition-all cursor-pointer ${
                         phoneNumbers.length > 0
                           ? "border-emerald-300 bg-emerald-50/50 p-3.5 hover:bg-emerald-50"
-                          : "border-[#E5E7EB] bg-slate-50/60 hover:border-[#165DFF]/50 hover:bg-blue-50/30 p-5 text-center flex flex-col items-center justify-center min-h-[120px]"
+                          : "border-slate-300 bg-slate-50/60 hover:border-[#165DFF]/50 hover:bg-blue-50/30 p-5 text-center flex flex-col items-center justify-center min-h-[120px]"
                       }`}
                     >
                       <input
@@ -1572,7 +1572,7 @@ const Campaign = () => {
                           className={`rounded-xl p-2 text-center border transition-all ${
                             csvStats.duplicates > 0
                               ? "bg-amber-50 border-amber-200"
-                              : "bg-slate-50 border-slate-200/70"
+                              : "bg-slate-50 border-slate-300"
                           }`}
                         >
                           <div
@@ -1599,7 +1599,7 @@ const Campaign = () => {
                           className={`rounded-xl p-2 text-center border transition-all ${
                             csvStats.invalid > 0
                               ? "bg-red-50 border-red-200"
-                              : "bg-slate-50 border-slate-200/70"
+                              : "bg-slate-50 border-slate-300"
                           }`}
                         >
                           <div
@@ -1652,7 +1652,7 @@ const Campaign = () => {
                           {phoneNumbers.slice(0, 5).map((n, i) => (
                             <div
                               key={i}
-                              className="px-2 py-0.5 bg-slate-100 border border-slate-200/70 rounded-lg text-[11px] text-[#172033] font-mono flex items-center gap-1"
+                              className="px-2 py-0.5 bg-slate-100 border border-slate-300 rounded-lg text-[11px] text-[#172033] font-mono flex items-center gap-1"
                             >
                               <Phone size={10} className="text-[#165DFF]" />
                               {n}
@@ -1685,7 +1685,7 @@ const Campaign = () => {
               </div>
 
               {/* STEP 1 PINNED FOOTER BAR */}
-              <div className="shrink-0 bg-white border border-slate-200/80 rounded-2xl px-4 py-3 shadow-sm shadow-blue-500/[0.03] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="shrink-0 bg-white border border-slate-300 rounded-2xl px-4 py-3 shadow-sm shadow-blue-500/[0.03] flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="text-xs font-medium text-[#64748B]">
                   {!campaignName.trim()
                     ? "Please enter a Campaign Name to continue."
@@ -1712,7 +1712,7 @@ const Campaign = () => {
             <div className="flex-1 min-h-0 flex flex-col gap-4">
               <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
                 {/* TEMPLATE LIST CARD */}
-                <div className="lg:col-span-7 h-full min-h-0 bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm shadow-blue-500/[0.03] flex flex-col overflow-hidden">
+                <div className="lg:col-span-7 h-full min-h-0 bg-white border border-slate-300 rounded-2xl p-4 sm:p-5 shadow-sm shadow-blue-500/[0.03] flex flex-col overflow-hidden">
                   <div className="shrink-0 flex items-center justify-between mb-3">
                     <div>
                       <h2 className="text-sm font-bold text-[#172033]">
@@ -1739,7 +1739,7 @@ const Campaign = () => {
                       value={templateSearch}
                       onChange={(e) => setTemplateSearch(e.target.value)}
                       placeholder="Search approved templates..."
-                      className="w-full pl-8 pr-7 py-2 rounded-xl border border-[#E5E7EB] bg-slate-50/80 focus:bg-white focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 outline-none transition-all text-xs text-[#172033] placeholder:text-[#94A3B8]"
+                      className="w-full pl-8 pr-7 py-2 rounded-xl border border-slate-300 bg-slate-50/80 focus:bg-white focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 outline-none transition-all text-xs text-[#172033] placeholder:text-[#94A3B8]"
                     />
                     {templateSearch && (
                       <button
@@ -1788,8 +1788,8 @@ const Campaign = () => {
                 {/* TEMPLATE DETAILS / MEDIA & VARIABLES CONFIG (Scrolls internally) */}
                 <div className="lg:col-span-5 h-full min-h-0 flex flex-col overflow-hidden">
                   {selectedTemplate ? (
-                    <div className="h-full min-h-0 bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm shadow-blue-500/[0.03] flex flex-col overflow-hidden">
-                      <div className="shrink-0 flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                    <div className="h-full min-h-0 bg-white border border-slate-300 rounded-2xl p-4 sm:p-5 shadow-sm shadow-blue-500/[0.03] flex flex-col overflow-hidden">
+                      <div className="shrink-0 flex items-center justify-between pb-3 mb-3 border-b border-slate-300">
                         <div className="min-w-0">
                           <span className="text-[10px] font-semibold uppercase tracking-wider text-[#165DFF] bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
                             Selected Template
@@ -1927,7 +1927,7 @@ const Campaign = () => {
                                 return (
                                   <div
                                     key={k}
-                                    className="p-3 bg-slate-50/80 rounded-xl border border-[#E5E7EB] space-y-2"
+                                    className="p-3 bg-slate-50/80 rounded-xl border border-slate-300 space-y-2"
                                   >
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-2">
@@ -1961,7 +1961,7 @@ const Campaign = () => {
                                                   [k]: e.target.value,
                                                 }))
                                               }
-                                              className="w-full appearance-none px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] text-xs bg-white text-[#172033] focus:outline-none focus:border-[#165DFF]"
+                                              className="w-full appearance-none px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs bg-white text-[#172033] focus:outline-none focus:border-[#165DFF]"
                                             >
                                               <option value="">
                                                 -- Fixed Manual Value --
@@ -2006,7 +2006,7 @@ const Campaign = () => {
                                               ? "e.g. Valued Customer"
                                               : `Value for {{${k}}}`
                                           }
-                                          className="w-full px-2.5 py-1.5 rounded-lg border border-[#E5E7EB] bg-white text-xs text-[#172033] focus:outline-none focus:border-[#165DFF]"
+                                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs text-[#172033] focus:outline-none focus:border-[#165DFF]"
                                         />
                                       </div>
                                     </div>
@@ -2023,7 +2023,7 @@ const Campaign = () => {
                             Message Preview
                           </span>
                           <div
-                            className="rounded-2xl border border-slate-200/80 bg-[#F8FAFC] p-3.5"
+                            className="rounded-2xl border border-slate-300 bg-[#F8FAFC] p-3.5"
                             style={{
                               backgroundImage: `radial-gradient(#CBD5E1 0.75px, transparent 0.75px)`,
                               backgroundSize: "18px 18px",
@@ -2054,7 +2054,7 @@ const Campaign = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="h-full bg-white border border-slate-200/80 rounded-2xl p-10 text-center shadow-sm shadow-blue-500/[0.03] flex flex-col items-center justify-center">
+                    <div className="h-full bg-white border border-slate-300 rounded-2xl p-10 text-center shadow-sm shadow-blue-500/[0.03] flex flex-col items-center justify-center">
                       <div className="w-11 h-11 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-center justify-center mx-auto mb-3">
                         <Sparkles size={20} className="text-[#165DFF]" />
                       </div>
@@ -2071,11 +2071,11 @@ const Campaign = () => {
               </div>
 
               {/* STEP 2 PINNED FOOTER BAR */}
-              <div className="shrink-0 bg-white border border-slate-200/80 rounded-2xl px-4 py-3 shadow-sm shadow-blue-500/[0.03] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="shrink-0 bg-white border border-slate-300 rounded-2xl px-4 py-3 shadow-sm shadow-blue-500/[0.03] flex flex-col sm:flex-row items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setCurrentStep(1)}
-                  className="h-9 px-4 rounded-xl border border-[#E5E7EB] text-[#172033] hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition w-full sm:w-auto justify-center cursor-pointer"
+                  className="h-9 px-4 rounded-xl border border-slate-300 text-[#172033] hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition w-full sm:w-auto justify-center cursor-pointer"
                 >
                   <ArrowLeft size={14} />
                   Back: Contacts & Details
@@ -2103,7 +2103,7 @@ const Campaign = () => {
           {/* STEP 3: CAMPAIGN SUMMARY & LAUNCH (Side-by-side summary + scrollable preview) */}
           {currentStep === 3 && (
             <div className="flex-1 min-h-0 flex flex-col gap-4">
-              <div className="flex-1 min-h-0 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm shadow-blue-500/[0.03] grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden">
+              <div className="flex-1 min-h-0 bg-white border border-slate-300 rounded-2xl p-5 shadow-sm shadow-blue-500/[0.03] grid grid-cols-1 lg:grid-cols-12 gap-5 overflow-hidden">
                 {/* LEFT: SUMMARY DETAILS */}
                 <div className="lg:col-span-5 flex flex-col justify-between overflow-y-auto pr-1">
                   <div>
@@ -2115,7 +2115,7 @@ const Campaign = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="bg-[#FAFAFC] border border-slate-200/80 rounded-xl p-3.5 flex flex-col justify-between">
+                      <div className="bg-[#FAFAFC] border border-slate-300 rounded-xl p-3.5 flex flex-col justify-between">
                         <span className="text-[10px] font-semibold text-[#64748B] uppercase tracking-wider">
                           Campaign Name
                         </span>
@@ -2127,7 +2127,7 @@ const Campaign = () => {
                         </span>
                       </div>
 
-                      <div className="bg-[#FAFAFC] border border-slate-200/80 rounded-xl p-3.5 flex flex-col justify-between">
+                      <div className="bg-[#FAFAFC] border border-slate-300 rounded-xl p-3.5 flex flex-col justify-between">
                         <span className="text-[10px] font-semibold text-[#64748B] uppercase tracking-wider">
                           Selected Template
                         </span>
@@ -2148,7 +2148,7 @@ const Campaign = () => {
                         </span>
                       </div>
 
-                      <div className="bg-[#FAFAFC] border border-slate-200/80 rounded-xl p-3.5 flex flex-col justify-between">
+                      <div className="bg-[#FAFAFC] border border-slate-300 rounded-xl p-3.5 flex flex-col justify-between">
                         <span className="text-[10px] font-semibold text-[#64748B] uppercase tracking-wider">
                           Duplicates Filtered
                         </span>
@@ -2181,7 +2181,7 @@ const Campaign = () => {
 
                 {/* RIGHT: LIVE WHATSAPP PREVIEW (Scrolls internally) */}
                 <div
-                  className="lg:col-span-7 h-full min-h-0 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 p-4 flex flex-col overflow-hidden"
+                  className="lg:col-span-7 h-full min-h-0 rounded-2xl bg-[#F8FAFC] border border-slate-300 p-4 flex flex-col overflow-hidden"
                   style={{
                     backgroundImage: `radial-gradient(#CBD5E1 0.75px, transparent 0.75px)`,
                     backgroundSize: "18px 18px",
@@ -2219,12 +2219,12 @@ const Campaign = () => {
               </div>
 
               {/* STEP 3 PINNED FOOTER BAR */}
-              <div className="shrink-0 bg-white border border-slate-200/80 rounded-2xl px-4 py-3 shadow-sm shadow-blue-500/[0.03] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="shrink-0 bg-white border border-slate-300 rounded-2xl px-4 py-3 shadow-sm shadow-blue-500/[0.03] flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => setCurrentStep(2)}
-                    className="h-9 px-4 rounded-xl border border-[#E5E7EB] text-[#172033] font-semibold hover:bg-slate-50 transition text-xs flex items-center gap-1.5 cursor-pointer"
+                    className="h-9 px-4 rounded-xl border border-slate-300 text-[#172033] font-semibold hover:bg-slate-50 transition text-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <ArrowLeft size={14} />
                     Back to Template
@@ -2233,7 +2233,7 @@ const Campaign = () => {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="h-9 px-4 rounded-xl border border-[#E5E7EB] text-[#64748B] hover:text-[#172033] font-semibold hover:bg-slate-50 transition text-xs cursor-pointer"
+                    className="h-9 px-4 rounded-xl border border-slate-300 text-[#64748B] hover:text-[#172033] font-semibold hover:bg-slate-50 transition text-xs cursor-pointer"
                   >
                     Reset All
                   </button>
@@ -2268,9 +2268,9 @@ const Campaign = () => {
          CAMPAIGN HISTORY TAB (Matching Leads & Templates Table)
       ───────────────────────────────────────────────────────── */}
       {tab === "history" && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm shadow-blue-500/[0.03] overflow-hidden">
+        <div className="bg-white border border-slate-300 rounded-2xl shadow-sm shadow-blue-500/[0.03] overflow-hidden">
           {/* Top Search Header inside Card */}
-          <div className="px-4 sm:px-5 py-3.5 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="px-4 sm:px-5 py-3.5 border-b border-slate-300 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="relative w-full sm:w-80">
               <Search
                 size={14}
@@ -2281,7 +2281,7 @@ const Campaign = () => {
                 placeholder="Search campaign or template..."
                 value={historySearch}
                 onChange={(e) => setHistorySearch(e.target.value)}
-                className="w-full pl-8 pr-7 py-2 text-xs bg-slate-50/80 focus:bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 text-[#172033] placeholder:text-[#94A3B8] outline-none transition-all"
+                className="w-full pl-8 pr-7 py-2 text-xs bg-slate-50/80 focus:bg-white rounded-xl border border-slate-300 focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 text-[#172033] placeholder:text-[#94A3B8] outline-none transition-all"
               />
               {historySearch && (
                 <button
@@ -2321,8 +2321,8 @@ const Campaign = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full table-fixed min-w-[920px]">
-                <thead className="bg-slate-50/80 border-b border-slate-100">
+              <table className="w-full table-fixed min-w-[960px]">
+                <thead className="bg-slate-50/80 border-b border-slate-300">
                   <tr>
                     {[
                       { label: "Campaign", width: "w-[18%] text-left" },
@@ -2332,7 +2332,7 @@ const Campaign = () => {
                       { label: "Read", width: "w-[8%] text-center" },
                       { label: "Failed", width: "w-[11%] text-center" },
                       { label: "Status", width: "w-[10%] text-center" },
-                      { label: "Date", width: "w-[9%] text-left" },
+                      { label: "Date", width: "w-[12%] text-left" },
                       { label: "Report", width: "w-[9%] text-center" },
                     ].map((col) => (
                       <th
@@ -2345,7 +2345,7 @@ const Campaign = () => {
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-200">
                   {filteredCampaigns.map((c) => {
                     const stats = campaignStatsMap[c.id];
                     const isLoadingStats = stats?.loading;
@@ -2398,7 +2398,7 @@ const Campaign = () => {
 
                         {/* Sent */}
                         <td className="px-4 py-3.5 text-center">
-                          <span className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-200/70 rounded-md text-[11px] font-semibold text-[#172033] tabular-nums">
+                          <span className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-300 rounded-md text-[11px] font-semibold text-[#172033] tabular-nums">
                             {sentVal}
                           </span>
                         </td>
@@ -2451,7 +2451,7 @@ const Campaign = () => {
                               </span>
                             </button>
                           ) : (
-                            <span className="inline-block px-2 py-0.5 bg-slate-50 border border-slate-200/60 rounded-md text-[11px] font-medium text-[#94A3B8] tabular-nums">
+                            <span className="inline-block px-2 py-0.5 bg-slate-50 border border-slate-300 rounded-md text-[11px] font-medium text-[#94A3B8] tabular-nums">
                               0
                             </span>
                           )}
@@ -2528,10 +2528,10 @@ const Campaign = () => {
               initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              className="relative z-10 w-full max-w-lg bg-white rounded-2xl border border-slate-200/80 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+              className="relative z-10 w-full max-w-lg bg-white rounded-2xl border border-slate-300 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-300 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center shrink-0">
                     <AlertCircle size={16} className="text-red-600" />
@@ -2578,7 +2578,7 @@ const Campaign = () => {
                   </div>
                 ) : (
                   <table className="w-full table-fixed">
-                    <thead className="bg-slate-50/90 border-b border-slate-100 sticky top-0 z-10">
+                    <thead className="bg-slate-50/90 border-b border-slate-300 sticky top-0 z-10">
                       <tr>
                         <th className="w-[12%] px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
                           #
@@ -2591,7 +2591,7 @@ const Campaign = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-200">
                       {(failedModalCampaign.failedRecipients || []).map(
                         (r, idx) => (
                           <tr

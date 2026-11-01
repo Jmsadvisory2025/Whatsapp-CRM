@@ -212,6 +212,26 @@ const router = createBrowserRouter(
   }
 );
 
+
+
+
+const injectGlobalBorders = () => {
+  if (typeof document === 'undefined') return;
+  const styleId = 'global-crisp-borders';
+  if (document.getElementById(styleId)) return;
+  const style = document.createElement('style');
+  style.id = styleId;
+  style.textContent = [
+    '.border-slate-200\\/80, .border-slate-200\\/70, .border-slate-200\\/60, .border-slate-200 { border-color: #CBD5E1 !important; }',
+    'thead.border-b, thead th, .border-b.border-slate-100, .border-b.border-slate-200 { border-bottom-color: #CBD5E1 !important; }',
+    '.divide-slate-100 > :not([hidden]) ~ :not([hidden]), .divide-slate-200 > :not([hidden]) ~ :not([hidden]), tbody.divide-y > tr { border-top-color: #E2E8F0 !important; }',
+    '.border-r.border-slate-200, .border-r.border-slate-100, .border-b.border-slate-100 { border-color: #CBD5E1 !important; }',
+    'input.border-\\[\\#E5E7EB\\], input.border-slate-200, select.border-\\[\\#E5E7EB\\], select.border-slate-200 { border-color: #CBD5E1 !important; }'
+  ].join('\n');
+  document.head.appendChild(style);
+};
+injectGlobalBorders();
+
 function App() {
   if (
     window.location.hostname !== "localhost" &&
@@ -224,6 +244,7 @@ function App() {
 
   return (
     <Provider store={store}>
+      
       <RouterProvider router={router} />
     </Provider>
   );
