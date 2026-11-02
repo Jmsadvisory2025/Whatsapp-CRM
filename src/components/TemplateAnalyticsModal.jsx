@@ -66,8 +66,10 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
 
         // Dynamic date range parameter handling
         if (selectedRange === "custom") {
-          if (customStart) queryParams.append("start_date", customStart);
-          if (customEnd) queryParams.append("end_date", customEnd);
+          const utcStartSec = Math.floor(new Date(`${customStart}T00:00:00Z`).getTime() / 1000);
+          const utcEndSec = Math.floor(new Date(`${customEnd}T23:59:59Z`).getTime() / 1000);
+          queryParams.append("start_date", utcStartSec);
+          queryParams.append("end_date", utcEndSec);
         } else {
           queryParams.append("days", selectedRange);
         }
@@ -124,14 +126,28 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
   let endDate = null;
 
   if (data?.template_analytics?.data?.[0]?.data_points) {
-    const points = data.template_analytics.data[0].data_points;
+    const rawPoints = data.template_analytics.data[0].data_points;
+    const startBoundaryTs =
+      selectedRange === "custom" && customStart
+        ? Math.floor(new Date(`${customStart}T00:00:00`).getTime() / 1000)
+        : null;
+    const endBoundaryTs =
+      selectedRange === "custom" && customEnd
+        ? Math.floor(new Date(`${customEnd}T23:59:59`).getTime() / 1000)
+        : null;
+    const points = rawPoints.filter((pt) => {
+      if (!pt.start) return true;
+      if (startBoundaryTs && pt.start < startBoundaryTs) return false;
+      if (endBoundaryTs && pt.start > endBoundaryTs) return false;
+      return true;
+    });
     points.forEach((pt) => {
       if (pt.start) {
         const ptStart = new Date(pt.start * 1000);
         if (!startDate || ptStart < startDate) startDate = ptStart;
       }
       if (pt.end) {
-        const ptEnd = new Date(pt.end * 1000);
+        const ptEnd = new Date((pt.end - 1) * 1000);
         if (!endDate || ptEnd > endDate) endDate = ptEnd;
       }
 
@@ -395,7 +411,11 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
                     Analytics are fetched directly from Meta Graph API. Metrics
                     may take a short time to update after sending.
                   </p>
-                  {startDate && endDate && (
+                  {selectedRange === "custom" && customStart && customEnd ? (
+                    <p className="mt-1.5 font-semibold bg-white text-[#165DFF] border border-blue-100 inline-block px-2 py-0.5 rounded-md text-[11px]">
+                      Date Range: {formatDate(customStart)} — {formatDate(customEnd)}
+                    </p>
+                  ) : startDate && endDate && (
                     <p className="mt-1.5 font-semibold bg-white text-[#165DFF] border border-blue-100 inline-block px-2 py-0.5 rounded-md text-[11px]">
                       Date Range: {formatDate(startDate)} —{" "}
                       {formatDate(endDate)}

@@ -1581,19 +1581,6 @@ const TableRow = ({
             <Eye size={14} />
           </button>
 
-          <button
-            onClick={handleAnalyticsClick}
-            className="relative p-1.5 rounded-lg hover:bg-indigo-50 text-[#64748B] hover:text-indigo-600 transition cursor-pointer"
-            title="Analytics"
-          >
-            <BarChart3 size={14} />
-            {showAnalyticsPing && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-              </span>
-            )}
-          </button>
 
           {template.category !== "AUTHENTICATION" && (
             <button

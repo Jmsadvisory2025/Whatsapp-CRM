@@ -22,6 +22,7 @@ const Whatsapp = lazy(() => import("./pages/Whatsapp"));
 const AddMember = lazy(() => import("./subpages/AddMember"));
 const ErrorPage = lazy(() => import("./pages/ErrorPage"));
 const Templates = lazy(() => import("./pages/Templates"));
+const TemplateAnalytics = lazy(() => import("./pages/TemplateAnalytics"));
 const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
 const Campaign = lazy(() => import("./pages/Campaign"));
 const HomeResolver = lazy(() => import("./components/guards/HomeResolver"));
@@ -130,6 +131,14 @@ const router = createBrowserRouter(
           element: (
             <Suspense fallback={<LoaderDemo />}>
               <Templates />
+            </Suspense>
+          ),
+        },
+        {
+          path: "templates/analytics",
+          element: (
+            <Suspense fallback={<LoaderDemo />}>
+              <TemplateAnalytics />
             </Suspense>
           ),
         },

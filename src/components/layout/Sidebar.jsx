@@ -14,6 +14,7 @@ import {
   ChevronDown,
   History,
   PlusCircle,
+  BarChart3,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { FaMeta } from "react-icons/fa6";
@@ -26,7 +27,16 @@ const baseMainMenuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", color: "#165DFF" },
   { icon: TrendingUp, label: "Customers", path: "/customers", color: "#0EA5E9" },
   { icon: FaWhatsapp, label: "Inbox", path: "/inbox", color: "#25D366" },
-  { icon: FileText, label: "Message Templates", path: "/templates", color: "#F59E0B" },
+  {
+    icon: FileText,
+    label: "Message Templates",
+    path: "/templates",
+    color: "#F59E0B",
+    subItems: [
+      { label: "Manage Templates", path: "/templates", exactPath: "/templates", icon: FileText },
+      { label: "Template Analytics", path: "/templates/analytics", exactPath: "/templates/analytics", icon: BarChart3 },
+    ],
+  },
   {
     icon: Megaphone,
     label: "Campaigns",
@@ -52,14 +62,22 @@ const Sidebar = ({ onToggle = () => {} }) => {
   const dispatch = useDispatch();
 
   const isOnCampaign = location.pathname.startsWith("/campaign");
+  const isOnTemplates = location.pathname.startsWith("/templates");
   const currentTabParam = new URLSearchParams(location.search).get("tab") || "new";
   const [campaignMenuOpen, setCampaignMenuOpen] = useState(isOnCampaign);
+  const [templatesMenuOpen, setTemplatesMenuOpen] = useState(isOnTemplates);
 
   useEffect(() => {
     if (isOnCampaign) {
       setCampaignMenuOpen(true);
     }
   }, [isOnCampaign]);
+
+  useEffect(() => {
+    if (isOnTemplates) {
+      setTemplatesMenuOpen(true);
+    }
+  }, [isOnTemplates]);
 
   const reduxOrg = useSelector((s) => s.auth?.organization || s.auth?.org_name || "");
   const orgName = reduxOrg
@@ -161,6 +179,30 @@ const Sidebar = ({ onToggle = () => {} }) => {
 
         if (hasSubItems) {
           const isFlyoutOpen = isCollapsed && activeFlyout === item.label;
+          const isTemplatesItem = item.label === "Message Templates";
+          const isCampaignsItem = item.label === "Campaigns";
+
+          const isItemActive = isTemplatesItem
+            ? isOnTemplates
+            : isCampaignsItem
+            ? isOnCampaign
+            : location.pathname.startsWith(item.path);
+
+          const isSubMenuOpen = isTemplatesItem
+            ? templatesMenuOpen
+            : isCampaignsItem
+            ? campaignMenuOpen
+            : false;
+
+          const toggleSubMenu = () => {
+            if (isTemplatesItem) {
+              setTemplatesMenuOpen((prev) => !prev);
+              if (!isOnTemplates) navigate(item.path);
+            } else if (isCampaignsItem) {
+              setCampaignMenuOpen((prev) => !prev);
+              if (!isOnCampaign) navigate(item.path);
+            }
+          };
 
           return (
             <li
@@ -180,16 +222,13 @@ const Sidebar = ({ onToggle = () => {} }) => {
                   if (isCollapsed) {
                     navigate(item.path);
                   } else {
-                    setCampaignMenuOpen((prev) => !prev);
-                    if (!isOnCampaign) {
-                      navigate(item.path);
-                    }
+                    toggleSubMenu();
                   }
                 }}
                 className={`
                   relative flex items-center justify-between rounded-xl transition-all duration-150 cursor-pointer
                   ${
-                    isOnCampaign
+                    isItemActive
                       ? "bg-white text-[#172033] font-semibold shadow-sm border border-slate-200/90"
                       : hoveredItem === item.label
                         ? "bg-slate-100/70 text-[#172033]"
@@ -214,13 +253,13 @@ const Sidebar = ({ onToggle = () => {} }) => {
                       color: item.color || "#165DFF",
                     }}
                   >
-                    <Icon size={18} strokeWidth={isOnCampaign ? 2.3 : 1.9} />
+                    <Icon size={18} strokeWidth={isItemActive ? 2.3 : 1.9} />
                   </div>
 
                   {!isCollapsed && (
                     <span
                       className={`text-[13px] whitespace-nowrap tracking-normal font-medium ${
-                        isOnCampaign ? "text-[#172033] font-semibold" : "text-[#64748B]"
+                        isItemActive ? "text-[#172033] font-semibold" : "text-[#64748B]"
                       }`}
                     >
                       {item.label}
@@ -232,7 +271,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
                   <ChevronDown
                     size={14}
                     className={`text-[#94A3B8] transition-transform duration-200 ${
-                      campaignMenuOpen ? "rotate-180 text-[#172033]" : ""
+                      isSubMenuOpen ? "rotate-180 text-[#172033]" : ""
                     }`}
                   />
                 )}
@@ -259,8 +298,9 @@ const Sidebar = ({ onToggle = () => {} }) => {
                     <div className="space-y-1">
                       {item.subItems.map((sub) => {
                         const SubIcon = sub.icon;
-                        const isSubActive =
-                          isOnCampaign && currentTabParam === sub.tabKey;
+                        const isSubActive = sub.exactPath
+                          ? location.pathname === sub.exactPath
+                          : isCampaignsItem && currentTabParam === sub.tabKey;
 
                         return (
                           <button
@@ -295,7 +335,7 @@ const Sidebar = ({ onToggle = () => {} }) => {
 
               {/* Sub-menu items for Expanded Sidebar */}
               <AnimatePresence initial={false}>
-                {!isCollapsed && campaignMenuOpen && (
+                {!isCollapsed && isSubMenuOpen && (
                   <motion.ul
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
@@ -305,8 +345,9 @@ const Sidebar = ({ onToggle = () => {} }) => {
                   >
                     {item.subItems.map((sub) => {
                       const SubIcon = sub.icon;
-                      const isSubActive =
-                        isOnCampaign && currentTabParam === sub.tabKey;
+                      const isSubActive = sub.exactPath
+                        ? location.pathname === sub.exactPath
+                        : isCampaignsItem && currentTabParam === sub.tabKey;
 
                       return (
                         <li key={sub.label}>
