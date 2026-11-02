@@ -618,19 +618,9 @@ const TemplateAnalytics = () => {
                   Template Insights Not Enabled on Meta (Error 4182004)
                 </p>
                 <p className="text-amber-800 mt-1 leading-relaxed text-xs">
-                  આ WhatsApp Business Account (WABA) પર Meta તરફથી <strong>Template Insights/Analytics</strong> ફીચર એક્ટિવેટ કરેલું નથી. 
-                  Meta ના નિયમ મુજબ Analytics જોવા માટે WhatsApp Manager અથવા Graph API દ્વારા WABA માટે Insights એકવાર Enable કરવું પડે છે.
+                  Template Insights and Analytics are not yet enabled for this WhatsApp Business Account (WABA) on Meta.
+                  According to Meta policies, you must enable insights once in WhatsApp Manager or via the Graph API to view message delivery and engagement metrics.
                 </p>
-                <div className="mt-3 flex items-center gap-3">
-                  <a
-                    href="https://business.facebook.com/wa/manage/templates/"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-xs transition"
-                  >
-                    Open WhatsApp Manager ↗
-                  </a>
-                </div>
               </div>
             </div>
           </div>
