@@ -240,12 +240,13 @@ const TemplateAnalytics = () => {
       startDateLimit = customStart;
       endDateLimit = customEnd;
     } else {
-      const daysCount = parseInt(selectedRange, 10) || 6;
+      const daysCount = parseInt(selectedRange, 10) || 7;
       const today = new Date();
       endDateLimit = today.toISOString().split("T")[0];
 
       const past = new Date();
-      past.setDate(past.getDate() - daysCount);
+      // Last 7 days includes today + previous 6 days (e.g. Nov 2 - 6 = Oct 27)
+      past.setDate(past.getDate() - (daysCount - 1));
       startDateLimit = past.toISOString().split("T")[0];
     }
 
@@ -261,11 +262,9 @@ const TemplateAnalytics = () => {
         const d = String(ptDate.getUTCDate()).padStart(2, "0");
         const ptDateStr = `${y}-${m}-${d}`;
 
-        // In Custom Range mode, filter by custom boundary dates if provided
-        if (selectedRange === "custom") {
-          if (startDateLimit && ptDateStr < startDateLimit) return;
-          if (endDateLimit && ptDateStr > endDateLimit) return;
-        }
+        // Filter by date boundaries matching Meta's exact window
+        if (startDateLimit && ptDateStr < startDateLimit) return;
+        if (endDateLimit && ptDateStr > endDateLimit) return;
 
         const sentVal = pt.sent || 0;
         const deliveredVal = pt.delivered || 0;
@@ -472,8 +471,8 @@ const TemplateAnalytics = () => {
                             setIsDropdownOpen(false);
                           }}
                           className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 transition cursor-pointer ${isSelected
-                              ? "bg-blue-50 text-[#165DFF] font-semibold"
-                              : "hover:bg-slate-50 text-[#172033] font-medium"
+                            ? "bg-blue-50 text-[#165DFF] font-semibold"
+                            : "hover:bg-slate-50 text-[#172033] font-medium"
                             }`}
                         >
                           <div className="min-w-0 flex-1">
@@ -485,10 +484,10 @@ const TemplateAnalytics = () => {
                               <span className="text-[10px] text-[#CBD5E1]">•</span>
                               <span
                                 className={`text-[10px] font-semibold ${tpl.status === "APPROVED"
-                                    ? "text-emerald-600"
-                                    : tpl.status === "REJECTED"
-                                      ? "text-red-500"
-                                      : "text-amber-600"
+                                  ? "text-emerald-600"
+                                  : tpl.status === "REJECTED"
+                                    ? "text-red-500"
+                                    : "text-amber-600"
                                   }`}
                               >
                                 {tpl.status}
@@ -542,8 +541,8 @@ const TemplateAnalytics = () => {
                           setIsRangeOpen(false);
                         }}
                         className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${isSelected
-                            ? "bg-blue-50 text-[#165DFF] font-semibold"
-                            : "hover:bg-slate-50 text-[#172033] font-medium"
+                          ? "bg-blue-50 text-[#165DFF] font-semibold"
+                          : "hover:bg-slate-50 text-[#172033] font-medium"
                           }`}
                       >
                         <span>{opt.label}</span>
@@ -719,8 +718,8 @@ const TemplateAnalytics = () => {
                       type="button"
                       onClick={() => toggleMetric(m.key)}
                       className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${isActive
-                          ? "bg-slate-50 border-slate-300 text-[#172033]"
-                          : "bg-white border-slate-200 text-[#94A3B8] opacity-60"
+                        ? "bg-slate-50 border-slate-300 text-[#172033]"
+                        : "bg-white border-slate-200 text-[#94A3B8] opacity-60"
                         }`}
                     >
                       <span
