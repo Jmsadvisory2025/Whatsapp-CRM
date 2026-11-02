@@ -14,6 +14,7 @@ const SignIn = () => {
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
 
     // Reset PIN states
     const [isResetMode, setIsResetMode] = useState(false);
@@ -95,7 +96,7 @@ const SignIn = () => {
 
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to send reset code');
+                throw new Error(data.error || data.message || 'Failed to send reset code');
             }
 
             setResetMessage('Reset code sent to your email!');
@@ -124,7 +125,7 @@ const SignIn = () => {
 
         try {
             const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-            const url = `${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}api/auth/reset-pin/verify/`;
+            const url = `${API_BASE_URL}${API_BASE_URL.endsWith('/') ? '' : '/'}api/auth/reset-pin/verify-code/`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -137,7 +138,7 @@ const SignIn = () => {
 
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.message || 'Failed to reset password');
+                throw new Error(data.error || data.message || 'Failed to reset password');
             }
 
             setResetMessage('Password reset successful! You can now login.');
@@ -315,11 +316,16 @@ const SignIn = () => {
                                                                     value={email}
                                                                     onChange={handleEmailChange}
                                                                     placeholder="Enter registered email"
-                                                                    className="w-full pl-10 pr-4 py-2.5 text-sm bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] outline-none"
+                                                                    className={`w-full pl-10 pr-4 py-2.5 text-sm bg-white rounded-xl border transition-all outline-none ${
+                                                                        emailError ? 'border-red-400 focus:border-red-500' : 'border-[#E5E7EB] focus:border-[#165DFF]'
+                                                                    }`}
                                                                     required
                                                                     disabled={isResetting}
                                                                 />
                                                             </div>
+                                                            {emailError && (
+                                                                <p className="text-xs text-red-600 mt-1">{emailError}</p>
+                                                            )}
                                                         </div>
 
                                                         <button
@@ -363,14 +369,29 @@ const SignIn = () => {
                                                             <label className="text-xs font-medium text-[#172033] mb-1.5 block">
                                                                 New PIN / Password
                                                             </label>
-                                                            <input
-                                                                type="password"
-                                                                value={newPassword}
-                                                                onChange={(e) => setNewPassword(e.target.value)}
-                                                                placeholder="Enter new PIN"
-                                                                className="w-full px-4 py-2.5 text-sm bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] outline-none"
-                                                                required
-                                                            />
+                                                            <div className="relative">
+                                                                <input
+                                                                    type={showNewPassword ? "text" : "password"}
+                                                                    value={newPassword}
+                                                                    onChange={(e) => setNewPassword(e.target.value)}
+                                                                    placeholder="Enter new PIN"
+                                                                    className={`w-full pl-4 pr-10 py-2.5 text-sm bg-white rounded-xl border transition-all outline-none ${
+                                                                        passwordError ? 'border-red-400 focus:border-red-500' : 'border-[#E5E7EB] focus:border-[#165DFF]'
+                                                                    }`}
+                                                                    required
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                                                                    title={showNewPassword ? "Hide password" : "Show password"}
+                                                                >
+                                                                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                                </button>
+                                                            </div>
+                                                            {passwordError && (
+                                                                <p className="text-xs text-red-600 mt-1">{passwordError}</p>
+                                                            )}
                                                         </div>
 
                                                         <button
