@@ -504,6 +504,7 @@ function ClientRow({ client, onStatusChange }) {
               value={client.meta_verified_name}
             />
             <InfoRow icon={<Shield size={12} />} label="WABA ID" value={client.waba_id} />
+            <InfoRow icon={<Phone size={12} />} label="Phone Number ID" value={client.phone_number_id} />
             <InfoRow
               icon={<Shield size={12} />}
               label="WABA Name (Meta)"

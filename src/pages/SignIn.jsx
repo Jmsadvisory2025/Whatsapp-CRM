@@ -342,7 +342,16 @@ const SignIn = () => {
                                                             <input
                                                                 type="text"
                                                                 value={resetCode}
-                                                                onChange={(e) => setResetCode(e.target.value)}
+                                                                onChange={(e) => {
+                                                                    const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                                                    setResetCode(cleaned);
+                                                                }}
+                                                                onPaste={(e) => {
+                                                                    e.preventDefault();
+                                                                    const pasted = e.clipboardData.getData('text');
+                                                                    const cleaned = pasted.replace(/\D/g, '').slice(0, 6);
+                                                                    setResetCode(cleaned);
+                                                                }}
                                                                 placeholder="123456"
                                                                 maxLength={6}
                                                                 className="w-full px-4 py-2.5 text-sm bg-white rounded-xl border border-[#E5E7EB] focus:border-[#165DFF] outline-none tracking-widest text-center font-bold"
