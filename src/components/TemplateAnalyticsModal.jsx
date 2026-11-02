@@ -15,9 +15,9 @@ import {
 import { useSelector } from "react-redux";
 
 const DATE_RANGE_OPTIONS = [
-  { label: "Last 7 Days", value: "7" },
-  { label: "Last 30 Days", value: "30" },
-  { label: "Last 60 Days", value: "60" },
+  { label: "Last 7 Days", value: "6" },
+  { label: "Last 30 Days", value: "29" },
+  { label: "Last 60 Days", value: "59" },
   { label: "Last 90 Days", value: "88" },
   { label: "Custom Range", value: "custom" },
 ];
@@ -29,7 +29,7 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
   const [errorDetails, setErrorDetails] = useState(null);
 
   // Date range filters
-  const [selectedRange, setSelectedRange] = useState("30");
+  const [selectedRange, setSelectedRange] = useState("29");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
@@ -313,14 +313,14 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => setSelectedRange("30")}
+                          onClick={() => setSelectedRange("29")}
                           className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-xs transition shadow-xs cursor-pointer"
                         >
                           Switch to Last 30 Days
                         </button>
                         <button
                           type="button"
-                          onClick={() => setSelectedRange("7")}
+                          onClick={() => setSelectedRange("6")}
                           className="px-3 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium rounded-lg text-xs transition cursor-pointer"
                         >
                           Switch to Last 7 Days
