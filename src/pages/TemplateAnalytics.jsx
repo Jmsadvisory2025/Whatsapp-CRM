@@ -178,16 +178,7 @@ const TemplateAnalytics = () => {
           queryParams.append("end_date", endTimestamp);
         }
       } else {
-        // For standard preset days (7, 30, 60, 88), align to exact Meta midnight UTC
-        const daysCount = parseInt(selectedRange, 10) || 7;
-        const now = new Date();
-        const endTimestamp = Math.floor(
-          Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59) / 1000
-        );
-        const startUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (daysCount - 1), 0, 0, 0));
-        const startTimestamp = Math.floor(startUtc.getTime() / 1000);
-        queryParams.append("start_date", startTimestamp);
-        queryParams.append("end_date", endTimestamp);
+        queryParams.append("days", selectedRange);
       }
 
       const response = await fetch(
@@ -313,8 +304,8 @@ const TemplateAnalytics = () => {
               (c.type === "url_button"
                 ? "Visit Website"
                 : c.type === "phone_number_button"
-                ? "Call Phone"
-                : c.type || "Button");
+                  ? "Call Phone"
+                  : c.type || "Button");
             const key = `${c.type || "button"}:${label}`;
             if (!buttonBreakdown[key]) {
               buttonBreakdown[key] = { label, count: 0 };
@@ -430,9 +421,8 @@ const TemplateAnalytics = () => {
               </div>
               <ChevronDown
                 size={13}
-                className={`text-[#94A3B8] transition-transform duration-200 shrink-0 ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
+                className={`text-[#94A3B8] transition-transform duration-200 shrink-0 ${isDropdownOpen ? "rotate-180" : ""
+                  }`}
               />
             </button>
 
@@ -481,11 +471,10 @@ const TemplateAnalytics = () => {
                             setSelectedTemplateId(tpl.template_id || tpl.id);
                             setIsDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 transition cursor-pointer ${
-                            isSelected
+                          className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 transition cursor-pointer ${isSelected
                               ? "bg-blue-50 text-[#165DFF] font-semibold"
                               : "hover:bg-slate-50 text-[#172033] font-medium"
-                          }`}
+                            }`}
                         >
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-xs">{tpl.name}</p>
@@ -495,13 +484,12 @@ const TemplateAnalytics = () => {
                               </span>
                               <span className="text-[10px] text-[#CBD5E1]">•</span>
                               <span
-                                className={`text-[10px] font-semibold ${
-                                  tpl.status === "APPROVED"
+                                className={`text-[10px] font-semibold ${tpl.status === "APPROVED"
                                     ? "text-emerald-600"
                                     : tpl.status === "REJECTED"
-                                    ? "text-red-500"
-                                    : "text-amber-600"
-                                }`}
+                                      ? "text-red-500"
+                                      : "text-amber-600"
+                                  }`}
                               >
                                 {tpl.status}
                               </span>
@@ -535,9 +523,8 @@ const TemplateAnalytics = () => {
               </div>
               <ChevronDown
                 size={13}
-                className={`text-[#94A3B8] transition-transform duration-200 shrink-0 ${
-                  isRangeOpen ? "rotate-180" : ""
-                }`}
+                className={`text-[#94A3B8] transition-transform duration-200 shrink-0 ${isRangeOpen ? "rotate-180" : ""
+                  }`}
               />
             </button>
 
@@ -554,11 +541,10 @@ const TemplateAnalytics = () => {
                           setSelectedRange(opt.value);
                           setIsRangeOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${
-                          isSelected
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${isSelected
                             ? "bg-blue-50 text-[#165DFF] font-semibold"
                             : "hover:bg-slate-50 text-[#172033] font-medium"
-                        }`}
+                          }`}
                       >
                         <span>{opt.label}</span>
                         {isSelected && (
@@ -732,11 +718,10 @@ const TemplateAnalytics = () => {
                       key={m.key}
                       type="button"
                       onClick={() => toggleMetric(m.key)}
-                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
-                        isActive
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${isActive
                           ? "bg-slate-50 border-slate-300 text-[#172033]"
                           : "bg-white border-slate-200 text-[#94A3B8] opacity-60"
-                      }`}
+                        }`}
                     >
                       <span
                         className="w-2 h-2 rounded-full"
