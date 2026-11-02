@@ -30,9 +30,9 @@ import {
 } from "recharts";
 
 const DATE_RANGE_OPTIONS = [
-  { label: "Last 7 Days", value: "7" },
-  { label: "Last 30 Days", value: "30" },
-  { label: "Last 60 Days", value: "60" },
+  { label: "Last 7 Days", value: "6" },
+  { label: "Last 30 Days", value: "29" },
+  { label: "Last 60 Days", value: "59" },
   { label: "Last 90 Days", value: "88" },
   { label: "Custom Range", value: "custom" },
 ];
@@ -56,7 +56,7 @@ const TemplateAnalytics = () => {
   const [selectedTemplateId, setSelectedTemplateId] = useState(
     templateIdParam || ""
   );
-  const [selectedRange, setSelectedRange] = useState("7");
+  const [selectedRange, setSelectedRange] = useState("6");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
@@ -159,8 +159,13 @@ const TemplateAnalytics = () => {
       if (wabaId) queryParams.append("waba_id", wabaId);
       if (metaToken) queryParams.append("access_token", metaToken);
 
-      if (activeTemplate.template_id) {
-        queryParams.append("template_id", activeTemplate.template_id);
+      const metaId =
+        activeTemplate.meta_template_id ||
+        activeTemplate.template_id ||
+        activeTemplate.meta_id;
+
+      if (metaId && /^\d+$/.test(String(metaId).trim())) {
+        queryParams.append("template_id", String(metaId).trim());
       } else {
         queryParams.append(
           "template_name",
@@ -240,13 +245,12 @@ const TemplateAnalytics = () => {
       startDateLimit = customStart;
       endDateLimit = customEnd;
     } else {
-      const daysCount = parseInt(selectedRange, 10) || 7;
+      const daysCount = parseInt(selectedRange, 10) || 6;
       const today = new Date();
       endDateLimit = today.toISOString().split("T")[0];
 
       const past = new Date();
-      // Last 7 days includes today + previous 6 days (e.g. Nov 2 - 6 = Oct 27)
-      past.setDate(past.getDate() - (daysCount - 1));
+      past.setDate(past.getDate() - daysCount);
       startDateLimit = past.toISOString().split("T")[0];
     }
 
@@ -370,6 +374,12 @@ const TemplateAnalytics = () => {
     errorDetails?.error_user_msg?.toLowerCase().includes("start time") ||
     error?.toLowerCase().includes("start time") ||
     error?.toLowerCase().includes("invalid parameter");
+
+  const isInsightsNotEnabled =
+    errorDetails?.error_subcode === 4182004 ||
+    errorDetails?.error_user_title?.toLowerCase().includes("not enabled") ||
+    errorDetails?.error_data?.toLowerCase?.().includes("not been enabled") ||
+    errorDetails?.error_user_msg?.toLowerCase().includes("not been enabled");
 
   const { minDateStr, maxDateStr } = useMemo(() => {
     const today = new Date();
@@ -599,7 +609,32 @@ const TemplateAnalytics = () => {
           <p className="text-xs font-semibold text-[#64748B]">Loading analytics...</p>
         </div>
       ) : error ? (
-        isStartTimeError ? (
+        isInsightsNotEnabled ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-xs shadow-sm">
+            <div className="flex items-start gap-3">
+              <AlertCircle size={20} className="text-amber-600 mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <p className="font-bold text-amber-900 text-sm">
+                  Template Insights Not Enabled on Meta (Error 4182004)
+                </p>
+                <p className="text-amber-800 mt-1 leading-relaxed text-xs">
+                  આ WhatsApp Business Account (WABA) પર Meta તરફથી <strong>Template Insights/Analytics</strong> ફીચર એક્ટિવેટ કરેલું નથી. 
+                  Meta ના નિયમ મુજબ Analytics જોવા માટે WhatsApp Manager અથવા Graph API દ્વારા WABA માટે Insights એકવાર Enable કરવું પડે છે.
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  <a
+                    href="https://business.facebook.com/wa/manage/templates/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-xs transition"
+                  >
+                    Open WhatsApp Manager ↗
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : isStartTimeError ? (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-xs shadow-sm">
             <div className="flex items-start gap-3">
               <AlertCircle size={18} className="text-amber-600 mt-0.5 shrink-0" />
@@ -613,14 +648,12 @@ const TemplateAnalytics = () => {
                 <div className="mt-3 flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setSelectedRange("29")}
                     className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-xs transition cursor-pointer"
                   >
                     Switch to Last 30 Days
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelectedRange("6")}
                     className="px-3 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-semibold rounded-lg text-xs transition cursor-pointer"
                   >
                     Last 7 Days
@@ -630,9 +663,16 @@ const TemplateAnalytics = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-xs shadow-sm flex items-center gap-2.5">
-            <AlertCircle size={16} className="text-red-500 shrink-0" />
-            <p className="text-red-700 font-medium">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-xs shadow-sm flex items-start gap-2.5">
+            <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-red-700 font-semibold">{error}</p>
+              {errorDetails && (
+                <p className="text-red-600/80 text-[11px] mt-1 font-mono break-all">
+                  {typeof errorDetails === "object" ? JSON.stringify(errorDetails) : String(errorDetails)}
+                </p>
+              )}
+            </div>
           </div>
         )
       ) : (
