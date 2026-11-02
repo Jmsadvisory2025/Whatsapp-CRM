@@ -284,6 +284,23 @@ const TemplateAnalytics = () => {
         totals.delivered += deliveredVal;
         totals.read += readVal;
 
+        // Meta Cost: Meta returns cost as an array of objects [ { type: "amount_spent", value: 12.34 } ]
+        if (Array.isArray(pt.cost)) {
+          pt.cost.forEach((c) => {
+            if (c.type === "amount_spent" || !c.type) {
+              totals.amount_spent += c.value || c.amount || 0;
+            }
+          });
+        } else if (typeof pt.amount_spent === "number") {
+          totals.amount_spent += pt.amount_spent;
+        } else if (typeof pt.cost === "number") {
+          totals.amount_spent += pt.cost;
+        } else if (pt.cost && typeof pt.cost.value === "number") {
+          totals.amount_spent += pt.cost.value;
+        } else if (pt.cost && typeof pt.cost.amount === "number") {
+          totals.amount_spent += pt.cost.amount;
+        }
+
         let clickTotalForPoint = 0;
         if (Array.isArray(pt.clicked)) {
           pt.clicked.forEach((c) => {
