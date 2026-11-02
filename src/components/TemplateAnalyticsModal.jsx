@@ -10,14 +10,28 @@ import {
   Eye,
   MousePointerClick,
   Receipt,
+  Calendar,
 } from "lucide-react";
 import { useSelector } from "react-redux";
+
+const DATE_RANGE_OPTIONS = [
+  { label: "Last 7 Days", value: "7" },
+  { label: "Last 30 Days", value: "30" },
+  { label: "Last 60 Days", value: "60" },
+  { label: "Last 90 Days", value: "88" },
+  { label: "Custom Range", value: "custom" },
+];
 
 const TemplateAnalyticsModal = ({ template, onClose }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorDetails, setErrorDetails] = useState(null);
+
+  // Date range filters
+  const [selectedRange, setSelectedRange] = useState("30");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
 
   const token =
     useSelector((state) => state.auth?.accessToken) ||
@@ -27,6 +41,11 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
   useEffect(() => {
+    // If custom is selected but dates are not chosen yet, skip fetch
+    if (selectedRange === "custom" && (!customStart || !customEnd)) {
+      return;
+    }
+
     const fetchAnalytics = async () => {
       setLoading(true);
       setError(null);
@@ -36,13 +55,21 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
         if (wabaId) queryParams.append("waba_id", wabaId);
         if (metaToken) queryParams.append("access_token", metaToken);
 
-        if (template.template_id) {
+        if (template?.template_id) {
           queryParams.append("template_id", template.template_id);
         } else {
           queryParams.append(
             "template_name",
-            template.template_name || template.name
+            template?.template_name || template?.name || ""
           );
+        }
+
+        // Dynamic date range parameter handling
+        if (selectedRange === "custom") {
+          if (customStart) queryParams.append("start_date", customStart);
+          if (customEnd) queryParams.append("end_date", customEnd);
+        } else {
+          queryParams.append("days", selectedRange);
         }
 
         const response = await fetch(
@@ -73,7 +100,16 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
     };
 
     fetchAnalytics();
-  }, [template, wabaId, metaToken, token, API_BASE_URL]);
+  }, [
+    template,
+    wabaId,
+    metaToken,
+    token,
+    API_BASE_URL,
+    selectedRange,
+    customStart,
+    customEnd,
+  ]);
 
   let stats = {
     sent: 0,
@@ -175,10 +211,10 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
         initial={{ opacity: 0, scale: 0.96, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
-        className="relative z-10 w-full max-w-lg bg-white rounded-2xl border border-slate-200/80 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className="relative z-10 w-full max-w-lg bg-white rounded-2xl border border-slate-300 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
               <BarChart3 size={16} className="text-[#165DFF]" />
@@ -200,6 +236,46 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
           </button>
         </div>
 
+        {/* Date Filter Bar */}
+        <div className="px-5 py-3 bg-[#F8FAFC] border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-1.5 text-xs text-[#64748B]">
+            <Calendar size={13} className="text-[#165DFF]" />
+            <span className="font-semibold text-[#172033]">Range:</span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <select
+              value={selectedRange}
+              onChange={(e) => setSelectedRange(e.target.value)}
+              className="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-medium text-[#172033] focus:outline-none focus:border-[#165DFF] cursor-pointer shadow-2xs"
+            >
+              {DATE_RANGE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            {selectedRange === "custom" && (
+              <div className="flex items-center gap-1.5 mt-1 sm:mt-0">
+                <input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="text-[11px] bg-white border border-slate-300 rounded-lg px-2 py-1 text-[#172033] focus:outline-none focus:border-[#165DFF]"
+                />
+                <span className="text-xs text-[#64748B]">to</span>
+                <input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="text-[11px] bg-white border border-slate-300 rounded-lg px-2 py-1 text-[#172033] focus:outline-none focus:border-[#165DFF]"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Content */}
         <div className="p-5 overflow-y-auto">
           {loading ? (
@@ -210,48 +286,103 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
               </p>
             </div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-100 rounded-xl p-4">
-              <div className="flex items-start gap-2.5">
-                <AlertCircle
-                  size={16}
-                  className="text-red-500 mt-0.5 shrink-0"
-                />
-                <div>
-                  <p className="text-xs font-bold text-red-700">
-                    Error fetching analytics
-                  </p>
-                  <p className="text-xs text-red-600 mt-1">{error}</p>
+            (() => {
+              const isStartTimeError =
+                errorDetails?.error_subcode === 4182005 ||
+                errorDetails?.code === 100 ||
+                errorDetails?.message?.toLowerCase().includes("start time") ||
+                errorDetails?.error_user_msg?.toLowerCase().includes("start time") ||
+                error?.toLowerCase().includes("start time") ||
+                error?.toLowerCase().includes("invalid parameter");
 
-                  {errorDetails && (
-                    <div className="mt-3 p-3 bg-white/80 rounded-xl border border-red-100">
-                      <p className="text-[11px] font-semibold text-red-800 mb-1">
-                        Details from Meta:
+              return isStartTimeError ? (
+                <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-4 text-xs">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle
+                      size={18}
+                      className="text-amber-600 mt-0.5 shrink-0"
+                    />
+                    <div className="flex-1">
+                      <p className="font-bold text-amber-900 text-sm">
+                        No Analytics Available for Selected Range
                       </p>
-                      <ul className="text-[11px] text-red-700 space-y-0.5">
-                        {errorDetails.type && (
-                          <li>
-                            <span className="font-semibold">Type:</span>{" "}
-                            {errorDetails.type}
-                          </li>
-                        )}
-                        {errorDetails.code && (
-                          <li>
-                            <span className="font-semibold">Code:</span>{" "}
-                            {errorDetails.code}
-                          </li>
-                        )}
-                        {errorDetails.fbtrace_id && (
-                          <li>
-                            <span className="font-semibold">Trace ID:</span>{" "}
-                            {errorDetails.fbtrace_id}
-                          </li>
-                        )}
-                      </ul>
+                      <p className="text-amber-800 mt-1 leading-relaxed">
+                        Meta only provides template analytics within its active data retention window and after the template was created. Templates created recently or queried beyond Meta's window do not have older metrics.
+                      </p>
+                      
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRange("30")}
+                          className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg text-xs transition shadow-xs cursor-pointer"
+                        >
+                          Switch to Last 30 Days
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedRange("7")}
+                          className="px-3 py-1.5 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium rounded-lg text-xs transition cursor-pointer"
+                        >
+                          Switch to Last 7 Days
+                        </button>
+                      </div>
+
+                      {errorDetails && (
+                        <div className="mt-3 pt-2.5 border-t border-amber-200/70 text-[11px] text-amber-700">
+                          <p>
+                            <span className="font-semibold">Meta Note:</span>{" "}
+                            {errorDetails.error_user_msg || errorDetails.message || error}
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </div>
+              ) : (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle
+                      size={16}
+                      className="text-red-500 mt-0.5 shrink-0"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-red-700">
+                        Error fetching analytics
+                      </p>
+                      <p className="text-xs text-red-600 mt-1">{error}</p>
+
+                      {errorDetails && (
+                        <div className="mt-3 p-3 bg-white/80 rounded-xl border border-red-100">
+                          <p className="text-[11px] font-semibold text-red-800 mb-1">
+                            Details from Meta:
+                          </p>
+                          <ul className="text-[11px] text-red-700 space-y-0.5">
+                            {errorDetails.type && (
+                              <li>
+                                <span className="font-semibold">Type:</span>{" "}
+                                {errorDetails.type}
+                              </li>
+                            )}
+                            {errorDetails.code && (
+                              <li>
+                                <span className="font-semibold">Code:</span>{" "}
+                                {errorDetails.code}
+                              </li>
+                            )}
+                            {errorDetails.fbtrace_id && (
+                              <li>
+                                <span className="font-semibold">Trace ID:</span>{" "}
+                                {errorDetails.fbtrace_id}
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
           ) : (
             <div className="space-y-4">
               <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-3.5 text-xs text-[#172033] flex items-start gap-2.5">
@@ -274,7 +405,7 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#FAFAFC] rounded-xl p-4 border border-slate-200/80 flex flex-col items-center text-center">
+                <div className="bg-[#FAFAFC] rounded-xl p-4 border border-slate-300 flex flex-col items-center text-center">
                   <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-2">
                     <Send size={15} className="text-[#165DFF]" />
                   </div>
@@ -286,7 +417,7 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
                   </p>
                 </div>
 
-                <div className="bg-[#FAFAFC] rounded-xl p-4 border border-slate-200/80 flex flex-col items-center text-center">
+                <div className="bg-[#FAFAFC] rounded-xl p-4 border border-slate-300 flex flex-col items-center text-center">
                   <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-2">
                     <CheckCircle2 size={15} className="text-emerald-600" />
                   </div>
@@ -298,7 +429,7 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
                   </p>
                 </div>
 
-                <div className="bg-[#FAFAFC] rounded-xl p-4 border border-slate-200/80 flex flex-col items-center text-center">
+                <div className="bg-[#FAFAFC] rounded-xl p-4 border border-slate-300 flex flex-col items-center text-center">
                   <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-2">
                     <Eye size={15} className="text-[#8B5CF6]" />
                   </div>
@@ -310,7 +441,7 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
                   </p>
                 </div>
 
-                <div className="bg-[#FAFAFC] rounded-xl p-4 border border-slate-200/80 flex flex-col items-center text-center">
+                <div className="bg-[#FAFAFC] rounded-xl p-4 border border-slate-300 flex flex-col items-center text-center">
                   <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-2">
                     <MousePointerClick size={15} className="text-amber-600" />
                   </div>
@@ -325,7 +456,7 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
 
               {/* Button Click Breakdown */}
               {buttonClicksList.length > 0 && (
-                <div className="p-3.5 border border-amber-200/80 rounded-xl bg-amber-50/40 space-y-2.5">
+                <div className="p-3.5 border border-amber-300 rounded-xl bg-amber-50/40 space-y-2.5">
                   <h4 className="text-[11px] font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
                     <MousePointerClick size={13} /> Button Clicks Breakdown
                   </h4>
@@ -346,7 +477,7 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
                       return (
                         <div
                           key={idx}
-                          className="bg-white rounded-xl p-2.5 border border-amber-100 space-y-1.5"
+                          className="bg-white rounded-xl p-2.5 border border-amber-200 space-y-1.5"
                         >
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-2 min-w-0">
@@ -379,7 +510,7 @@ const TemplateAnalyticsModal = ({ template, onClose }) => {
 
               {/* Cost Insights */}
               {stats.sent > 0 && (
-                <div className="p-3.5 border border-emerald-200/80 rounded-xl bg-emerald-50/40 space-y-2">
+                <div className="p-3.5 border border-emerald-300 rounded-xl bg-emerald-50/40 space-y-2">
                   <h4 className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
                     <Receipt size={13} /> Cost Insights
                   </h4>
