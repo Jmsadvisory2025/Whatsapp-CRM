@@ -223,7 +223,7 @@ export default function Dashboard() {
           .then(res => res.ok ? res.json() : null)
           .catch(e => { console.error("Failed to fetch accurate TP leads count", e); return null; });
           
-        const pClients = fetch(`${API_BASE}api/techprovider/clients/?meta=0`, { headers })
+        const pClients = fetch(`${API_BASE}api/techprovider/clients/`, { headers })
           .then(res => res.ok ? res.json() : null)
           .catch(e => { console.error("Failed to fetch TP clients count", e); return null; });
 
@@ -233,9 +233,6 @@ export default function Dashboard() {
         let realProspectCount = undefined;
         let realTotalCustomers = json.total_customers;
         let realCustomersByDay = {};
-        let computedNewToday = 0;
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         
         if (lpJson) {
           realLeadCount = lpJson.lead_count;
@@ -246,11 +243,6 @@ export default function Dashboard() {
             if (c.created_at) {
               const dStr = c.created_at.split('T')[0];
               realCustomersByDay[dStr] = (realCustomersByDay[dStr] || 0) + 1;
-              const cd = new Date(c.created_at);
-              const cLocalStr = `${cd.getFullYear()}-${String(cd.getMonth() + 1).padStart(2, '0')}-${String(cd.getDate()).padStart(2, '0')}`;
-              if (cLocalStr === todayStr || dStr === todayStr) {
-                computedNewToday += 1;
-              }
             }
           });
         }
@@ -285,7 +277,7 @@ export default function Dashboard() {
           summary: {
             total_customers: realTotalCustomers,
             active_today: json.active_today,
-            new_today: computedNewToday,
+            new_today: json.new_today,
             conversations_by_status: json.conversations_by_status,
             leads: realLeadCount,
             prospects: realProspectCount,
