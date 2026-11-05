@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTemplates,
@@ -12,6 +12,7 @@ import {
   clearSyncAllResult,
   clearError,
 } from "../store/templateSlice";
+import { fetchCampaigns } from "../store/campaignSlice";
 
 import {
   Plus,
@@ -204,47 +205,55 @@ const WhatsAppPreview = ({ template }) => {
       }}
     >
       <div className="p-4 space-y-2">
-        {headerType === "TEXT" && headerText && (
-          <div className="bg-white rounded-2xl px-3.5 py-2.5 border border-slate-200/80 shadow-2xs max-w-[90%]">
-            <p className="text-xs font-bold text-[#172033]">
-              {formatWhatsAppText(headerText)}
-            </p>
-          </div>
-        )}
-
-        {["IMAGE", "VIDEO", "DOCUMENT"].includes(headerType) && (
-          <div className="bg-slate-100 rounded-2xl h-32 flex flex-col items-center justify-center border border-slate-200/80 shadow-2xs max-w-[90%] text-[#94A3B8] overflow-hidden relative">
-            {headerType === "IMAGE" &&
-              template.example_media instanceof File ? (
-              <img
-                src={URL.createObjectURL(template.example_media)}
-                className="w-full h-full object-cover"
-                alt="Preview"
-              />
-            ) : (
-              <>
-                {headerType === "IMAGE" && <Image size={28} />}
-                {headerType === "VIDEO" && <Film size={28} />}
-                {headerType === "DOCUMENT" && <FileText size={28} />}
-                <span className="text-[11px] font-semibold mt-1.5 uppercase">
-                  {headerType} Header
-                </span>
-              </>
-            )}
-          </div>
-        )}
-
-        <div className="bg-[#EFF6FF] rounded-2xl rounded-br-sm px-3.5 py-3 border border-blue-200/70 shadow-2xs max-w-[90%]">
-          {bodyText ? (
-            <p className="text-xs text-[#172033] whitespace-pre-wrap leading-relaxed">
-              {formatWhatsAppText(bodyText)}
-            </p>
-          ) : (
-            <p className="text-xs text-[#94A3B8] italic">No body text</p>
+        <div className="bg-[#EFF6FF] rounded-2xl rounded-br-sm p-4 border border-blue-200/70 shadow-2xs max-w-[92%] space-y-2.5">
+          {/* Distinct Header Section */}
+          {headerType === "TEXT" && headerText && (
+            <div className="pb-2 border-b border-blue-200/60">
+              <span className="text-[9px] font-bold tracking-widest text-[#165DFF]/70 uppercase block mb-0.5">
+                Header
+              </span>
+              <div className="text-[13px] font-bold text-[#0F172A] leading-snug">
+                {formatWhatsAppText(headerText)}
+              </div>
+            </div>
           )}
 
+          {["IMAGE", "VIDEO", "DOCUMENT"].includes(headerType) && (
+            <div className="bg-slate-100 rounded-xl h-32 flex flex-col items-center justify-center border border-slate-200/80 shadow-2xs text-[#94A3B8] overflow-hidden relative mb-1">
+              {headerType === "IMAGE" &&
+                template.example_media instanceof File ? (
+                <img
+                  src={URL.createObjectURL(template.example_media)}
+                  className="w-full h-full object-cover"
+                  alt="Preview"
+                />
+              ) : (
+                <>
+                  {headerType === "IMAGE" && <Image size={28} />}
+                  {headerType === "VIDEO" && <Film size={28} />}
+                  {headerType === "DOCUMENT" && <FileText size={28} />}
+                  <span className="text-[11px] font-semibold mt-1.5 uppercase">
+                    {headerType} Header
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Body Section */}
+          <div>
+            {bodyText ? (
+              <p className="text-[12px] font-normal text-[#1E293B] whitespace-pre-wrap leading-relaxed">
+                {formatWhatsAppText(bodyText)}
+              </p>
+            ) : (
+              <p className="text-xs text-[#94A3B8] italic">No body text</p>
+            )}
+          </div>
+
+          {/* Footer Section */}
           {footerText && (
-            <p className="text-[11px] text-[#64748B] mt-2.5 border-t border-blue-200/60 pt-1.5">
+            <p className="text-[11px] text-[#64748B] pt-2 border-t border-blue-200/60 leading-normal">
               {formatWhatsAppText(footerText)}
             </p>
           )}
@@ -1473,6 +1482,33 @@ const PreviewModal = ({ template, onClose, onEdit }) => {
   );
 };
 
+const getHeaderFormat = (template) => {
+  const headerComp = template?.components?.find((c) => c.type === "HEADER");
+  const type = (template?.header_type || headerComp?.format || "").toUpperCase();
+  if (["TEXT", "IMAGE", "VIDEO", "DOCUMENT"].includes(type)) {
+    return type;
+  }
+  return "NONE";
+};
+
+const HeaderBadge = ({ type }) => {
+  const cfg = {
+    TEXT: { label: "Text", bg: "bg-blue-50", text: "text-[#165DFF]", border: "border-blue-200/80" },
+    IMAGE: { label: "Image", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200/80" },
+    VIDEO: { label: "Video", bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200/80" },
+    DOCUMENT: { label: "Document", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200/80" },
+    NONE: { label: "None", bg: "bg-slate-100", text: "text-[#64748B]", border: "border-slate-200" },
+  }[type] || { label: type || "None", bg: "bg-slate-100", text: "text-[#64748B]", border: "border-slate-200" };
+
+  return (
+    <span
+      className={`inline-block px-2.5 py-0.5 rounded-md text-[10px] font-semibold uppercase border ${cfg.bg} ${cfg.text} ${cfg.border}`}
+    >
+      {cfg.label}
+    </span>
+  );
+};
+
 /* -------------------------------------------------------------------------- */
 /* TEMPLATE ROW                                                               */
 /* -------------------------------------------------------------------------- */
@@ -1488,6 +1524,7 @@ const TableRow = ({
 }) => {
   const isDeleting = isDeletingId === template.id;
   const catStyle = getCategoryStyle(template.category);
+  const headerFormat = getHeaderFormat(template);
 
   const [featureClicks, setFeatureClicks] = useState(() => {
     return parseInt(localStorage.getItem("template_feature_clicks") || "0", 10);
@@ -1554,6 +1591,10 @@ const TableRow = ({
 
       <td className="px-3 py-3.5">
         <StatusBadge status={template.status} />
+      </td>
+
+      <td className="px-3 py-3.5 text-center">
+        <HeaderBadge type={headerFormat} />
       </td>
 
       <td className="px-3 py-3.5 overflow-hidden">
@@ -1626,6 +1667,14 @@ const Templates = () => {
     syncAllResult,
     error,
   } = useSelector((s) => s.templates);
+  const { campaigns } = useSelector((s) => s.campaign);
+
+  const token =
+    useSelector((state) => state.auth?.accessToken) ||
+    localStorage.getItem("accessToken");
+  const wabaId = useSelector((state) => state.metaConnect?.wabaId);
+  const metaToken = import.meta.env.VITE_META_ACCESS_TOKEN;
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState(null);
@@ -1820,18 +1869,19 @@ const Templates = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed min-w-[960px]">
+            <table className="w-full table-fixed min-w-[1000px]">
               <thead className="bg-slate-50/80 border-b border-slate-100">
                 <tr>
                   {[
                     { label: "ID", width: "w-[4%]" },
-                    { label: "Name", width: "w-[21%]" },
+                    { label: "Name", width: "w-[20%]" },
                     { label: "Category", width: "w-[12%]" },
                     { label: "Language", width: "w-[8%]" },
-                    { label: "Status", width: "w-[12%]" },
-                    { label: "Body Preview", width: "w-[21%]" },
-                    { label: "Vars", width: "w-[7%] text-center" },
-                    { label: "Actions", width: "w-[15%] text-right" },
+                    { label: "Status", width: "w-[11%]" },
+                    { label: "Header", width: "w-[10%] text-center" },
+                    { label: "Body Preview", width: "w-[20%]" },
+                    { label: "Vars", width: "w-[5%] text-center" },
+                    { label: "Actions", width: "w-[10%] text-right" },
                   ].map((col) => (
                     <th
                       key={col.label}
